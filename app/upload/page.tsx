@@ -201,7 +201,7 @@ export default function UploadPage() {
         {/* Mobile Header */}
         <div className="md:hidden w-full p-6">
           <div className="flex flex-col items-center text-center">
-            <Image src="/ohplus-new-logo.png" alt="OH! Plus Logo" width={80} height={80} priority />
+            <Image src="public/boohk-logo.svg" alt="OH! Plus Logo" width={80} height={80} priority />
             <h2 className="mt-4 text-2xl font-light text-blue-700 leading-tight text-center">
               Complete Your Registration
             </h2>
@@ -211,7 +211,7 @@ export default function UploadPage() {
         <div className="flex">
           {/* Left Section: Logo */}
           <div className="hidden md:flex flex-col items-center justify-evenly p-8 bg-gray-50 w-1/2">
-            <Image src="/ohplus-new-logo.png" alt="OH! Plus Logo" width={120} height={120} priority />
+            <Image src="public/boohk-logo.svg" alt="OH! Plus Logo" width={120} height={120} priority />
             <h2 className="text-3xl font-light text-blue-700 leading-tight text-center">
               Complete Your
               <br />

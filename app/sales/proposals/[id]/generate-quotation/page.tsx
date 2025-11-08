@@ -290,7 +290,7 @@ export default function GenerateQuotationPage() {
           {/* Document Header */}
           <div className="text-center mb-6 sm:mb-8 pb-4 sm:pb-6 border-b-2 border-blue-600">
             <div className="flex items-center justify-center mb-3 sm:mb-4">
-              <img src="/oh-plus-logo.png" alt="Boohk Logo" className="h-8 sm:h-10 lg:h-12 w-auto" />
+              <img src="public/boohk-logo.svg" alt="Boohk Logo" className="h-8 sm:h-10 lg:h-12 w-auto" />
             </div>
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">QUOTATION</h1>
             <p className="text-sm sm:text-base lg:text-lg text-gray-600">Digital Billboard Rental Services</p>

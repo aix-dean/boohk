@@ -208,7 +208,7 @@ async function testServiceAssignmentHTMLPDF() {
       }
 
       async function resolveCompanyLogo(userData, projectData) {
-        return "/ohplus-new-logo.png";
+        return "public/boohk-logo.svg";
       }
 
       // Main PDF generation function

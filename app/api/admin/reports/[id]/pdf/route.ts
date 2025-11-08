@@ -311,7 +311,7 @@ export async function GET(
               </div>
               <div class="flex-shrink-0">
                 <div class="bg-white rounded-lg px-4 py-2 flex items-center justify-center shadow-sm" style="width: 160px; height: 160px;">
-                  ${companyData?.photo_url ? `<img src="${companyData.photo_url}" alt="Company Logo" class="max-h-full max-w-full object-contain" />` : '<img src="/ohplus-new-logo.png" alt="Company Logo" class="max-h-full max-w-full object-contain" />'}
+                  ${companyData?.photo_url ? `<img src="${companyData.photo_url}" alt="Company Logo" class="max-h-full max-w-full object-contain" />` : '<img src="public/boohk-logo.svg" alt="Company Logo" class="max-h-full max-w-full object-contain" />'}
                 </div>
               </div>
             </div>

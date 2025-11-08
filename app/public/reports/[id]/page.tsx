@@ -178,7 +178,7 @@ export default function PublicReportPage() {
               <p className="text-cyan-100 text-sm">as of {formatDate(report.date)}</p>
             </div>
             <div className="bg-white p-4 rounded-lg">
-              <img src="/oh--company-logo.jpg" alt="Company Logo" className="h-12 w-auto" />
+              <img src="public/boohk-logo.svg" alt="Company Logo" className="h-12 w-auto" />
             </div>
           </div>
         </div>

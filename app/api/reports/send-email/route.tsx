@@ -492,7 +492,7 @@ export async function POST(request: NextRequest) {
     const companyData = await fetchCompanyData(companyId)
 
     // Fetch company logo and extract dominant color
-    let companyLogo = "/ohplus-new-logo.png" // Default fallback logo
+    let companyLogo = "public/boohk-logo.svg" // Default fallback logo
     let dominantColor = undefined
 
     if (companyId && companyId !== "unknown") {

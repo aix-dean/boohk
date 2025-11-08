@@ -32,7 +32,7 @@ export default function SalesReportPreviewPage() {
   const [preparedByName, setPreparedByName] = useState<string>("")
   const { user } = useAuth()
   const { toast } = useToast()
-  const [companyLogo, setCompanyLogo] = useState<string>("/ohplus-new-logo.png")
+  const [companyLogo, setCompanyLogo] = useState<string>("public/boohk-logo.svg")
   const [showCongratulations, setShowCongratulations] = useState(false)
   const [booking, setBooking] = useState<any>(null)
   const reportContentRef = useRef<HTMLDivElement>(null)
@@ -91,7 +91,7 @@ export default function SalesReportPreviewPage() {
               setCompanyLogo(companyData.photo_url)
             } else {
               console.log("No company photo_url found, using default OH+ logo")
-              setCompanyLogo("/ohplus-new-logo.png")
+              setCompanyLogo("public/boohk-logo.svg")
             }
             return
           } else {
@@ -109,16 +109,16 @@ export default function SalesReportPreviewPage() {
           "User"
 
         setPreparedByName(fallbackName)
-        setCompanyLogo("/ohplus-new-logo.png")
+        setCompanyLogo("public/boohk-logo.svg")
       } else {
         console.log("User document not found for uid:", user.uid)
         setPreparedByName(user.displayName || user.email?.split("@")[0] || "User")
-        setCompanyLogo("/ohplus-new-logo.png")
+        setCompanyLogo("public/boohk-logo.svg")
       }
     } catch (error) {
       console.error("Error fetching prepared by name:", error)
       setPreparedByName(user.displayName || user.email?.split("@")[0] || "User")
-      setCompanyLogo("/ohplus-new-logo.png")
+      setCompanyLogo("public/boohk-logo.svg")
     }
   }
 
@@ -656,7 +656,7 @@ export default function SalesReportPreviewPage() {
                     className="max-h-full max-w-full object-contain"
                     onError={(e) => {
                       console.error("Company logo failed to load:", companyLogo)
-                      setCompanyLogo("/ohplus-new-logo.png")
+                      setCompanyLogo("public/boohk-logo.svg")
                     }}
                   />
                 </div>
