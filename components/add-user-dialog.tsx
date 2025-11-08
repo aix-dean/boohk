@@ -137,7 +137,7 @@ export function AddUserDialog({ open, onOpenChange, onSuccess, initialRole, rema
           invitationCode: invitationCode,
           registrationUrl,
           senderName: userData?.displayName || userData?.email,
-          companyName: projectData?.company_name || "OH Plus",
+          companyName: projectData?.company_name || "Boohk",
           role: formData.role,
           expiresAt: expiresAt.toLocaleDateString(),
         }),

@@ -907,7 +907,7 @@ export default function CostEstimatePage({ params }: { params: Promise<{ id: str
       // Simulate fetching project data
       setProjectData({
         company_logo: "/path/to/company-logo.svg",
-        company_name: "OH Plus Outdoor Advertising",
+        company_name: "Boohk Outdoor Advertising",
       })
     }
 
@@ -918,7 +918,7 @@ export default function CostEstimatePage({ params }: { params: Promise<{ id: str
     if (isSendEmailDialogOpen && costEstimate) {
       setEmailSubject(`Cost Estimate: ${costEstimate.lineItems[0].description || "Custom Cost Estimate"}`)
       setEmailBody(
-        `Dear ${costEstimate.client?.contactPerson || costEstimate.client?.company || "Valued Client"},\n\nWe are pleased to provide you with a detailed cost estimate for your advertising campaign. Please find the full cost estimate attached and accessible via the link below.\n\nThank you for considering OH Plus for your advertising needs. We look forward to working with you to bring your campaign to life!\n\nBest regards,\nThe OH Plus Team`,
+        `Dear ${costEstimate.client?.contactPerson || costEstimate.client?.company || "Valued Client"},\n\nWe are pleased to provide you with a detailed cost estimate for your advertising campaign. Please find the full cost estimate attached and accessible via the link below.\n\nThank you for considering Boohk for your advertising needs. We look forward to working with you to bring your campaign to life!\n\nBest regards,\nThe Boohk Team`,
       )
       // CC field is intentionally left empty (no auto-fill)
       setCcEmail("")
@@ -2801,7 +2801,7 @@ export default function CostEstimatePage({ params }: { params: Promise<{ id: str
               <Label htmlFor="from" className="text-right">
                 From
               </Label>
-              <Input id="from" value="OH Plus &lt;noreply@resend.dev&gt;" readOnly className="col-span-3" />
+              <Input id="from" value="Boohk &lt;noreply@resend.dev&gt;" readOnly className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="replyTo" className="text-right">
@@ -2835,7 +2835,7 @@ export default function CostEstimatePage({ params }: { params: Promise<{ id: str
                 value={emailBody}
                 onChange={(e) => setEmailBody(e.target.value)}
                 className="col-span-3 min-h-[150px]"
-                placeholder="e.g., Dear [Client Name],\n\nPlease find our cost estimate attached...\n\nBest regards,\nThe OH Plus Team"
+                placeholder="e.g., Dear [Client Name],\n\nPlease find our cost estimate attached...\n\nBest regards,\nThe Boohk Team"
               />
             </div>
           </div>

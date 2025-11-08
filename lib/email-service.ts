@@ -235,7 +235,7 @@ class EmailService {
     const defaultTemplates = [
       {
         name: templateType === "report" ? "Report Template 1" : "Cost Estimate Template 1",
-        subject: templateType === "report" ? "Report: {title} - {companyName}" : "Cost Estimate: {title} - OH Plus",
+        subject: templateType === "report" ? "Report: {title} - {companyName}" : "Cost Estimate: {title} - Boohk",
         body: templateType === "report" ?
           `Hi {clientName},
 

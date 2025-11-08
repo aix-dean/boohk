@@ -615,7 +615,7 @@ describe('/api/quotations/send-email', () => {
       expect(result.success).toBe(true)
       expect(mockResend.emails.send).toHaveBeenCalledWith(
         expect.objectContaining({
-          from: 'OH Plus <noreply@ohplus.ph>'
+          from: 'Boohk <noreply@ohplus.ph>'
         })
       )
     })
@@ -653,7 +653,7 @@ describe('/api/quotations/send-email', () => {
       expect(result.success).toBe(true)
       expect(mockResend.emails.send).toHaveBeenCalledWith(
         expect.objectContaining({
-          from: 'OH Plus <noreply@ohplus.ph>'
+          from: 'Boohk <noreply@ohplus.ph>'
         })
       )
     })
@@ -1673,7 +1673,7 @@ describe('/api/quotations/send-email', () => {
         // Should use default values for null/undefined fields
         expect(mockResend.emails.send).toHaveBeenCalledWith(
           expect.objectContaining({
-            from: 'OH Plus <noreply@ohplus.ph>' // Should fallback to defaults
+            from: 'Boohk <noreply@ohplus.ph>' // Should fallback to defaults
           })
         )
       })

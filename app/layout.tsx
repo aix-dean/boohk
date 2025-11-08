@@ -12,7 +12,7 @@ import { Toaster } from "@/components/ui/toaster"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "OH Plus",
+  title: "Boohk",
   description: "Manage your outdoor advertising sites",
   icons: {
     icon: "/oh-plus-logo.png",

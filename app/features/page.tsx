@@ -332,7 +332,7 @@ export default function FeaturesPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">System Features Overview</h1>
         <p className="text-lg text-gray-600 mb-4">
-          Explore all the features and capabilities available in the OH Plus platform
+          Explore all the features and capabilities available in the Boohk platform
         </p>
 
         {/* Stats */}

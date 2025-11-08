@@ -183,7 +183,7 @@ describe('Compliance Confirmation Dialog Logic', () => {
             fileName: fileName,
             uploadedAt: expect.any(Object), // serverTimestamp
             uploadedBy: 'test-user-id',
-            sent_from: 'OH Plus',
+            sent_from: 'Boohk',
             sent_by: 'John Doe',
           }
         }

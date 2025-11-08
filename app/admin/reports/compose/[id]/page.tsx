@@ -63,7 +63,7 @@ If you have any questions or would like to discuss the findings, feel free to re
 Best regards,
 Admin Executive
 Admin Executive
-OH PLUS
+Boohk
 +639XXXXXXXXX`,
   })
 
@@ -170,7 +170,7 @@ Looking forward to your feedback!
 Best regards,
 [Your Name]
 [Your Position]
-OH PLUS
+Boohk
 [Contact Information]`,
         userId: user.uid,
         template_type: "report" as const,
@@ -193,7 +193,7 @@ Please let me know your thoughts or if you need any additional information.
 Best regards,
 [Your Name]
 [Your Position]
-OH PLUS
+Boohk
 [Contact Information]`,
         userId: user.uid,
         template_type: "report" as const,
@@ -232,7 +232,7 @@ OH PLUS
               ...prev,
               to: clientData.email,
               cc: "",
-              subject: `Report: ${reportData.siteName} - ${clientData.company} - OH Plus`,
+              subject: `Report: ${reportData.siteName} - ${clientData.company} - Boohk`,
             }))
           }
         }

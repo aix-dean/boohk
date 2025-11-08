@@ -60,7 +60,7 @@ export function OhliverWelcomeNotification({
         <div className="flex-1">
           <h4 className="font-medium text-gray-900">OHLIVER is here to help!</h4>
           <p className="text-sm text-gray-600 mt-1">
-            Need assistance with OH Plus? I'm your AI assistant, ready to answer questions and help you navigate the
+            Need assistance with Boohk? I'm your AI assistant, ready to answer questions and help you navigate the
             platform.
           </p>
           <Button onClick={handleOpenAssistant} size="sm" className="mt-3 bg-blue-500 hover:bg-blue-600">

@@ -457,7 +457,7 @@ export default function ComposeEmailPage() {
       "{title}": costEstimate?.title || "Custom Cost Estimate",
       "{clientName}": costEstimate?.client?.name || costEstimate?.client?.company || "Valued Client",
       "{userName}": user?.displayName || "Sales Executive",
-      "{companyName}": "OH Plus",
+      "{companyName}": "Boohk",
       "{userContact}": user?.phoneNumber || "",
       "{userEmail}": user?.email || "",
     }

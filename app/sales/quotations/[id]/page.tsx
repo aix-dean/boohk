@@ -534,16 +534,16 @@ export default function QuotationPage({ params }: { params: Promise<{ id: string
 
   useEffect(() => {
     if (isSendEmailDialogOpen && quotation) {
-      setEmailSubject(`Quotation: ${quotation.quotation_number || "Custom Quotation"} - OH Plus`) // Updated subject
+      setEmailSubject(`Quotation: ${quotation.quotation_number || "Custom Quotation"} - Boohk`) // Updated subject
       setEmailBody(
         `Dear ${quotation.client_name || "Valued Client"},
 
 We are pleased to provide you with a detailed quotation for your advertising campaign. Please find the full quotation attached and accessible via the link below.
 
-Thank you for considering OH Plus for your advertising needs. We look forward to working with you to bring your campaign to life!
+Thank you for considering Boohk for your advertising needs. We look forward to working with you to bring your campaign to life!
 
 Best regards,
-The OH Plus Team`,
+The Boohk Team`,
       )
       if (user?.email) {
         setCcEmail(user.email)

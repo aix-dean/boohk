@@ -290,7 +290,7 @@ export default function GenerateQuotationPage() {
           {/* Document Header */}
           <div className="text-center mb-6 sm:mb-8 pb-4 sm:pb-6 border-b-2 border-blue-600">
             <div className="flex items-center justify-center mb-3 sm:mb-4">
-              <img src="/oh-plus-logo.png" alt="OH Plus Logo" className="h-8 sm:h-10 lg:h-12 w-auto" />
+              <img src="/oh-plus-logo.png" alt="Boohk Logo" className="h-8 sm:h-10 lg:h-12 w-auto" />
             </div>
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">QUOTATION</h1>
             <p className="text-sm sm:text-base lg:text-lg text-gray-600">Digital Billboard Rental Services</p>
@@ -684,7 +684,7 @@ export default function GenerateQuotationPage() {
               <div>
                 <h4 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Contact Information</h4>
                 <div className="text-xs sm:text-sm text-gray-700 space-y-1">
-                  <div>OH Plus Digital Solutions</div>
+                  <div>Boohk Digital Solutions</div>
                   <div>Email: sales@ohplus.com</div>
                   <div>Phone: +63 (02) 8123-4567</div>
                   <div>Website: www.ohplus.com</div>

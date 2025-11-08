@@ -639,7 +639,7 @@ export default function QuotationsListPage() {
           fileName: file.name,
           uploadedAt: serverTimestamp(),
           uploadedBy: user?.uid,
-          sent_from: "OH Plus",
+          sent_from: "Boohk",
           sent_by: `${userData?.first_name || ""} ${userData?.last_name || ""}`.trim() || user?.email || `User-${user?.uid?.slice(-6)}`,
         },
         updated: serverTimestamp(),
@@ -688,7 +688,7 @@ export default function QuotationsListPage() {
               fileName: file.name,
               uploadedAt: new Date(),
               uploadedBy: user?.uid,
-              sent_from: "OH Plus",
+              sent_from: "Boohk",
               sent_by: `${userData?.first_name || ""} ${userData?.last_name || ""}`.trim() || user?.email || `User-${user?.uid?.slice(-6)}`,
             }
           }
@@ -709,7 +709,7 @@ export default function QuotationsListPage() {
               fileName: file.name,
               uploadedAt: new Date(),
               uploadedBy: user?.uid,
-              sent_from: "OH Plus",
+              sent_from: "Boohk",
               sent_by: `${userData?.first_name || ""} ${userData?.last_name || ""}`.trim() || user?.email || `User-${user?.uid?.slice(-6)}`,
             }
           }
@@ -1733,7 +1733,7 @@ export default function QuotationsListPage() {
           fileUrl: downloadURL,
           fileName: selectedQuotationForProject.tempFile?.name || "",
           uploadedBy: user?.uid,
-          sent_from: "OH Plus",
+          sent_from: "Boohk",
           sent_by: `${userData?.first_name || ""} ${userData?.last_name || ""}`.trim() || user?.email || `User-${user?.uid?.slice(-6)}`,
         },
         status: "reserved", // Update the main status of the quotation

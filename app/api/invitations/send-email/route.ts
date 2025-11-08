@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
           </div>
           
           <div class="footer">
-            <p>This invitation was sent by ${senderName} from ${companyName || "OH Plus"}.</p>
+            <p>This invitation was sent by ${senderName} from ${companyName || "Boohk"}.</p>
             <p>If you didn't expect this invitation, you can safely ignore this email.</p>
           </div>
         </body>
@@ -212,7 +212,7 @@ Best regards,
 ${senderName}
 
 ---
-This invitation was sent by ${senderName} from ${companyName || "OH Plus"}.
+This invitation was sent by ${senderName} from ${companyName || "Boohk"}.
 If you didn't expect this invitation, you can safely ignore this email.
     `
 

@@ -798,7 +798,7 @@ describe('/api/reports/send-email - Comprehensive Tests', () => {
       expect(result.success).toBe(true)
       expect(mockResend.emails.send).toHaveBeenCalledWith(
         expect.objectContaining({
-          from: 'OH Plus <noreply@ohplus.ph>'
+          from: 'Boohk <noreply@ohplus.ph>'
         })
       )
     })

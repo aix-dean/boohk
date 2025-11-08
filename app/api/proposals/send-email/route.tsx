@@ -280,7 +280,7 @@ export async function POST(request: NextRequest) {
     console.log("Generated proposal URL:", proposalUrl)
 
     // Use custom subject and body if provided, otherwise fall back to default
-    const finalSubject = subject || `Proposal: ${proposal.title || "Custom Advertising Solution"} - ${proposal.companyName || "OH Plus"}`
+    const finalSubject = subject || `Proposal: ${proposal.title || "Custom Advertising Solution"} - ${proposal.companyName || "Boohk"}`
 
     // Create email template function that uses the extracted dominant color and user data
     const createProposalEmailTemplate = (dominantColor: string, userName?: string, userPosition?: string, replyToEmail?: string) => `
@@ -288,7 +288,7 @@ export async function POST(request: NextRequest) {
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Proposal from ${proposal.companyName || "OH Plus"}</title>
+        <title>Proposal from ${proposal.companyName || "Boohk"}</title>
         <style>
           body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -506,7 +506,7 @@ export async function POST(request: NextRequest) {
       <body>
         <div class="container">
           <div class="header">
-            ${proposal.companyLogo ? `<img src="${logoDataUri || proposal.companyLogo}" alt="${proposal.companyName || 'Company Logo'}" style="max-height: 60px; margin-bottom: 10px;" />` : `<h1>${proposal.companyName || 'OH Plus'}</h1>`}
+            ${proposal.companyLogo ? `<img src="${logoDataUri || proposal.companyLogo}" alt="${proposal.companyName || 'Company Logo'}" style="max-height: 60px; margin-bottom: 10px;" />` : `<h1>${proposal.companyName || 'Boohk'}</h1>`}
             <p>Professional Outdoor Advertising Solutions</p>
           </div>
 
@@ -581,11 +581,11 @@ export async function POST(request: NextRequest) {
                📞 Phone: ${currentUserPhoneNumber || "+639XXXXXXXXX"}
              </div>
 
-            <p>Thank you for considering OH Plus as your advertising partner. We look forward to creating something amazing together!</p>
+            <p>Thank you for considering Boohk as your advertising partner. We look forward to creating something amazing together!</p>
 
             <p style="margin-bottom: 0;">
               Best regards,<br>
-              <strong>The OH Plus Team</strong>
+              <strong>The Boohk Team</strong>
             </p>
           </div>
 
@@ -599,8 +599,8 @@ export async function POST(request: NextRequest) {
               <div class="footer-header-section" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px;">
                 <div class="footer-left-content" style="display: flex; align-items: center; gap: 15px;">
                   <div style="display: flex; align-items: center; gap: 10px;">
-                    ${proposal.companyLogo ? `<img src="${logoDataUri || proposal.companyLogo}" alt="${proposal.companyName || 'Company Logo'}" class="footer-logo" style="max-height: 60px;" />` : `<div style="width: 60px; height: 60px; background: rgba(255, 255, 255, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: white;">${(proposal.companyName || 'OH Plus').charAt(0)}</div>`}
-                    <span style="color: white; font-size: 18px; font-weight: 600;">${proposal.companyName || 'OH Plus'}</span>
+                    ${proposal.companyLogo ? `<img src="${logoDataUri || proposal.companyLogo}" alt="${proposal.companyName || 'Company Logo'}" class="footer-logo" style="max-height: 60px;" />` : `<div style="width: 60px; height: 60px; background: rgba(255, 255, 255, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: white;">${(proposal.companyName || 'Boohk').charAt(0)}</div>`}
+                    <span style="color: white; font-size: 18px; font-weight: 600;">${proposal.companyName || 'Boohk'}</span>
                   </div>
                   <div class="sales-info">
                     <h4 class="sales-name" style="color: ${dominantColor}; margin: 0 0 2px 0; font-size: 16px; font-weight: 600;">${userName || 'Sales Executive'}</h4>
@@ -610,7 +610,7 @@ export async function POST(request: NextRequest) {
                   </div>
                 </div>
                 <div class="footer-company-section" style="text-align: right;">
-                  <h2 style="color: white; margin: 0; font-size: 24px; font-weight: 600;">${proposal.companyName || 'OH Plus'}</h2>
+                  <h2 style="color: white; margin: 0; font-size: 24px; font-weight: 600;">${proposal.companyName || 'Boohk'}</h2>
                   <p style="color: rgba(255, 255, 255, 0.9); margin: 5px 0 0 0; font-size: 16px;">Professional Outdoor Advertising Solutions</p>
                 </div>
               </div>
@@ -657,7 +657,7 @@ export async function POST(request: NextRequest) {
 
     // Prepare email data with optional PDF attachment
     const emailData: any = {
-       from: "OH Plus <noreply@ohplus.ph>",
+       from: "Boohk <noreply@ohplus.ph>",
        to: [clientEmail],
        subject: finalSubject, // Use the final subject
        html: finalBody, // Use the final body

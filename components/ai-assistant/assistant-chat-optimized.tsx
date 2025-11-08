@@ -22,7 +22,7 @@ export function AssistantChatOptimized({ onClose, onMinimize, isMinimized }: Ass
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "model",
-      parts: "Hello! I'm your OH Plus Assistant. How can I help you with the OH Plus platform today?",
+      parts: "Hello! I'm your Boohk Assistant. How can I help you with the Boohk platform today?",
     },
   ])
   const [isAiThinking, setIsAiThinking] = useState(false)
@@ -295,7 +295,7 @@ export function AssistantChatOptimized({ onClose, onMinimize, isMinimized }: Ass
       <div className="flex items-center justify-between bg-primary text-primary-foreground p-3 rounded-t-lg">
         <div className="flex items-center gap-2">
           <Image src="/ohliver-mascot.png" alt="OHLIVER" width={24} height={24} className="rounded-full" />
-          <span className="font-medium">OH Plus AI Assistant</span>
+          <span className="font-medium">Boohk AI Assistant</span>
         </div>
         <div className="flex items-center gap-1">
           <Button
@@ -324,7 +324,7 @@ export function AssistantChatOptimized({ onClose, onMinimize, isMinimized }: Ass
       <div className="flex items-center justify-between bg-primary text-primary-foreground p-3 rounded-t-lg">
         <div className="flex items-center gap-2">
           <Image src="/ohliver-mascot.png" alt="OHLIVER" width={24} height={24} className="rounded-full" />
-          <span className="font-medium">OH Plus AI Assistant</span>
+          <span className="font-medium">Boohk AI Assistant</span>
         </div>
         {/* Show user info if authenticated */}
         {userName !== "Anonymous User" && <span className="text-xs opacity-75">Hi, {userName.split(" ")[0]}!</span>}

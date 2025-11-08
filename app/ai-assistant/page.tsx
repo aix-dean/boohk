@@ -130,7 +130,7 @@ export default function AIAssistantPage() {
     {
       role: "model",
       parts:
-        "Hello! I'm OHLIVER, your OH Plus AI Assistant. I'm here to help you navigate the platform, answer questions, and guide you through any tasks. What would you like to know?",
+        "Hello! I'm OHLIVER, your Boohk AI Assistant. I'm here to help you navigate the platform, answer questions, and guide you through any tasks. What would you like to know?",
     },
   ])
   const [isAiThinking, setIsAiThinking] = useState(false)
@@ -387,7 +387,7 @@ export default function AIAssistantPage() {
                   OHLIVER AI Assistant
                   <Sparkles className="h-6 w-6 text-blue-500 animate-pulse" />
                 </h1>
-                <p className="text-gray-600 font-medium">Your intelligent OH Plus companion</p>
+                <p className="text-gray-600 font-medium">Your intelligent Boohk companion</p>
               </div>
             </div>
             {userName !== "Anonymous User" && (
@@ -619,7 +619,7 @@ export default function AIAssistantPage() {
                 <div className="flex gap-4">
                   <div className="flex-1 relative">
                     <Input
-                      placeholder="Ask OHLIVER anything about OH Plus..."
+                      placeholder="Ask OHLIVER anything about Boohk..."
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={handleKeyPress}

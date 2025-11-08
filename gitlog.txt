@@ -11567,9 +11567,9 @@ commit 7824a914f1d7c17b9b2fcb80fae24ee5d4c401d4
 Author: v0 <v0[bot]@users.noreply.github.com>
 Date:   2025-08-29T02:45:28+00:00
 
-    feat: update email service to OH Plus
+    feat: update email service to Boohk
     
-    Change email sender to OH Plus for better branding.
+    Change email sender to Boohk for better branding.
     
     #VERCEL_SKIP
     
@@ -36125,7 +36125,7 @@ Date:   2025-07-15T07:44:09+00:00
 
     feat: enhance login card branding with larger logo and text
     
-    Improve visibility of OH Plus logo and tagline for better prominence.
+    Improve visibility of Boohk logo and tagline for better prominence.
     
     #VERCEL_SKIP
     
@@ -37834,7 +37834,7 @@ commit 0a4c80e0f54c727fe978b81c85ed3f1f436a0734
 Author: v0 <v0[bot]@users.noreply.github.com>
 Date:   2025-07-15T00:52:14+00:00
 
-    feat: remove OH Plus logo from registration page
+    feat: remove Boohk logo from registration page
     
     Show only background image on registration page.
     
@@ -37850,9 +37850,9 @@ commit c79468821e0ba1f39f48349d0dbdfb0f481622dc
 Author: v0 <v0[bot]@users.noreply.github.com>
 Date:   2025-07-14T15:14:49+00:00
 
-    feat: update registration page with OH Plus logo and background
+    feat: update registration page with Boohk logo and background
     
-    Maintain original background and add OH Plus logo for branding.
+    Maintain original background and add Boohk logo for branding.
     
     #VERCEL_SKIP
     

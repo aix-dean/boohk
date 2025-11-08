@@ -310,7 +310,7 @@ export default function ComposeEmailPage() {
       "{title}": quotation?.items?.name || "Custom Quotation",
       "{clientName}": quotation?.client_name || quotation?.client_company_name || "Valued Client",
       "{userName}": user?.displayName || "Sales Executive",
-      "{companyName}": "OH Plus",
+      "{companyName}": "Boohk",
       "{userContact}": user?.phoneNumber || "",
       "{userEmail}": user?.email || "",
     }

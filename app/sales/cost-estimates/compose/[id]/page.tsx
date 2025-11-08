@@ -122,9 +122,9 @@ export default function ComposeEmailPage() {
 
   useEffect(() => {
     if (costEstimate) {
-      setEmailSubject(`Cost Estimate: ${costEstimate.title || "Custom Cost Estimate"} - OH Plus`)
+      setEmailSubject(`Cost Estimate: ${costEstimate.title || "Custom Cost Estimate"} - Boohk`)
       setEmailBody(
-        `Dear ${costEstimate.client?.contactPerson || costEstimate.client?.company || "Valued Client"},\n\nWe are pleased to provide you with a detailed cost estimate for your advertising campaign. Please find the full cost estimate attached and accessible via the link below.\n\nThank you for considering OH Plus for your advertising needs. We look forward to working with you to bring your campaign to life!\n\nBest regards,\nThe OH Plus Team`,
+        `Dear ${costEstimate.client?.contactPerson || costEstimate.client?.company || "Valued Client"},\n\nWe are pleased to provide you with a detailed cost estimate for your advertising campaign. Please find the full cost estimate attached and accessible via the link below.\n\nThank you for considering Boohk for your advertising needs. We look forward to working with you to bring your campaign to life!\n\nBest regards,\nThe Boohk Team`,
       )
       // Note: CC field is intentionally left empty (no auto-fill)
     }
@@ -348,7 +348,7 @@ export default function ComposeEmailPage() {
                     </Label>
                     <Input
                       id="from"
-                      value="OH Plus <noreply@ohplus.ph>"
+                      value="Boohk <noreply@ohplus.ph>"
                       readOnly
                       className="col-span-3"
                     />
@@ -391,7 +391,7 @@ export default function ComposeEmailPage() {
                       value={emailBody}
                       onChange={(e) => setEmailBody(e.target.value)}
                       className="col-span-3 min-h-[200px]"
-                      placeholder="e.g., Dear [Client Name],\n\nPlease find our cost estimate attached...\n\nBest regards,\nThe OH Plus Team"
+                      placeholder="e.g., Dear [Client Name],\n\nPlease find our cost estimate attached...\n\nBest regards,\nThe Boohk Team"
                     />
                   </div>
                 </div>

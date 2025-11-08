@@ -100,7 +100,7 @@ const getCompletionPercentage = (report: any) => {
 async function fetchCompanyData(companyId: string) {
   // Provide immediate fallback data to prevent hanging
   const fallbackData = {
-    company_name: "OH Plus",
+    company_name: "Boohk",
     company_location: "Manila, Philippines",
     phone: "Contact: (02) 123 4567",
     photo_url: null,
@@ -425,7 +425,7 @@ export async function GET(
     pdf.text('Prepared by:', margin, footerY - 15)
     pdf.setFont('helvetica', 'normal')
     pdf.setFontSize(9)
-    pdf.text(companyData?.company_name || "OH Plus", margin, footerY - 5)
+    pdf.text(companyData?.company_name || "Boohk", margin, footerY - 5)
     pdf.text('SALES', margin, footerY + 2)
     pdf.text(formatDate(report.date), margin, footerY + 9)
 

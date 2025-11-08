@@ -152,7 +152,7 @@ async function fetchCompanyData(companyId: string) {
       }
 
       return {
-        company_name: data.company_name || data.name || "OH Plus",
+        company_name: data.company_name || data.name || "Boohk",
         company_location: data.company_location || data.address || "No. 727 General Solano St., San Miguel, Manila 1005",
         phone: data.phone || data.telephone || data.contact_number || "+639XXXXXXXXX",
         email: verifiedEmail,
@@ -161,7 +161,7 @@ async function fetchCompanyData(companyId: string) {
     }
 
     return {
-      company_name: "OH Plus",
+      company_name: "Boohk",
       company_location: "No. 727 General Solano St., San Miguel, Manila 1005",
       phone: "+639XXXXXXXXX",
       email: "noreply@ohplus.ph",
@@ -170,7 +170,7 @@ async function fetchCompanyData(companyId: string) {
   } catch (error) {
     console.error("Error fetching company data:", error)
     return {
-      company_name: "OH Plus",
+      company_name: "Boohk",
       company_location: "No. 727 General Solano St., San Miguel, Manila 1005",
       phone: "+639XXXXXXXXX",
       email: "noreply@ohplus.ph",

@@ -3,10 +3,10 @@ import { generateContent } from "@/lib/gemini-service"
 import type { ChatMessage } from "@/lib/gemini-service"
 import { saveChatMessage, saveConversation } from "@/lib/chat-database-service"
 
-const SYSTEM_CONTEXT = `You are OHLIVER, the helpful AI assistant for the OH Plus platform - a comprehensive Out-of-Home (OOH) advertising management system.
+const SYSTEM_CONTEXT = `You are OHLIVER, the helpful AI assistant for the Boohk platform - a comprehensive Out-of-Home (OOH) advertising management system.
 
 PLATFORM OVERVIEW:
-OH Plus is an enterprise platform for managing outdoor advertising operations including LED billboards, static billboards, and digital signage networks.
+Boohk is an enterprise platform for managing outdoor advertising operations including LED billboards, static billboards, and digital signage networks.
 
 KEY MODULES & FEATURES:
 
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
 Current page context: ${currentPage}
 User: ${userName} (${userEmail})
 
-Please provide helpful assistance based on the OH Plus platform context.`,
+Please provide helpful assistance based on the Boohk platform context.`,
       },
       ...messages,
     ]

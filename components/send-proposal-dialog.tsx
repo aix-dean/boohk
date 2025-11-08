@@ -131,7 +131,7 @@ export function SendProposalDialog({ isOpen, onClose, proposal, onProposalSent }
               <Label htmlFor="from" className="text-right">
                 From
               </Label>
-              <Input id="from" value="OH Plus <noreply@resend.dev>" readOnly className="col-span-3" />
+              <Input id="from" value="Boohk <noreply@resend.dev>" readOnly className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="replyTo" className="text-right">
@@ -166,7 +166,7 @@ export function SendProposalDialog({ isOpen, onClose, proposal, onProposalSent }
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 className="col-span-3 min-h-[150px]"
-                placeholder="e.g., Dear [Client Name],\n\nPlease find our proposal attached...\n\nBest regards,\nThe OH Plus Team"
+                placeholder="e.g., Dear [Client Name],\n\nPlease find our proposal attached...\n\nBest regards,\nThe Boohk Team"
               />
             </div>
           </div>
