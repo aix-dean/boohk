@@ -1,0 +1,44 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.kilocode
+/.kilocodemodes
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# testing
+coverage/
+.vitest/
+test-blank-page-feature.test.js
+lib/proposal-service.test.ts
+lib/types/proposal.test.ts
+app/sales/proposals/__tests__/proposal-details-page.test.tsx
+
+#mcp server
+mcp.json
+
+#DS files
+.DS_Store
+mcp.json
+

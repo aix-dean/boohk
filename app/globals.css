@@ -1,0 +1,299 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Top Navigation Styles */
+.top-nav {
+  @apply h-16;
+}
+
+.top-nav-container {
+  @apply h-full mx-auto px-4;
+}
+
+.top-nav-content {
+  @apply h-full flex justify-between items-center;
+}
+
+.top-nav-left {
+  @apply flex items-center;
+}
+
+.top-nav-logo {
+  @apply flex items-center mr-6;
+}
+
+.top-nav-links {
+  @apply space-x-1;
+}
+
+.top-nav-link {
+  @apply px-3 py-2 rounded-md text-sm font-medium;
+}
+
+.top-nav-link-active {
+  @apply bg-white/10;
+}
+
+.top-nav-mobile {
+  @apply block md:hidden;
+}
+
+.top-nav-mobile-button {
+  @apply inline-flex items-center justify-center p-2 rounded-md;
+}
+
+.top-nav-mobile-menu {
+  @apply md:hidden fixed inset-0 z-50 pt-16 pb-20 h-screen w-screen overflow-y-auto;
+}
+
+.top-nav-mobile-links {
+  @apply px-2 pt-2 pb-3 space-y-1;
+}
+
+.top-nav-mobile-link {
+  @apply block px-3 py-2 rounded-md text-base font-medium text-gray-700;
+}
+
+.top-nav-mobile-link-active {
+  @apply bg-gray-100 text-gray-900;
+}
+
+/* Responsive Table Styles */
+.responsive-table-container {
+  @apply w-full overflow-x-auto;
+}
+
+.responsive-table-card {
+  @apply block md:hidden border rounded-lg p-4 mb-4;
+}
+
+.responsive-table-card-header {
+  @apply font-semibold text-lg mb-2;
+}
+
+.responsive-table-card-row {
+  @apply flex justify-between py-1 border-b border-gray-100 last:border-0;
+}
+
+.responsive-table-card-label {
+  @apply text-sm text-gray-500;
+}
+
+.responsive-table-card-value {
+  @apply text-sm font-medium;
+}
+
+/* Mobile Form Styles */
+@media (max-width: 640px) {
+  .form-row {
+    @apply flex flex-col space-y-2;
+  }
+
+  .form-col {
+    @apply w-full;
+  }
+
+  .form-actions {
+    @apply flex flex-col space-y-2;
+  }
+
+  .form-actions button {
+    @apply w-full;
+  }
+}
+
+/* Responsive Card Grid */
+.responsive-card-grid {
+  @apply grid gap-4;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+@media (max-width: 640px) {
+  .responsive-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Responsive Typography */
+h1 {
+  @apply text-xl md:text-2xl lg:text-3xl;
+}
+
+h2 {
+  @apply text-lg md:text-xl lg:text-2xl;
+}
+
+h3 {
+  @apply text-base md:text-lg lg:text-xl;
+}
+
+.text-truncate {
+  @apply truncate;
+}
+
+/* Responsive Padding and Margins */
+.responsive-container {
+  @apply px-4 sm:px-6 md:px-8 py-4 sm:py-6 md:py-8;
+}
+
+.responsive-section {
+  @apply mb-4 sm:mb-6 md:mb-8;
+}
+
+.responsive-card {
+  @apply p-3 sm:p-4 md:p-6;
+}
+
+/* Beautiful Webkit Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: hsl(var(--muted-foreground) / 0.7);
+}
+
+::-webkit-scrollbar-corner {
+  background: hsl(var(--muted));
+}
+
+/* Thin scrollbar variant for specific components */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 2px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.4);
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom scrollbar for dark mode */
+.dark ::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.6);
+}
+
+.dark ::-webkit-scrollbar-thumb:active {
+  background: hsl(var(--muted-foreground) / 0.8);
+}

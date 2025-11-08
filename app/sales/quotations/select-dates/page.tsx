@@ -1,0 +1,718 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
+import Image from "next/image"
+import { CalendarIcon, Loader2 } from "lucide-react"
+import { Timestamp } from "firebase/firestore"
+import { createDirectQuotation, createMultipleQuotations } from "@/lib/quotation-service"
+import { getProductById, getProductBookings } from "@/lib/firebase-service"
+import { getClientById } from "@/lib/client-service"
+import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/hooks/use-toast"
+import type { Product } from "@/lib/firebase-service"
+import type { Client } from "@/lib/client-service"
+import type { Booking } from "@/lib/firebase-service"
+
+export default function SelectDatesPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { user, userData } = useAuth()
+  const { toast } = useToast()
+
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
+  const [isCreating, setIsCreating] = useState(false)
+  const [monthOffset, setMonthOffset] = useState(0)
+
+  const [selectedSites, setSelectedSites] = useState<Product[]>([])
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null)
+  const [siteBookings, setSiteBookings] = useState<Record<string, Booking[]>>({})
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false)
+  const [siteIds, setSiteIds] = useState<string[]>([])
+  const [cmsData, setCmsData] = useState<Record<string, any>>({})
+  const [spotNumbersData, setSpotNumbersData] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    const sitesParam = searchParams.get("sites")
+    const clientIdParam = searchParams.get("clientId")
+    const productIdParam = searchParams.get("productId")
+    const spotNumbersParam = searchParams.get("spotNumbers")
+    const spotSelectionsParam = searchParams.get("spotSelections")
+    const cmsDataParam = searchParams.get("cmsData")
+    const spotNumbersDataParam = searchParams.get("spotNumbersData")
+
+    if (clientIdParam) {
+      const fetchClient = async () => {
+        const client = await getClientById(clientIdParam)
+        if (client) setSelectedClient(client)
+      }
+      fetchClient()
+    }
+
+    // Parse CMS and spot number data from cost estimates
+    if (cmsDataParam) {
+      try {
+        const parsedCmsData = JSON.parse(decodeURIComponent(cmsDataParam))
+        setCmsData(parsedCmsData)
+      } catch (error) {
+        console.error("Error parsing cmsData:", error)
+      }
+    }
+
+    if (spotNumbersDataParam) {
+      try {
+        const parsedSpotNumbersData = JSON.parse(decodeURIComponent(spotNumbersDataParam))
+        setSpotNumbersData(parsedSpotNumbersData)
+      } catch (error) {
+        console.error("Error parsing spotNumbersData:", error)
+      }
+    }
+
+    // Handle new spotSelections mode (from updated spot selection dialog)
+    if (spotSelectionsParam) {
+      try {
+        const spotSelections = JSON.parse(decodeURIComponent(spotSelectionsParam))
+        console.log(`Parsed spot selections:`, spotSelections)
+
+        const fetchProductsAndSpots = async () => {
+          setIsLoadingProducts(true)
+          const allSpotSites: Product[] = []
+          const bookingsMap: Record<string, Booking[]> = {}
+
+          for (const selection of spotSelections) {
+            const { productId, spotNumbers } = selection
+            const product = await getProductById(productId)
+
+            if (product) {
+              // Generate spots data like in product detail page
+              const totalSpots = product.cms?.loops_per_day || 18
+              const allSpots = []
+
+              // Sample client names for demonstration
+              const clientNames = ["Coca-Cola", "Bear-Brand", "Toyota", "Lucky Me", "Bench", "Maggi", "Oishi"]
+
+              for (let i = 1; i <= totalSpots; i++) {
+                // Check if this spot has scheduled content
+                const hasScheduledContent = false // We'll assume spots are available for now
+
+                const isOccupied = hasScheduledContent
+
+                allSpots.push({
+                  id: `spot-${i}`,
+                  number: i,
+                  status: (isOccupied ? "occupied" : "vacant") as "occupied" | "vacant",
+                  clientName: isOccupied ? clientNames[(i - 1) % clientNames.length] : undefined,
+                  imageUrl: isOccupied ? "/placeholder.svg" : undefined,
+                })
+              }
+
+              // Filter to selected spots
+              const selectedSpots = allSpots.filter(spot => spotNumbers.includes(spot.number))
+
+              // Convert spots to site-like objects for display
+              const spotSites = selectedSpots.map(spot => ({
+                ...product,
+                id: `${product.id}`,
+                name: `${product.name}`,
+                spotNumber: spot.number,
+                spotData: spot,
+              }))
+
+              allSpotSites.push(...spotSites)
+
+              // Fetch bookings for the product
+              const productBookings = await getProductBookings(productId)
+              spotSites.forEach(site => {
+                bookingsMap[site.id!] = productBookings
+              })
+            }
+          }
+
+          // If sitesParam is also present, combine with non-dynamic sites
+          if (sitesParam) {
+            try {
+              const parsedSiteIds = JSON.parse(decodeURIComponent(sitesParam))
+              console.log(`Also processing non-dynamic sites:`, parsedSiteIds)
+
+              for (const siteId of parsedSiteIds) {
+                const product = await getProductById(siteId)
+                if (product) {
+                  allSpotSites.push(product)
+
+                  // Fetch bookings for this product
+                  const productBookings = await getProductBookings(siteId)
+                  bookingsMap[siteId] = productBookings
+                }
+              }
+            } catch (error) {
+              console.error("Error parsing sites parameter:", error)
+            }
+          }
+
+          setSelectedSites(allSpotSites)
+          setSiteIds(allSpotSites.map(site => site.id!))
+          setSiteBookings(bookingsMap)
+          setIsLoadingProducts(false)
+        }
+        fetchProductsAndSpots()
+      } catch (error) {
+        console.error("Error parsing spot selections:", error)
+        setIsLoadingProducts(false)
+      }
+    }
+    // Handle spots mode (from spot selection dialog)
+    else if (productIdParam && spotNumbersParam) {
+      try {
+        const productId = productIdParam
+        const selectedSpotNumbers = JSON.parse(decodeURIComponent(spotNumbersParam))
+        console.log(`Parsed product ID:`, productId, `Selected spot numbers:`, selectedSpotNumbers)
+
+        const fetchProductAndSpots = async () => {
+          setIsLoadingProducts(true)
+          const product = await getProductById(productId)
+          if (product) {
+            // Generate spots data like in product detail page
+            const totalSpots = product.cms?.loops_per_day || 18
+            const allSpots = []
+
+            // Sample client names for demonstration
+            const clientNames = ["Coca-Cola", "Bear-Brand", "Toyota", "Lucky Me", "Bench", "Maggi", "Oishi"]
+
+            for (let i = 1; i <= totalSpots; i++) {
+              // Check if this spot has scheduled content
+              const hasScheduledContent = false // We'll assume spots are available for now
+
+              const isOccupied = hasScheduledContent
+
+              allSpots.push({
+                id: `spot-${i}`,
+                number: i,
+                status: (isOccupied ? "occupied" : "vacant") as "occupied" | "vacant",
+                clientName: isOccupied ? clientNames[(i - 1) % clientNames.length] : undefined,
+                imageUrl: isOccupied ? "/placeholder.svg" : undefined,
+              })
+            }
+
+            // Filter to selected spots
+            const selectedSpots = allSpots.filter(spot => selectedSpotNumbers.includes(spot.number))
+
+            // Convert spots to site-like objects for display
+            const spotSites = selectedSpots.map(spot => ({
+              ...product,
+              id: `${product.id}`,
+              name: `${product.name}`,
+              spotNumber: spot.number,
+              spotData: spot,
+            }))
+
+            setSelectedSites(spotSites)
+            setSiteIds(spotSites.map(site => site.id!))
+
+            // Fetch bookings for the product
+            const productBookings = await getProductBookings(productId)
+            const bookingsMap: Record<string, Booking[]> = {}
+            spotSites.forEach(site => {
+              bookingsMap[site.id!] = productBookings
+            })
+            setSiteBookings(bookingsMap)
+          }
+          setIsLoadingProducts(false)
+        }
+        fetchProductAndSpots()
+      } catch (error) {
+        console.error("Error parsing spot parameters:", error)
+        setIsLoadingProducts(false)
+      }
+    }
+    // Handle traditional sites mode
+    else if (sitesParam) {
+      try {
+        const parsedSiteIds = JSON.parse(decodeURIComponent(sitesParam))
+        console.log(`Parsed site IDs:`, parsedSiteIds)
+        setSiteIds(parsedSiteIds)
+        const fetchProducts = async () => {
+          setIsLoadingProducts(true)
+          const products: Product[] = []
+          const bookingsMap: Record<string, Booking[]> = {}
+          for (const siteId of parsedSiteIds) {
+            const product = await getProductById(siteId)
+            if (product) products.push(product)
+
+            // Fetch bookings for this product
+            const productBookings = await getProductBookings(siteId)
+            bookingsMap[siteId] = productBookings
+          }
+          setSelectedSites(products)
+          setSiteBookings(bookingsMap)
+          setIsLoadingProducts(false)
+        }
+        fetchProducts()
+      } catch (error) {
+        console.error("Error parsing site IDs:", error)
+        setIsLoadingProducts(false)
+      }
+    } else {
+      setSiteIds([])
+    }
+   }, [searchParams])
+
+   // Reset month offset when dates change
+   useEffect(() => {
+     setMonthOffset(0)
+   }, [startDate, endDate])
+
+  const handleCreateQuotation = async () => {
+    if (!startDate || !endDate || !selectedClient || selectedSites.length === 0) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!user?.uid || !userData?.company_id) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to create a quotation.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsCreating(true)
+    try {
+      const startDateObj = new Date(startDate)
+      const endDateObj = new Date(endDate)
+
+      const sitesData = selectedSites.map((site) => {
+        const isDynamicOrDigital = (site.content_type || "").toLowerCase() === "dynamic" || (site.content_type || "").toLowerCase() === "digital"
+        const siteId = site.id!
+
+        return {
+          id: siteId,
+          name: site.name,
+          location: site.specs_rental?.location || (site as any).light?.location || "N/A",
+          price: site.price || 0,
+          type: site.type || "Unknown",
+          image: site.media && site.media.length > 0 ? site.media[0].url : undefined,
+          content_type: site.content_type || "",
+          specs_rental: site.specs_rental,
+          // Include CMS map and spot number for dynamic/digital content types
+          // Use data from cost estimates if available, otherwise from site
+          ...(isDynamicOrDigital && {
+            cms: cmsData[siteId] || site.cms,
+            spot_number: spotNumbersData[siteId] || (site as any).spotNumber,
+          }),
+        }
+      })
+
+      const clientData = {
+        id: selectedClient.id,
+        name: selectedClient.name,
+        email: selectedClient.email,
+        company: selectedClient.company,
+        phone: selectedClient.phone,
+        address: selectedClient.address,
+        designation: selectedClient.designation,
+        industry: selectedClient.industry,
+        company_id: selectedClient.company_id,
+      }
+
+      const options = {
+        startDate: startDateObj,
+        endDate: endDateObj,
+        company_id: userData.company_id,
+        client_company_id: selectedClient.company_id,
+        page_id: selectedSites.length > 1 ? `PAGE-${Date.now()}` : undefined,
+        created_by_first_name: userData.first_name,
+        created_by_last_name: userData.last_name,
+      }
+
+      let quotationIds: string[]
+
+      if (selectedSites.length > 1) {
+        quotationIds = await createMultipleQuotations(clientData, sitesData, user.uid, options)
+        toast({
+          title: "Quotations Created",
+          description: `Successfully created ${quotationIds.length} quotations.`,
+        })
+      } else {
+        const quotationId = await createDirectQuotation(clientData, sitesData, user.uid, options)
+        quotationIds = [quotationId]
+        toast({
+          title: "Quotation Created",
+          description: "Quotation has been created successfully.",
+        })
+      }
+
+      router.push(`/sales/quotations/${quotationIds[0]}`)
+    } catch (error) {
+      console.error("Error creating quotation:", error)
+      toast({
+        title: "Error",
+        description: "Failed to create quotation. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
+  const totalDays =
+    startDate && endDate
+      ? Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
+      : 30
+
+  // Helper function to convert booking dates to Date objects
+  const convertToDate = (dateValue: string | Timestamp): Date => {
+    if (typeof dateValue === 'string') {
+      return new Date(dateValue)
+    } else {
+      return dateValue.toDate()
+    }
+  }
+
+  // Helper function to get filtered booked ranges for a site
+  const getBookedRanges = (siteId: string) => {
+    const bookings = siteBookings[siteId] || []
+    const site = selectedSites.find(s => s.id === siteId)
+
+    console.log(`🔍 DEBUG: getBookedRanges called for siteId:`, siteId)
+    console.log(`🔍 DEBUG: Site object:`, site)
+    console.log(`🔍 DEBUG: Site has spotNumber:`, (site as any)?.spotNumber)
+    console.log(`🔍 DEBUG: spotNumbersData for siteId:`, spotNumbersData[siteId])
+    console.log(`🔍 DEBUG: All bookings for this site:`, bookings)
+
+    const filteredBookings = bookings
+      .filter(booking => {
+        // Filter out completed/cancelled bookings
+        const statusFilter = booking.status !== "COMPLETED" && booking.status !== "CANCELLED"
+        console.log(`🔍 DEBUG: Booking ${booking.id} status filter:`, statusFilter, `status:`, booking.status)
+
+        // If this is a spot-specific site, filter by spot numbers
+        // Check both site.spotNumber and spotNumbersData[siteId]
+        const spotNumber = (site as any)?.spotNumber || (spotNumbersData[siteId] ? parseInt(spotNumbersData[siteId]) : undefined)
+        if (spotNumber !== undefined) {
+          const spotFilter = booking.spot_numbers && Array.isArray(booking.spot_numbers) && booking.spot_numbers.includes(spotNumber)
+          console.log(`🔍 DEBUG: Booking ${booking.id} spot filter for spot ${spotNumber}:`, spotFilter, `booking.spot_numbers:`, booking.spot_numbers)
+          return statusFilter && spotFilter
+        }
+
+        return statusFilter
+      })
+
+    console.log(`🔍 DEBUG: Filtered bookings:`, filteredBookings)
+
+    const ranges = filteredBookings.map(booking => {
+      const start = convertToDate(booking.start_date)
+      const end = convertToDate(booking.end_date)
+      const range = {
+        start: new Date(start.getFullYear(), start.getMonth(), start.getDate()),
+        end: new Date(end.getFullYear(), end.getMonth(), end.getDate()),
+      }
+      console.log(`🔍 DEBUG: Booking ${booking.id} range:`, range)
+      return range
+    })
+
+    console.log(`🔍 DEBUG: Final ranges for site ${siteId}:`, ranges)
+    return ranges
+  }
+
+  const checkOverlap = (siteId: string, s: Date, e: Date) =>
+    getBookedRanges(siteId).some((r) => s <= r.end && e >= r.start)
+
+  const removeSite = (id: string) => {
+      setSelectedSites((prev) => {
+          const updated = prev.filter((site) => site.id !== id);
+          if (updated.length === 0) router.push("/sales/dashboard"); // safe now
+          return updated;
+      });
+
+  }
+
+  // Helper function to get all months between start and end dates
+  const getMonthsBetween = (start: string, end: string) => {
+      if (!start || !end) return []
+      const startDate = new Date(start)
+      const endDate = new Date(end)
+      const months = []
+      const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1)
+      while (current <= endDate) {
+          months.push({ month: current.getMonth(), year: current.getFullYear() })
+          current.setMonth(current.getMonth() + 1)
+      }
+      return months
+  }
+
+  const renderCalendar = (monthIndex: number, year: number, bookedRanges: { start: Date; end: Date }[]) => {
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate()
+    const startDay = new Date(year, monthIndex, 1).getDay()
+
+    return (
+      <div className="text-center">
+        <h3 className="font-bold mb-2">
+          {new Date(year, monthIndex).toLocaleString("default", { month: "long" })} {year}
+        </h3>
+        <div className="grid grid-cols-7 gap-1 text-xs">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+            <div key={d} className="font-semibold text-gray-600 p-1">
+              {d}
+            </div>
+          ))}
+          {Array.from({ length: startDay }).map((_, i) => (
+            <div key={`e-${i}`} className="p-1" />
+          ))}
+          {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+            const date = new Date(year, monthIndex, day)
+            const selectedStart = startDate ? new Date(startDate) : null
+            const selectedEnd = endDate ? new Date(endDate) : null
+
+            // Highlight dates that are booked
+            const isBooked = bookedRanges.some((r) => date >= r.start && date <= r.end)
+
+            const isStartDate = startDate && date.toDateString() === new Date(startDate).toDateString()
+            const isEndDate = endDate && date.toDateString() === new Date(endDate).toDateString()
+            const isSelected = isStartDate || isEndDate
+            const isInRange = startDate && endDate && date >= new Date(startDate) && date <= new Date(endDate)
+            const isBetween = startDate && endDate && date > new Date(startDate) && date < new Date(endDate)
+
+            return (
+              <div
+                key={day}
+                className={`p-1 rounded text-center relative ${isBooked
+                  ? "bg-red-500 text-white" // booked overrides everything
+                  : isSelected
+                    ? "bg-blue-500 text-white font-bold ring-2 ring-blue-300"
+                    : isBetween
+                      ? "bg-blue-100 text-blue-800"
+                      : isInRange
+                        ? "bg-blue-100 text-blue-800 font-semibold"
+                        : "text-gray-700"
+                  }`}
+              >
+                {day}
+                {isSelected && (
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-600 rounded-full"></div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  // Get months to show based on selected start date or current date
+  const allMonths = startDate && endDate ? getMonthsBetween(startDate, endDate) : []
+  const shouldShowAllMonths = allMonths.length > 3
+
+  let monthsToShow = []
+  if (shouldShowAllMonths) {
+      // Show 3 months starting from monthOffset
+      const startIndex = monthOffset
+      monthsToShow = allMonths.slice(startIndex, startIndex + 3)
+  } else {
+      // Original logic - show 3 months
+      const baseDate = startDate ? new Date(startDate) : new Date()
+      const baseMonth = baseDate.getMonth()
+      const baseYear = baseDate.getFullYear()
+      monthsToShow = [
+          { month: baseMonth, year: baseYear },
+          { month: (baseMonth + 1) % 12, year: baseMonth + 1 > 11 ? baseYear + 1 : baseYear },
+          { month: (baseMonth + 2) % 12, year: baseMonth + 2 > 11 ? baseYear + 1 : baseYear },
+      ]
+  }
+
+  // Navigation controls
+  const canGoLeft = shouldShowAllMonths && monthOffset > 0
+  const canGoRight = shouldShowAllMonths && monthOffset + 3 < allMonths.length
+
+  // Check if any site has overlapping dates
+  const hasOverlaps = selectedSites.some(site =>
+    startDate && endDate && checkOverlap(site.id!, new Date(startDate), new Date(endDate))
+  )
+  const today = new Date().toISOString().split("T")[0]
+
+  const getNextDay = (dateStr: string) => {
+    if (!dateStr) return today
+    const d = new Date(dateStr)
+    d.setDate(d.getDate() + 1)
+    return d.toISOString().split("T")[0]
+  }
+
+  const renderSkeletonSiteCard = (siteId: string) => (
+    <div key={siteId} className="border rounded-lg p-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Left: Site card skeleton */}
+        <div className="bg-gray-100 rounded-lg overflow-hidden">
+          <Skeleton className="h-40 w-full" />
+          <div className="p-3 space-y-1">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-4 w-1/4" />
+          </div>
+        </div>
+
+        {/* Right: Calendars skeleton */}
+        <div className="md:col-span-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="text-center">
+                <Skeleton className="h-6 w-24 mx-auto mb-2" />
+                <Skeleton className="h-32 w-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="min-h-screen bg-white p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <Button variant="ghost" onClick={() => router.back()} className="flex items-center gap-2">
+            ← Select Dates
+          </Button>
+        </div>
+
+        {/* Start/End Date Inputs */}
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="px-2">
+            <label className="block text-sm font-semibold mb-2">Start Date</label>
+            <Input type="date"
+              value={startDate}
+              onChange={(e) => {
+                setStartDate(e.target.value)
+                // reset end date if it's invalid
+                if (endDate && e.target.value && endDate <= e.target.value) {
+                  setEndDate("")
+                }
+              }}
+              min={today}
+            />
+          </div>
+          <div className="px-2">
+            <label className="block text-sm font-semibold mb-2">End Date</label>
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              min={getNextDay(startDate)}
+              disabled={!startDate} // disable until start date is picked
+            />
+          </div>
+          <div className="px-2">
+            <span className="font-semibold mb-4 text-sm block ">Total</span>
+            <span className="text-sm">{totalDays} days</span>
+          </div>
+          <div className="justify-end md:ml-auto flex items-end">
+            <Button
+              onClick={handleCreateQuotation}
+              disabled={!startDate || !endDate || isCreating || hasOverlaps || isLoadingProducts}
+              className="px-8 py-3 text-lg font-semibold"
+            >
+              {isCreating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...</> : "Next →"}
+            </Button>
+          </div>
+        </div>
+        {/* Sites with calendars */}
+        <div className="space-y-6">
+          {isLoadingProducts
+            ? siteIds.map(renderSkeletonSiteCard)
+            : selectedSites.map((site) => {
+              const bookedRanges = getBookedRanges(site.id!)
+              const overlap = startDate && endDate && checkOverlap(site.id!, new Date(startDate), new Date(endDate))
+              return (
+                <div key={site.id} className="border rounded-lg p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {/* Left: Site card */}
+                    <div className="bg-gray-100 rounded-lg overflow-hidden">
+                      <div className="h-40 relative">
+                        {site.media && site.media.length > 0 ? (
+                          <Image
+                            src={site.media[0].url}
+                            alt={site.name}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="h-full bg-gray-300 flex items-center justify-center text-gray-500">
+                            No Image
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-3 text-sm space-y-1">
+                        <p className="text-gray-500">{site.site_code || "Site Code"}</p>
+                        <p className="font-medium">{site.name}</p>
+                        <p className="font-medium truncate">
+                          {site.specs_rental?.location || (site as any).light?.location || "Location"}
+                        </p>
+                        <p className="font-medium">₱{site.price}</p>
+                      </div>
+                    </div>
+
+                    {/* Right: Calendars */}
+                    <div className="md:col-span-3">
+                      {/* Navigation controls */}
+                      {shouldShowAllMonths && (
+                        <div className="flex justify-between items-center mb-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setMonthOffset(Math.max(0, monthOffset - 1))}
+                            disabled={!canGoLeft}
+                          >
+                            ← Previous
+                          </Button>
+                          <span className="text-sm text-gray-600">
+                            Showing months {monthOffset + 1} - {Math.min(monthOffset + 3, allMonths.length)} of {allMonths.length}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setMonthOffset(Math.min(allMonths.length - 3, monthOffset + 1))}
+                            disabled={!canGoRight}
+                          >
+                            Next →
+                          </Button>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {monthsToShow.map(({ month, year }) => (
+                          <div key={`${year}-${month}`}>
+                            {renderCalendar(month, year, bookedRanges)}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Overlap warning */}
+                  {overlap && (
+                    <div className="mt-2 flex justify-between items-center text-sm text-red-500 italic">
+                      <span>
+                        There is a booking overlap from October 16, 2025 to October 30, 2025
+                      </span>
+                      <Button variant="destructive" size="sm" onClick={() => removeSite(site.id!)}>
+                        Remove
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+        </div>
+
+      </div>
+    </div>
+  )
+}

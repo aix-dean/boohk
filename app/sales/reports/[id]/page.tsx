@@ -1,0 +1,945 @@
+"use client"
+
+import { useState, useEffect, useRef, use } from "react"
+import { useRouter, useParams } from "next/navigation"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import {
+  ArrowLeft,
+  FileText,
+  ImageIcon,
+  Video,
+  File,
+  X,
+  Download,
+  ZoomIn,
+  Send,
+  ExternalLink,
+  Edit,
+  Loader2,
+} from "lucide-react"
+import { getReportById, type ReportData } from "@/lib/report-service"
+import { getProductById, type Product } from "@/lib/firebase-service"
+import { useAuth } from "@/contexts/auth-context"
+import { SendReportDialog } from "@/components/send-report-dialog"
+import { useToast } from "@/hooks/use-toast"
+import { doc, getDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { generateReportPDF } from "@/lib/report-pdf-service"
+
+export default function SalesReportViewPage() {
+  const router = useRouter()
+  const params = useParams()
+  const [report, setReport] = useState<ReportData | null>(null)
+  const [reportId, setReportId] = useState<string>("")
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [posting, setPosting] = useState(false)
+  const [fullScreenAttachment, setFullScreenAttachment] = useState<any>(null)
+  const [isFullScreenOpen, setIsFullScreenOpen] = useState(false)
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
+  const [isSendDialogOpen, setIsSendDialogOpen] = useState(false)
+  const [imageLoadErrors, setImageLoadErrors] = useState<Set<string>>(new Set())
+  const [preparedByName, setPreparedByName] = useState<string>("")
+  const [printLoading, setPrintLoading] = useState(false)
+  const { user } = useAuth()
+  const { toast } = useToast()
+  const [companyLogo, setCompanyLogo] = useState<string>("/ohplus-new-logo.png")
+  const reportContentRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const getParams = async () => {
+      const resolvedParams = await params
+      setReportId(resolvedParams.id as string)
+    }
+    getParams()
+  }, [params])
+
+  useEffect(() => {
+    if (reportId) {
+      loadReportData(reportId)
+    }
+  }, [reportId])
+
+  useEffect(() => {
+    if (user?.uid) {
+      fetchPreparedByName()
+    }
+  }, [user?.uid])
+
+  // Handle automatic print when page loads with action parameter
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search)
+    const action = searchParams.get("action")
+
+    if (action === "print" && report && !loading) {
+      setPrintLoading(true)
+
+      // Scroll to load all maps before generating PDF
+      setTimeout(async () => {
+        try {
+          // Dynamic imports for client-side libraries
+          // @ts-ignore
+          const { default: html2canvas } = await import('html2canvas')
+          // @ts-ignore
+          const { default: jsPDF } = await import('jspdf')
+
+          // Find all page containers
+          const pageContainers = document.querySelectorAll('#report-pdf-container')
+
+          if (pageContainers.length === 0) {
+            throw new Error("No report pages found")
+          }
+
+          // @ts-ignore
+          const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+          })
+
+          for (let i = 0; i < pageContainers.length; i++) {
+            const container = pageContainers[i] as HTMLElement
+
+            // Temporarily remove height restrictions to capture full content
+            const originalMaxHeight = container.style.maxHeight
+            const originalOverflow = container.style.overflow
+            container.style.maxHeight = 'none'
+            container.style.overflow = 'visible'
+
+            // Capture the page with html2canvas
+            // @ts-ignore
+            const canvas = await html2canvas(container, {
+              scale: 3, // Higher quality like proposals
+              useCORS: true,
+              allowTaint: false,
+              backgroundColor: '#ffffff',
+              width: container.offsetWidth,
+              height: container.offsetHeight,
+              imageTimeout: 0,
+              logging: false,
+            })
+
+            // Restore original styles
+            container.style.maxHeight = originalMaxHeight
+            container.style.overflow = originalOverflow
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.7)
+
+            // Calculate dimensions to fit the page (same as proposals)
+            const pdfWidth = pdf.internal.pageSize.getWidth()
+            const pdfHeight = pdf.internal.pageSize.getHeight()
+            const imgWidth = canvas.width
+            const imgHeight = canvas.height
+            const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
+            const imgX = (pdfWidth - imgWidth * ratio) / 2
+            const imgY = (pdfHeight - imgHeight * ratio) / 2
+
+            if (i > 0) {
+              pdf.addPage()
+            }
+
+            pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio)
+          }
+
+          // Generate PDF blob for printing
+          const blob = pdf.output('blob')
+          // Create URL for the blob
+          const pdfUrl = URL.createObjectURL(blob)
+          // Open in new window for printing
+          const printWindow = window.open(pdfUrl, '_blank')
+          if (printWindow) {
+            // Wait for PDF to load then print and navigate back
+            printWindow.onload = () => {
+              printWindow.print()
+              // Navigate back immediately after triggering print
+              router.push('/sales/reports')
+            }
+          }
+        } catch (error) {
+          console.error("Error generating PDF for print:", error)
+          toast({
+            title: "Error",
+            description: "Failed to generate PDF for printing",
+            variant: "destructive",
+          })
+        } finally {
+          setPrintLoading(false)
+        }
+        // Clean up the URL parameter
+        const url = new URL(window.location.href)
+        url.searchParams.delete("action")
+        window.history.replaceState({}, "", url.toString())
+      }, 1000) // Initial delay before starting
+    }
+  }, [report, loading])
+
+  const fetchPreparedByName = async () => {
+    if (!user?.uid) return
+
+    try {
+      console.log("Fetching user data for uid:", user.uid)
+
+      const userDocRef = doc(db, "iboard_users", user.uid)
+      const userDoc = await getDoc(userDocRef)
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data()
+        console.log("User data found:", userData)
+
+        if (userData.company_id) {
+          console.log("Fetching company data for company_id:", userData.company_id)
+
+          const companyDocRef = doc(db, "companies", userData.company_id)
+          const companyDoc = await getDoc(companyDocRef)
+
+          if (companyDoc.exists()) {
+            const companyData = companyDoc.data()
+            console.log("Company data found:", companyData)
+
+            const name =
+              companyData.name ||
+              companyData.company_name ||
+              userData.display_name ||
+              userData.first_name + " " + userData.last_name ||
+              user.displayName ||
+              user.email?.split("@")[0] ||
+              "User"
+
+            setPreparedByName(name)
+            console.log("Set prepared by name to:", name)
+
+            if (companyData.logo && companyData.logo.trim() !== "") {
+              console.log("Setting company logo to:", companyData.logo)
+              setCompanyLogo(companyData.logo)
+            } else {
+              console.log("No company logo found, using default OH+ logo")
+              setCompanyLogo("/ohplus-new-logo.png")
+            }
+            return
+          } else {
+            console.log("Company document not found for company_id:", userData.company_id)
+          }
+        } else {
+          console.log("No company_id found in user data")
+        }
+
+        const fallbackName =
+          userData.display_name ||
+          userData.first_name + " " + userData.last_name ||
+          user.displayName ||
+          user.email?.split("@")[0] ||
+          "User"
+
+        setPreparedByName(fallbackName)
+        setCompanyLogo("/ohplus-new-logo.png")
+      } else {
+        console.log("User document not found for uid:", user.uid)
+        setPreparedByName(user.displayName || user.email?.split("@")[0] || "User")
+        setCompanyLogo("/ohplus-new-logo.png")
+      }
+    } catch (error) {
+      console.error("Error fetching prepared by name:", error)
+      setPreparedByName(user.displayName || user.email?.split("@")[0] || "User")
+      setCompanyLogo("/ohplus-new-logo.png")
+    }
+  }
+
+  const loadReportData = async (reportId: string) => {
+    try {
+      setLoading(true)
+
+      // Fetch the report data
+      const reportData = await getReportById(reportId)
+
+      if (!reportData) {
+        toast({
+          title: "Error",
+          description: "Report not found",
+          variant: "destructive",
+        })
+        router.push("/sales/reports")
+        return
+      }
+
+      console.log("Loaded report data:", reportData)
+
+      // Fetch the associated product data
+      if (reportData.siteId) {
+        try {
+          const productData = await getProductById(reportData.siteId)
+          console.log("Loaded product data:", productData)
+          setProduct(productData)
+        } catch (productError) {
+          console.error("Error fetching product data:", productError)
+          // Continue without product data - it's not critical
+        }
+      }
+
+      setReport(reportData)
+    } catch (error) {
+      console.error("Error loading report data:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load report data",
+        variant: "destructive",
+      })
+      router.push("/sales/reports")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formatDate = (dateInput: string | any) => {
+    if (!dateInput) return "N/A"
+    let date: Date
+    if (typeof dateInput === 'string') {
+      date = new Date(dateInput)
+    } else if (dateInput && typeof dateInput.toDate === 'function') {
+      date = dateInput.toDate()
+    } else {
+      return "N/A"
+    }
+    if (isNaN(date.getTime())) return "N/A"
+    return date.toLocaleDateString("en-US", {
+      year: "2-digit",
+      month: "2-digit",
+      day: "2-digit",
+    })
+  }
+
+  const getReportTypeDisplay = (type: string) => {
+    return type
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ")
+  }
+
+  const getFileIcon = (fileName: string) => {
+    if (!fileName) return <File className="h-12 w-12 text-gray-400" />
+
+    const extension = fileName.toLowerCase().split(".").pop()
+
+    switch (extension) {
+      case "pdf":
+        return <FileText className="h-12 w-12 text-red-500" />
+      case "doc":
+      case "docx":
+        return <FileText className="h-12 w-12 text-blue-500" />
+      case "jpg":
+      case "jpeg":
+      case "png":
+      case "gif":
+      case "webp":
+        return <ImageIcon className="h-12 w-12 text-green-500" />
+      case "mp4":
+      case "avi":
+      case "mov":
+      case "wmv":
+        return <Video className="h-12 w-12 text-purple-500" />
+      default:
+        return <File className="h-12 w-12 text-gray-500" />
+    }
+  }
+
+  const isImageFile = (fileName: string) => {
+    if (!fileName) return false
+    const extension = fileName.toLowerCase().split(".").pop()
+    return ["jpg", "jpeg", "png", "gif", "webp"].includes(extension || "")
+  }
+
+  const isVideoFile = (fileName: string) => {
+    if (!fileName) return false
+    const extension = fileName.toLowerCase().split(".").pop()
+    return ["mp4", "avi", "mov", "wmv"].includes(extension || "")
+  }
+
+  const isPdfFile = (fileName: string) => {
+    if (!fileName) return false
+    const extension = fileName.toLowerCase().split(".").pop()
+    return extension === "pdf"
+  }
+
+  const openFullScreen = (attachment: any) => {
+    setFullScreenAttachment(attachment)
+    setIsFullScreenOpen(true)
+  }
+
+  const closeFullScreen = () => {
+    setIsFullScreenOpen(false)
+    setFullScreenAttachment(null)
+  }
+
+  const downloadFile = (fileUrl: string, fileName: string) => {
+    const link = document.createElement("a")
+    link.href = fileUrl
+    link.download = fileName
+    link.target = "_blank"
+    link.rel = "noopener noreferrer"
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const openInNewTab = (fileUrl: string) => {
+    window.open(fileUrl, "_blank", "noopener,noreferrer")
+  }
+
+  const handleImageError = (fileUrl: string, fileName: string) => {
+    console.error("Image failed to load:", fileUrl)
+    setImageLoadErrors((prev) => new Set(prev).add(fileUrl))
+  }
+
+  const handleDownloadPDF = async () => {
+    if (!report) return
+
+    setIsGeneratingPDF(true)
+    try {
+      toast({
+        title: "Download",
+        description: "Generating PDF...",
+      })
+
+      const siteName = getSiteName(report)
+      const pdfFile = await generateReportPDF(report.id || 'unknown', siteName)
+
+      // Create download link
+      const url = URL.createObjectURL(pdfFile)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = pdfFile.name
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast({
+        title: "Success",
+        description: "PDF downloaded successfully",
+      })
+    } catch (error) {
+      console.error("Error generating PDF:", error)
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsGeneratingPDF(false)
+    }
+  }
+
+  const handleSendReport = () => {
+    setIsSendDialogOpen(true)
+  }
+
+  const handleSendOption = (option: "email" | "whatsapp" | "viber" | "messenger") => {
+    setIsSendDialogOpen(false)
+
+    if (option === "email") {
+      console.log("Send via email")
+    } else {
+      console.log(`Send via ${option}`)
+    }
+  }
+
+  const handleBack = () => {
+    router.back()
+  }
+
+  const handleEdit = () => {
+    router.push(`/sales/reports/${reportId}/edit`)
+  }
+
+  const calculateInstallationDuration = (startDate: string | any, endDate: string | any) => {
+    if (!startDate || !endDate) return 0
+
+    let start: Date, end: Date
+    if (typeof startDate === 'string') {
+      start = new Date(startDate)
+    } else if (startDate && typeof startDate.toDate === 'function') {
+      start = startDate.toDate()
+    } else {
+      return 0
+    }
+    if (typeof endDate === 'string') {
+      end = new Date(endDate)
+    } else if (endDate && typeof endDate.toDate === 'function') {
+      end = endDate.toDate()
+    } else {
+      return 0
+    }
+    const diffTime = Math.abs(end.getTime() - start.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
+  }
+
+  const getSiteLocation = (product: Product | null) => {
+    if (!product) return "N/A"
+    return product.specs_rental?.location || product.light?.location || "N/A"
+  }
+
+  const getSiteName = (report: ReportData | null) => {
+    if (!report) return "N/A"
+    return report.siteName || "N/A"
+  }
+
+  const getSiteSize = (product: Product | null) => {
+    if (!product) return "N/A"
+
+    const specs = product.specs_rental
+    if (specs?.height && specs?.width) {
+      const panels = (specs as any).panels || "N/A"
+      return `${specs.height} (H) x ${specs.width} (W) x ${panels} Panels`
+    }
+
+    return (product.specs_rental as any)?.size || (product.light as any)?.size || "N/A"
+  }
+
+  const getMaterialSpecs = (product: Product | null) => {
+    if (!product) return "N/A"
+    return (product.specs_rental as any)?.material || "Stickers"
+  }
+
+  const getIllumination = (product: Product | null) => {
+    if (!product) return "N/A"
+    const illumination = (product.specs_rental as any)?.illumination
+    if (typeof illumination === 'string') {
+      return illumination
+    }
+    return "LR 2097 (200 Watts x 40)"
+  }
+
+  const getGondola = (product: Product | null) => {
+    if (!product) return "N/A"
+    return (product.specs_rental as any)?.gondola ? "YES" : "NO"
+  }
+
+  const getTechnology = (product: Product | null) => {
+    if (!product) return "N/A"
+    return (product.specs_rental as any)?.technology || "Clear Tapes"
+  }
+
+  const getCompletionPercentage = (report: ReportData | null) => {
+    if (!report) return 100
+
+    if (report.installationStatus !== undefined) {
+      const percentage = Number.parseInt(report.installationStatus.toString(), 10)
+      return isNaN(percentage) ? 0 : percentage
+    }
+
+    if (report.completionPercentage !== undefined) {
+      return report.completionPercentage
+    }
+
+    return report.reportType === "installation-report" ? 0 : 100
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading report...</div>
+      </div>
+    )
+  }
+
+  if (!report) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Report not found</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white px-4 py-3 mb-4 flex items-center shadow-sm border-b">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBack}
+            className="text-gray-600 hover:text-gray-800 hover:bg-gray-100 p-2"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-medium">{getSiteName(report)}</div>
+        </div>
+
+        <div className="ml-auto"></div>
+      </div>
+
+      <div className="relative flex justify-center">
+        <div className="absolute left-4 top-6 z-10">
+          <div className="flex flex-col gap-4">
+            {/* <div className="flex flex-col items-center">
+              <Button
+                onClick={handleEdit}
+                className="bg-white hover:bg-gray-50 text-gray-600 border border-gray-300 p-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                size="sm"
+              >
+                <Edit className="h-5 w-5" />
+              </Button>
+              <span className="text-xs text-gray-600 mt-1 font-medium">Edit</span>
+            </div> */}
+
+            <div className="flex flex-col items-center">
+              <Button
+                onClick={handleDownloadPDF}
+                disabled={isGeneratingPDF}
+                className="bg-white hover:bg-gray-50 text-gray-600 border border-gray-300 p-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                size="sm"
+              >
+                <Download className="h-5 w-5" />
+              </Button>
+              <span className="text-xs text-gray-600 mt-1 font-medium">{isGeneratingPDF ? "..." : "Download"}</span>
+            </div>
+
+            <div className="flex flex-col items-center">
+              <Button
+                onClick={handleSendReport}
+                className="bg-white hover:bg-gray-50 text-gray-600 border border-gray-300 p-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                size="sm"
+              >
+                <Send className="h-5 w-5" />
+              </Button>
+              <span className="text-xs text-gray-600 mt-1 font-medium">Send</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="report-pdf-container" className="mb-8 bg-white shadow-lg rounded-lg" style={{ width: '210mm', minHeight: '297mm', maxWidth: 'none' }}>
+          <div className="w-full relative">
+            <div className="relative h-16 overflow-hidden">
+              <div className="absolute inset-0 bg-blue-900"></div>
+              <div
+                className="absolute top-0 right-0 h-full bg-cyan-400"
+                style={{
+                  width: "40%",
+                  clipPath: "polygon(25% 0%, 100% 0%, 100% 100%, 0% 100%)",
+                }}
+              ></div>
+              <div className="relative z-10 h-full flex items-center px-6">
+                <div className="text-white text-lg font-semibold">Logistics</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 space-y-6">
+            <div className="flex justify-between items-center">
+              <div className="flex flex-col">
+                <div className="bg-cyan-400 text-white px-6 py-3 rounded-lg text-base font-medium inline-block">
+                  {getReportTypeDisplay(report.reportType)}
+                </div>
+                <p className="text-gray-600 text-sm mt-2">as of {formatDate(report.date)}</p>
+              </div>
+              <div className="flex-shrink-0">
+                <div
+                  className="bg-white rounded-lg px-4 py-2 flex items-center justify-center shadow-sm"
+                  style={{ width: "160px", height: "160px" }}
+                >
+                  <img
+                    src={companyLogo || "/placeholder.svg"}
+                    alt="Company Logo"
+                    className="max-h-full max-w-full object-contain"
+                    onError={(e) => {
+                      console.error("Company logo failed to load:", companyLogo)
+                      setCompanyLogo("/ohplus-new-logo.png")
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Card className="shadow-sm">
+              <CardContent className="p-6">
+                <h2 className="text-xl font-bold mb-4 text-gray-900">Project Information</h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-[auto_1fr] gap-4 items-start">
+                      <span className="font-bold text-gray-700 whitespace-nowrap">Site ID:</span>
+                      <span className="text-gray-900">{getSiteLocation(product)}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto_1fr] gap-4 items-start">
+                      <span className="font-bold text-gray-700 whitespace-nowrap">Job Order:</span>
+                      <span className="text-gray-900">
+                        {report.joNumber || report.id?.slice(-4).toUpperCase() || "N/A"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-[auto_1fr] gap-4 items-start">
+                      <span className="font-bold text-gray-700 whitespace-nowrap">Job Order Date:</span>
+                      <span className="text-gray-900">{formatDate(report.date)}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto_1fr] gap-4 items-start">
+                      <span className="font-bold text-gray-700 whitespace-nowrap">Site:</span>
+                      <span className="text-gray-900">{getSiteName(report)}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto_1fr] gap-4 items-start">
+                      <span className="font-bold text-gray-700 whitespace-nowrap">Size:</span>
+                      <span className="text-gray-900">{getSiteSize(product)}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto_1fr] gap-4 items-start">
+                      <span className="font-bold text-gray-700 whitespace-nowrap">Start Date:</span>
+                      <span className="text-gray-900">
+                        {report.bookingDates?.start ? formatDate(report.bookingDates.start) : "N/A"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-[auto_1fr] gap-4 items-start">
+                      <span className="font-bold text-gray-700 whitespace-nowrap">End Date:</span>
+                      <span className="text-gray-900">
+                        {report.bookingDates?.end ? formatDate(report.bookingDates.end) : "N/A"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-[auto_1fr] gap-4 items-start">
+                      <span className="font-bold text-gray-700 whitespace-nowrap">Installation Duration:</span>
+                      <span className="text-gray-900">
+                        {report.bookingDates?.start && report.bookingDates?.end
+                          ? `${calculateInstallationDuration(report.bookingDates.start, report.bookingDates.end)} days`
+                          : "N/A"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-[auto_1fr] gap-4 items-start">
+                      <span className="font-bold text-gray-700 whitespace-nowrap">Content:</span>
+                      <span className="text-gray-900">{product?.content_type || "Static"}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto_1fr] gap-4 items-start">
+                      <span className="font-bold text-gray-700 whitespace-nowrap">Material Specs:</span>
+                      <span className="text-gray-900">{getMaterialSpecs(product)}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto_1fr] gap-4 items-start">
+                      <span className="font-bold text-gray-700 whitespace-nowrap">Crew:</span>
+                      <span className="text-gray-900">Team {report.assignedTo || "Sales"}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto_1fr] gap-4 items-start">
+                      <span className="font-bold text-gray-700 whitespace-nowrap">Illumination:</span>
+                      <span className="text-gray-900">{getIllumination(product)}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto_1fr] gap-4 items-start">
+                      <span className="font-bold text-gray-700 whitespace-nowrap">Gondola:</span>
+                      <span className="text-gray-900">{getGondola(product)}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto_1fr] gap-4 items-start">
+                      <span className="font-bold text-gray-700 whitespace-nowrap">Technology:</span>
+                      <span className="text-gray-900">{getTechnology(product)}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto_1fr] gap-4 items-start">
+                      <span className="font-bold text-gray-700 whitespace-nowrap">Sales:</span>
+                      <span className="text-gray-900">{report.sales}</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <h2 className="text-xl font-bold text-gray-900">Project Status</h2>
+                <div
+                  className={`text-white px-3 py-1 rounded text-sm font-medium ${(() => {
+                    const percentage = getCompletionPercentage(report)
+
+                    if (percentage >= 90) return "bg-green-500"
+                    if (percentage >= 70) return "bg-yellow-500"
+                    if (percentage >= 50) return "bg-orange-500"
+                    return "bg-red-500"
+                  })()}`}
+                >
+                  {getCompletionPercentage(report)}%
+                </div>
+              </div>
+
+              {report.attachments && report.attachments.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {report.attachments.map((attachment, index) => (
+                    <div key={index} className="space-y-2">
+                      <div
+                        className="bg-gray-200 rounded-lg h-64 flex flex-col items-center justify-center p-4 overflow-hidden cursor-pointer hover:bg-gray-300 transition-colors relative group"
+                        onClick={() => attachment.fileUrl && openFullScreen(attachment)}
+                      >
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center z-10">
+                          <ZoomIn className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                        </div>
+
+                        {report.siteImageUrl && isImageFile(attachment.fileName) ? (
+                          <img
+                            src={report.siteImageUrl || "/placeholder.svg"}
+                            alt={attachment.fileName}
+                            className="max-w-full max-h-full object-contain rounded"
+                            onError={(e) => handleImageError(report.siteImageUrl || "", attachment.fileName)}
+                          />
+                        ) : attachment.fileUrl && isImageFile(attachment.fileName) ? (
+                          <img
+                            src={attachment.fileUrl || "/placeholder.svg"}
+                            alt={attachment.fileName}
+                            className="max-w-full max-h-full object-contain rounded"
+                            onError={(e) => handleImageError(attachment.fileUrl, attachment.fileName)}
+                          />
+                        ) : (
+                          <div className="text-center space-y-2">
+                            {getFileIcon(attachment.fileName)}
+                            <p className="text-sm text-gray-700 font-medium break-all">{attachment.fileName}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-between items-end pt-8 border-t">
+              <div>
+                <h3 className="font-semibold mb-2">Prepared by:</h3>
+                <div className="text-sm text-gray-600">
+                  <div>{preparedByName || "Loading..."}</div>
+                  <div>LOGISTICS</div>
+                  <div>{formatDate(report.date)}</div>
+                </div>
+              </div>
+              <div className="text-right text-sm text-gray-500 italic">
+                "All data are based on the latest available records as of{" "}
+                {formatDate(new Date().toISOString().split("T")[0])}."
+              </div>
+            </div>
+          </div>
+
+          <div className="w-full relative">
+            <div className="relative h-16 overflow-hidden">
+              <div className="absolute inset-0 bg-cyan-400"></div>
+              <div
+                className="absolute top-0 right-0 h-full bg-blue-900"
+                style={{
+                  width: "75%",
+                  clipPath: "polygon(25% 0%, 100% 0%, 100% 100%, 0% 100%)",
+                }}
+              ></div>
+              <div className="relative z-10 h-full flex items-center justify-between px-8">
+                <div className="flex items-center gap-6">
+                  <div className="text-white text-lg font-semibold">{""}</div>
+                </div>
+                <div className="text-white text-right flex items-center gap-2">
+                  <div className="text-sm font-medium">Smart. Seamless. Scalable</div>
+                  <div className="text-2xl font-bold flex items-center">
+                    OH!
+                    <div className="ml-1 text-cyan-400">
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2v16M2 10h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {report && (
+        <SendReportDialog
+          isOpen={isSendDialogOpen}
+          onClose={() => setIsSendDialogOpen(false)}
+          report={report}
+          onSelectOption={handleSendOption}
+          companyLogo={companyLogo}
+        />
+      )}
+
+      <Dialog open={isFullScreenOpen} onOpenChange={setIsFullScreenOpen}>
+        <DialogContent className="max-w-[90vw] max-h-[90vh] w-full h-full p-0 bg-black border-2 border-gray-800">
+          <div className="relative w-full h-full flex flex-col">
+            <div className="absolute top-0 left-0 right-0 z-10 bg-black bg-opacity-90 p-4 flex justify-between items-center border-b border-gray-700">
+              <DialogTitle className="text-white text-lg font-medium truncate pr-4">
+                {fullScreenAttachment?.fileName || "File Preview"}
+              </DialogTitle>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {fullScreenAttachment?.fileUrl && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openInNewTab(fullScreenAttachment.fileUrl)}
+                      className="text-white hover:bg-white hover:bg-opacity-20"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        downloadFile(fullScreenAttachment.fileUrl, fullScreenAttachment.fileName || "file")
+                      }
+                      className="text-white hover:bg-white hover:bg-opacity-20"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={closeFullScreen}
+                  className="text-white hover:bg-white hover:bg-opacity-20"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto pt-16 pb-16">
+              <div className="min-h-full flex items-center justify-center p-6">
+                {fullScreenAttachment?.fileUrl ? (
+                  <div className="w-full max-w-full flex items-center justify-center">
+                    {isImageFile(fullScreenAttachment.fileName || "") ? (
+                      <img
+                        src={fullScreenAttachment.fileUrl || "/placeholder.svg"}
+                        alt={fullScreenAttachment.fileName || "Full screen preview"}
+                        className="max-w-full max-h-[calc(90vh-8rem)] object-contain rounded shadow-lg"
+                        style={{ maxWidth: "calc(90vw - 3rem)" }}
+                      />
+                    ) : (
+                      <div className="text-center text-white space-y-4 p-8">
+                        <div className="flex justify-center">{getFileIcon(fullScreenAttachment.fileName || "")}</div>
+                        <div>
+                          <p className="text-lg font-medium break-all">{fullScreenAttachment.fileName}</p>
+                          <p className="text-sm text-gray-300 mt-2">Preview not available for this file type</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center text-white p-8">
+                    <p>File not available</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {fullScreenAttachment?.note && (
+              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-90 p-4 border-t border-gray-700">
+                <p className="text-white text-sm italic text-center">{fullScreenAttachment.note}</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Print Loading Dialog */}
+      <Dialog open={printLoading} onOpenChange={() => {}}>
+        <DialogContent className="max-w-sm mx-auto text-center border-0 shadow-lg">
+          <DialogTitle className="sr-only">Generating PDF for Print</DialogTitle>
+          <div className="py-6">
+            <div className="mb-4">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Preparing for Print</h2>
+              <p className="text-gray-600">Generating PDF and waiting for all content to load...</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
