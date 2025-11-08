@@ -893,9 +893,9 @@ export default function LoginPage() {
       {/* Left side - Login Form */}
       <div className="flex-1 flex flex-col justify-center items-center bg-white p-8 order-1 md:order-1 min-h-0">
         {/* Full width container for login form */}
-        <div className="w-full max-w-md space-y-6 flex-1 flex flex-col justify-center">
+        <div className="w-full max-w-xs space-y-6 flex-1 flex flex-col justify-center px-5">
           <div className="space-y-2">
-            <h1 className="text-4xl font-bold text-gray-900">Welcome!</h1>
+            <h1 style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '30px', fontStyle: 'normal', fontWeight: '700', lineHeight: '100%' }}>Welcome!</h1>
           </div>
 
           <div className="space-y-4">
@@ -911,21 +911,29 @@ export default function LoginPage() {
                   <Label htmlFor="username" className="text-sm text-gray-600">
                     Username
                   </Label>
-                  <Input id="username" type="text" placeholder="Username" className="h-12 border-gray-200 rounded-lg" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  <Input id="username" type="text" placeholder="Username" className="h-12" style={{ borderRadius: '10px', border: '1.2px solid var(--GREY, #C4C4C4)', background: '#FFF', width: '275px', height: '24px', flexShrink: 0 }} value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-sm text-gray-600">
                     Password
                   </Label>
-                  <Input id="password" type="password" placeholder="Password" className="h-12 border-gray-200 rounded-lg" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                  <Input id="password" type="password" placeholder="Password" className="h-12" style={{ borderRadius: '10px', border: '1.2px solid var(--GREY, #C4C4C4)', background: '#FFF', width: '275px', height: '24px', flexShrink: 0 }} value={password} onChange={(e) => setPassword(e.target.value)} required />
                 </div>
 
                 {/* Forgot Password link */}
                 <div className="flex justify-end mb-4">
                   <button
                     type="button"
-                    className="text-sm text-blue-600 hover:text-blue-800 underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                    style={{
+                      color: 'var(--LINK-BLUE, #2D3FFF)',
+                      textAlign: 'right',
+                      fontFamily: 'Inter',
+                      fontSize: '12px',
+                      fontStyle: 'normal',
+                      fontWeight: '700',
+                      lineHeight: '12px'
+                    }}
                     onClick={() => {
                       router.push('/forgot-password');
                     }}
@@ -934,7 +942,7 @@ export default function LoginPage() {
                   </button>
                 </div>
 
-                <Button className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg" type="submit" disabled={isLoading}>
+                <Button style={{ borderRadius: '10px', background: 'var(--DARK-BLUEEE, #1D0BEB)', width: '275px', height: '27px', flexShrink: 0 }} className="w-full h-12 text-white font-medium" type="submit" disabled={isLoading}>
                   {isLoading ? "Verifying..." : "Login"}
                 </Button>
               </form>
@@ -943,8 +951,8 @@ export default function LoginPage() {
         </div>
 
         {/* Promotional text at the bottom of the first column */}
-        <div className="mt-auto pt-6 text-center">
-          <p className="text-gray-500 italic text-sm leading-relaxed">
+        <div className="mt-auto pt-6 text-start">
+          <p className="text-gray-500 italic text-sm leading-relaxed" style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '12px', fontStyle: 'italic', fontWeight: 400, lineHeight: '118%' }}>
             Looking to streamline your OOH business? Explore our ERP with a free demo. Email us at{" "}
             <span className="font-bold">inquiry@aix.ph</span>
           </p>
@@ -958,10 +966,13 @@ export default function LoginPage() {
             src="/register-image-1.png"
             alt="Login illustration"
             fill
-            
+
             priority
           />
         </div>
+        <img src="/boohk-logo.svg" width="62" height="77.5" style={{position: 'absolute', top: '20px', right: '20px', flexShrink: 0, padding: '16px'}} />
+        <div style={{position: 'absolute', bottom: 50, left: 20, color: '#FFF', fontFamily: 'Bricolage Grotesque', fontSize: '60px', fontStyle: 'normal', fontWeight: 800, lineHeight: '100%', paddingLeft: '20px', paddingBottom: '20px'}}>Boohk</div>
+        <div style={{position: 'absolute', bottom: 20, left: 20, color: '#FFF', fontFamily: 'Inter', fontSize: '25.734px', fontWeight: 600, lineHeight: '100%', paddingLeft: '20px', paddingBottom: '20px'}}>OOH Retail Solutions</div>
       </div>
 
       {/* Password Setup Dialog */}
