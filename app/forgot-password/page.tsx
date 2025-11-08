@@ -107,7 +107,7 @@ export default function ForgotPasswordPage() {
         <div className="hidden md:flex flex-1 relative order-2 md:order-2">
           <div className="w-full h-full rounded-[50px] p-4">
             <Image
-              src="/login-image-1.png"
+              src="/register-image-1.png"
               alt="Forgot password illustration"
               fill
               className="rounded-[46px] p-8"
@@ -199,7 +199,7 @@ export default function ForgotPasswordPage() {
       <div className="hidden md:flex flex-1 relative order-2 md:order-2">
         <div className="w-full h-full rounded-[50px] p-4">
           <Image
-            src="/login-image-1.png"
+            src="/register-image-1.png"
             alt="Forgot password illustration"
             fill
             className="rounded-[46px] p-8"

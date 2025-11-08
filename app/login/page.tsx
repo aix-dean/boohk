@@ -878,7 +878,7 @@ export default function LoginPage() {
       <div className="md:hidden w-full p-6 bg-white border-b border-gray-200">
         <div className="flex flex-col items-center text-center">
           <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2 mb-4">
-            <div className="text-gray-900 font-bold text-xl">OH+</div>
+            <div className="text-gray-900 font-bold text-xl">Boohk</div>
           </div>
           <h2 className="text-xl font-light text-gray-700 leading-tight">
             Powering smarter site management
@@ -953,12 +953,12 @@ export default function LoginPage() {
 
       {/* Right side - Illustration */}
       <div className="hidden md:flex flex-1 relative order-2 md:order-2">
-        <div className="w-full h-full rounded-[50px] p-4">
+        <div className="w-full h-full">
           <Image
-            src="/login-image-1.png"
+            src="/register-image-1.png"
             alt="Login illustration"
             fill
-            className="rounded-[46px] p-8"
+            
             priority
           />
         </div>

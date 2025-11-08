@@ -234,7 +234,7 @@ function formatCurrency(amount: number | string): string {
 
 // Helper function to resolve company logo based on user/company data
 async function resolveCompanyLogo(userData?: any, projectData?: any): Promise<string> {
-  // Priority order: project logo -> user company logo -> company name mapping -> default OH+ logo
+  // Priority order: project logo -> user company logo -> company name mapping -> default Boohk logo
 
   console.log("resolveCompanyLogo - userData:", userData)
   console.log("resolveCompanyLogo - projectData:", projectData)
@@ -325,8 +325,8 @@ async function resolveCompanyLogo(userData?: any, projectData?: any): Promise<st
     }
   }
 
-  // Default fallback to OH+ logo
-  console.log("Using default OH+ logo")
+  // Default fallback to Boohk logo
+  console.log("Using default Boohk logo")
   return "public/boohk-logo.svg"
 }
 
@@ -1094,7 +1094,7 @@ export async function generateServiceAssignmentPDF(
     // Company info on the right
     pdf.text("Smart. Seamless. Scalable.", pageWidth - margin - 50, yPosition)
     pdf.setFont("helvetica", "bold")
-    pdf.text("OH+", pageWidth - margin - 15, yPosition + 5)
+    pdf.text("Boohk", pageWidth - margin - 15, yPosition + 5)
 
     // Apply PDF viewer preferences for initial zoom
     const pdfBytes = new Uint8Array(pdf.output("arraybuffer"))
@@ -1438,7 +1438,7 @@ export async function generateJobOrderPDF(jobOrder: JobOrder, returnBase64 = fal
     // Company info on the right
     pdf.text("Smart. Seamless. Scalable.", pageWidth - margin - 50, yPosition)
     pdf.setFont("helvetica", "bold")
-    pdf.text("OH+", pageWidth - margin - 15, yPosition + 5)
+    pdf.text("Boohk", pageWidth - margin - 15, yPosition + 5)
 
     // Apply PDF viewer preferences for initial zoom
     const pdfBytes = new Uint8Array(pdf.output("arraybuffer"))
@@ -2446,7 +2446,7 @@ export async function generateReportPDF(
                 console.log("PDF: Setting company logo to:", companyData.photo_url)
                 companyLogoUrl = companyData.photo_url
               } else {
-                console.log("PDF: No company photo_url found, using default OH+ logo")
+                console.log("PDF: No company photo_url found, using default Boohk logo")
                 companyLogoUrl = "public/boohk-logo.svg"
               }
             } else {
@@ -3417,7 +3417,7 @@ export async function generateServiceAssignmentCreatePDF(
 
     pdf.text("Smart. Seamless. Scalable.", pageWidth - margin - 50, yPosition)
     pdf.setFont("helvetica", "bold")
-    pdf.text("OH+", pageWidth - margin - 15, yPosition + 5)
+    pdf.text("Boohk", pageWidth - margin - 15, yPosition + 5)
 
     // Apply PDF viewer preferences for initial zoom
     const pdfBytes = new Uint8Array(pdf.output("arraybuffer"))
@@ -3722,7 +3722,7 @@ export async function generateServiceAssignmentFallbackPDF(
     // Company info on the right
     pdf.text("Smart. Seamless. Scalable.", pageWidth - margin - 50, yPosition)
     pdf.setFont("helvetica", "bold")
-    pdf.text("OH+", pageWidth - margin - 15, yPosition + 5)
+    pdf.text("Boohk", pageWidth - margin - 15, yPosition + 5)
 
     // Apply PDF viewer preferences for initial zoom
     const pdfBytes = new Uint8Array(pdf.output("arraybuffer"))

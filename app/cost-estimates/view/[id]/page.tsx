@@ -612,7 +612,7 @@ export default function PublicCostEstimateViewPage() {
               {/* Document Footer */}
               <div className="mt-12 pt-6 border-t border-gray-200 text-center text-xs text-gray-500">
                 <p>This cost estimate is subject to final approval and may be revised based on project requirements.</p>
-                <p className="mt-1">© {new Date().getFullYear()} OH+ Outdoor Advertising. All rights reserved.</p>
+                <p className="mt-1">© {new Date().getFullYear()} Boohk Outdoor Advertising. All rights reserved.</p>
               </div>
             </div>
           </div>

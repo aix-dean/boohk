@@ -826,7 +826,7 @@ export async function generateQuotationPDF(quotation: Quotation, returnBlob: boo
     align: "center",
   })
   pdf.text(
-    `© ${new Date().getFullYear()} OH+ Outdoor Advertising. All rights reserved.`,
+    `© ${new Date().getFullYear()} Boohk Outdoor Advertising. All rights reserved.`,
     pageWidth / 2,
     pageHeight - 10,
     { align: "center" },

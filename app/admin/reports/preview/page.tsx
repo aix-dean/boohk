@@ -92,7 +92,7 @@ export default function AdminReportPreviewPage() {
               console.log("Setting company logo to:", companyData.photo_url)
               setCompanyLogo(companyData.photo_url)
             } else {
-              console.log("No company photo_url found, using default OH+ logo")
+              console.log("No company photo_url found, using default Boohk logo")
               setCompanyLogo("public/boohk-logo.svg")
             }
             return

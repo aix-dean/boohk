@@ -707,7 +707,7 @@ export default function AccountCreationPage() {
       <div className="hidden md:flex flex-1 relative">
         <div className="w-full h-full rounded-[50px] p-4">
           <Image
-            src="/register-image-1.png"
+            src="/register-image-1"
             alt="Registration illustration"
             fill
             className="rounded-[46px] p-8"

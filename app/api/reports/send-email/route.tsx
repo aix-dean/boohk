@@ -506,12 +506,12 @@ export async function POST(request: NextRequest) {
               usingField: 'logo'
             })
           } else {
-            console.log("No company logo found in document, using default OH+ logo")
+            console.log("No company logo found in document, using default Boohk logo")
           }
         }
       } catch (error) {
         console.error("Error fetching company logo:", error)
-        console.log("Using default OH+ logo due to error")
+        console.log("Using default Boohk logo due to error")
       }
     }
 

@@ -214,7 +214,7 @@ export default function SalesReportViewPage() {
               console.log("Setting company logo to:", companyData.logo)
               setCompanyLogo(companyData.logo)
             } else {
-              console.log("No company logo found, using default OH+ logo")
+              console.log("No company logo found, using default Boohk logo")
               setCompanyLogo("public/boohk-logo.svg")
             }
             return
