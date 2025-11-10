@@ -32,10 +32,15 @@ import {
   CalendarCheck,
   Calculator, // Import Calculator icon
   User,
+  Grid3x3,
+  Tag,
+  Smile,
+  ChevronDown,
 } from "lucide-react"
 import { useUnreadMessages } from "@/hooks/use-unread-messages"
 import { useAuth } from "@/contexts/auth-context"
 import { LogisticsNotifications, SalesNotifications, AdminNotifications, ITNotifications, TreasuryNotifications, BusinessDevNotifications } from "@/components/notifications"
+import { DepartmentDropdown } from "@/components/department-dropdown"
 
 // Navigation data structure with icons
 const navigationItems = [
@@ -262,12 +267,17 @@ export function SideNavigation() {
   }
 
   return (
-    <div className={`w-64 h-[calc(100vh-64px)] ${getDiagonalBgColor(currentSection)} border-r border-gray-200 shadow-sm flex flex-col relative`}>
-      <nav className="p-3 space-y-4 flex-1 min-h-0 overflow-y-auto pb-16">
+    <div className="h-screen w-[234px] bg-gradient-to-b from-[#1a0f5c] via-[#4a1d7f] via-[#6b2d9e] to-[#2d4a9e] shadow-sm flex flex-col relative">
+      <div className="h-16 flex items-center px-6">
+        <DepartmentDropdown />
+      </div>
+      <div className="h-px bg-white/30 mx-6"></div>
+      <nav className="px-4 flex-1 min-h-0 overflow-y-auto pb-16">
         {currentSection === "cms" ? (
           <>
             {/* Updates Center Section */}
-            <div className="bg-[#fbe0e0] backdrop-blur-sm border border-green-500/30 rounded-[20px] p-3 text-gray-900">
+
+            <div className="hidden bg-[#fbe0e0] backdrop-blur-sm rounded-[20px] p-3 text-gray-900">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-medium">Updates Center</h3>
               </div>
@@ -294,44 +304,12 @@ export function SideNavigation() {
               </div>
             </div>
 
-            {/* To Go Section */}
-            <div className="bg-[#fbe0e0] backdrop-blur-sm border border-white/30 rounded-[20px] shadow-sm">
-              <div className="px-3 py-2 border-b border-gray-100">
-                <h3 className="text-sm font-medium text-gray-700">To Go</h3>
-              </div>
+            {/* Flat Navigation */}
+            <div className="rounded-[20px] shadow-sm">
               <div className="p-1">
                 {[
                   { title: "Dashboard", href: "/cms/dashboard", icon: LayoutDashboard },
                   { title: "Planner", href: "/cms/planner", icon: Calendar },
-                ].map((item) => {
-                  const Icon = item.icon
-                  const active = isActive(pathname, item.href)
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                      )}
-                    >
-                      
-                      <span className="flex-1">{item.title}</span>
-                    </Link>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* To Do Section */}
-            <div className="bg-white/55 backdrop-blur-sm border border-white/30 rounded-[20px] shadow-sm">
-              <div className="px-3 py-2 border-b border-gray-100">
-                <h3 className="text-sm font-medium text-gray-700">To Do</h3>
-              </div>
-              <div className="p-1">
-                {[
                   { title: "JOs", href: "/cms/orders", icon: ClipboardList },
                   { title: "Content Library", href: "/cms/content", icon: FileText },
                   { title: "Screen Management", href: "/cms/screens", icon: Monitor },
@@ -346,13 +324,12 @@ export function SideNavigation() {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                        "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
+                        !active && "hover:bg-white/10 rounded-[10px]",
+                        active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      
+                      <Icon className="h-4 w-4" />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -365,45 +342,13 @@ export function SideNavigation() {
           <>
             <LogisticsNotifications />
 
-            {/* To Go Section */}
-            <div className="bg-white/55 backdrop-blur-sm border border-white/30 rounded-[20px] shadow-sm">
-              <div className="px-3 py-2 border-b border-gray-100">
-                <h3 className="text-sm font-medium text-gray-700">To Go</h3>
-              </div>
+            {/* Flat Navigation */}
+            <div className="rounded-[20px] shadow-sm">
               <div className="p-1">
                 {[
                   { title: "Dashboard", href: "/logistics/dashboard", icon: LayoutDashboard },
                   { title: "Bulletin Board", href: "/logistics/bulletin-board", icon: ClipboardList },
                   { title: "Planner", href: "/logistics/planner", icon: Calendar },
-                ].map((item) => {
-                  const Icon = item.icon
-                  const active = isActive(pathname, item.href)
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                      )}
-                    >
-                      
-                      <span className="flex-1">{item.title}</span>
-                    </Link>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* To Do Section */}
-            <div className="bg-white/55 backdrop-blur-sm border border-white/30 rounded-[20px] shadow-sm">
-              <div className="px-3 py-2 border-b border-gray-100">
-                <h3 className="text-sm font-medium text-gray-700">To Do</h3>
-              </div>
-              <div className="p-1">
-                {[
                   { title: "Service Assignments", href: "/logistics/assignments", icon: FileText },
                   { title: "Job Orders", href: "/logistics/job-orders", icon: ClipboardList },
                   { title: "Reports", href: "/logistics/service-reports", icon: BarChart3 },
@@ -419,13 +364,12 @@ export function SideNavigation() {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                        "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
+                        !active && "hover:bg-white/10 rounded-[10px]",
+                        active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      
+                      <Icon className="h-4 w-4" />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -439,7 +383,7 @@ export function SideNavigation() {
             {/* Dynamic notification component based on section */}
             {currentSection === "business" && <BusinessDevNotifications />}
             {currentSection === "it" && <ITNotifications />}
-            {currentSection === "finance" && <div className="bg-white/55 backdrop-blur-sm border border-white/30 rounded-[20px] p-3 text-gray-900">
+            {currentSection === "finance" && <div className="hidden bg-white/55 backdrop-blur-sm rounded-[20px] p-3 text-gray-900">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-medium">Updates Center</h3>
               </div>
@@ -601,7 +545,7 @@ export function SideNavigation() {
                 <button className="text-xs text-gray-900/90 hover:text-gray-900 transition-colors">See All</button>
               </div>
             </div>}
-            {currentSection === "accounting" && <div className="bg-white/55 backdrop-blur-sm border border-white/30 rounded-[20px] p-3 text-gray-900">
+            {currentSection === "accounting" && <div className="hidden bg-white/55 backdrop-blur-sm rounded-[20px] p-3 text-gray-900">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-medium">Updates Center</h3>
               </div>
@@ -645,136 +589,13 @@ export function SideNavigation() {
             </div>}
             {currentSection === "treasury" && <TreasuryNotifications />}
 
-            {/* To Go Section */}
-            <div className="bg-white/55 backdrop-blur-sm border border-white/30 rounded-[20px] shadow-sm">
-              <div className="px-3 py-2 border-b border-gray-100">
-                <h3 className="text-sm font-medium text-gray-700">To Go</h3>
-              </div>
+            {/* Flat Navigation */}
+            <div className="rounded-[20px] shadow-sm">
               <div className="p-1">
                 {currentSection === "business" && [
                   { title: "Dashboard", href: "/business/dashboard", icon: LayoutDashboard },
                   { title: "Bulletin Board", href: "/business/project-bulletin", icon: Monitor },
                   { title: "Planner", href: "/business-dev/planner", icon: Calendar },
-                ].map((item) => {
-                  const Icon = item.icon
-                  const active = isActive(pathname, item.href)
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                      )}
-                    >
-                      
-                      <span className="flex-1">{item.title}</span>
-                    </Link>
-                  )
-                })}
-                {currentSection === "it" && [
-                  { title: "Dashboard", href: "/it", icon: LayoutDashboard },
-                  { title: "Planner", href: "/it/planner", icon: Calendar },
-                ].map((item) => {
-                  const Icon = item.icon
-                  const active = isActive(pathname, item.href)
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                      )}
-                    >
-                      
-                      <span className="flex-1">{item.title}</span>
-                    </Link>
-                  )
-                })}
-                {currentSection === "finance" && [
-                  { title: "Dashboard", href: "/finance", icon: LayoutDashboard },
-                  { title: "Reports", href: "/finance/reports", icon: BarChart3 },
-                  { title: "Budget Planning", href: "/finance/budget", icon: Calendar },
-                ].map((item) => {
-                  const Icon = item.icon
-                  const active = isActive(pathname, item.href)
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                      )}
-                    >
-                      
-                      <span className="flex-1">{item.title}</span>
-                    </Link>
-                  )
-                })}
-                {currentSection === "accounting" && [
-                  { title: "Sales Record", href: "/accounting/sales-record", icon: FileText },
-                  { title: "Sales and Collection", href: "/accounting/sales-and-collection", icon: Receipt },
-                  { title: "Encashment", href: "/accounting/encashment", icon: CreditCard },
-                ].map((item) => {
-                  const Icon = item.icon
-                  const active = isActive(pathname, item.href)
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                      )}
-                    >
-                      
-                      <span className="flex-1">{item.title}</span>
-                    </Link>
-                  )
-                })}
-                {currentSection === "treasury" && [
-                  { title: "Dashboard", href: "/treasury/dashboard", icon: LayoutDashboard },
-                  { title: "Planner", href: "/treasury/planner", icon: Calendar },
-                  { title: "Collectibles", href: "/treasury/collectibles", icon: Package },
-                  { title: "Requests", href: "/treasury/requests", icon: FileText },
-                ].map((item) => {
-                  const Icon = item.icon
-                  const active = isActive(pathname, item.href)
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                      )}
-                    >
-                      <span className="flex-1">{item.title}</span>
-                    </Link>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* To Do Section */}
-            <div className="bg-white/55 backdrop-blur-sm border border-white/30 rounded-[20px] shadow-sm">
-              <div className="px-3 py-2 border-b border-gray-100">
-                <h3 className="text-sm font-medium text-gray-700">To Do</h3>
-              </div>
-              <div className="p-1">
-                {currentSection === "business" && [
                   { title: "Inventory", href: "/business/inventory", icon: Package },
                   { title: "Price Listing", href: "/business/price-listing", icon: DollarSign },
                   { title: "To-do-list", href: "/business/todo-list", icon: ClipboardList },
@@ -786,17 +607,19 @@ export function SideNavigation() {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                        "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
+                        !active && "hover:bg-white/10 rounded-[10px]",
+                        active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
+                      <Icon className="h-4 w-4" />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
                 })}
                 {currentSection === "it" && [
+                  { title: "Dashboard", href: "/it", icon: LayoutDashboard },
+                  { title: "Planner", href: "/it/planner", icon: Calendar },
                   { title: "User Management", href: "/it/user-management", icon: Users },
                   { title: "Migration", href: "/it/migration", icon: Truck },
                   { title: "To-do-list", href: "/it/todo-list", icon: ClipboardList },
@@ -809,17 +632,20 @@ export function SideNavigation() {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                        "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
+                        !active && "hover:bg-white/10 rounded-[10px]",
+                        active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
+                      <Icon className="h-4 w-4" />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
                 })}
                 {currentSection === "finance" && [
+                  { title: "Dashboard", href: "/finance", icon: LayoutDashboard },
+                  { title: "Reports", href: "/finance/reports", icon: BarChart3 },
+                  { title: "Budget Planning", href: "/finance/budget", icon: Calendar },
                   { title: "Invoices", href: "/finance/invoices", icon: Receipt },
                   { title: "Expenses", href: "/finance/expenses", icon: CreditCard },
                   { title: "Requests", href: "/finance/requests", icon: ClipboardList },
@@ -832,18 +658,20 @@ export function SideNavigation() {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                        "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
+                        !active && "hover:bg-white/10 rounded-[10px]",
+                        active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      
+                      <Icon className="h-4 w-4" />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
                 })}
                 {currentSection === "accounting" && [
+                  { title: "Sales Record", href: "/accounting/sales-record", icon: FileText },
+                  { title: "Sales and Collection", href: "/accounting/sales-and-collection", icon: Receipt },
+                  { title: "Encashment", href: "/accounting/encashment", icon: CreditCard },
                   { title: "Invoices", href: "/accounting/invoices", icon: Receipt },
                   { title: "Expenses", href: "/accounting/expenses", icon: CreditCard },
                   { title: "Requests", href: "/accounting/requests", icon: ClipboardList },
@@ -859,18 +687,21 @@ export function SideNavigation() {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                        "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
+                        !active && "hover:bg-white/10 rounded-[10px]",
+                        active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      
+                      <Icon className="h-4 w-4" />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
                 })}
                 {currentSection === "treasury" && [
+                  { title: "Dashboard", href: "/treasury/dashboard", icon: LayoutDashboard },
+                  { title: "Planner", href: "/treasury/planner", icon: Calendar },
+                  { title: "Collectibles", href: "/treasury/collectibles", icon: Package },
+                  { title: "Requests", href: "/treasury/requests", icon: FileText },
                   { title: "Reports", href: "/treasury/reports", icon: BarChart3 },
                   { title: "Settings", href: "/treasury/settings", icon: Settings },
                 ].map((item) => {
@@ -881,13 +712,12 @@ export function SideNavigation() {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                        "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
+                        !active && "hover:bg-white/10 rounded-[10px]",
+                        active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      
+                      <Icon className="h-4 w-4" />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -899,7 +729,7 @@ export function SideNavigation() {
         ) : currentSection === "finance" ? (
           <>
             {/* Updates Center Section */}
-            <div className="bg-[#fbe0e0] backdrop-blur-sm border border-green-500/30 rounded-[20px] p-3 text-gray-900">
+            <div className="hidden bg-[#fbe0e0] backdrop-blur-sm border border-green-500/30 rounded-[20px] p-3 text-gray-900">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-medium">Updates Center</h3>
               </div>
@@ -1063,9 +893,9 @@ export function SideNavigation() {
             </div>
 
             {/* To Go Section */}
-            <div className="bg-white/55 backdrop-blur-sm border border-white/30 rounded-[20px] shadow-sm">
-              <div className="px-3 py-2 border-b border-gray-100">
-                <h3 className="text-sm font-medium text-gray-700">To Go</h3>
+            <div className="rounded-[20px] shadow-sm">
+              <div className="px-3 py-2">
+                <h3 className="text-sm font-medium text-white">To Go</h3>
               </div>
               <div className="p-1">
                 {[
@@ -1080,13 +910,12 @@ export function SideNavigation() {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                        "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
+                        !active && "hover:bg-white/10 rounded-[10px]",
+                        active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      
+                      <Icon className="h-4 w-4" />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1095,9 +924,9 @@ export function SideNavigation() {
             </div>
 
             {/* To Do Section */}
-            <div className="bg-white/55 backdrop-blur-sm border border-white/30 rounded-[20px] shadow-sm">
-              <div className="px-3 py-2 border-b border-gray-100">
-                <h3 className="text-sm font-medium text-gray-700">To Do</h3>
+            <div className="rounded-[20px] shadow-sm">
+              <div className="px-3 py-2">
+                <h3 className="text-sm font-medium text-white">To Do</h3>
               </div>
               <div className="p-1">
                 {[
@@ -1113,13 +942,12 @@ export function SideNavigation() {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                        "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
+                        !active && "hover:bg-white/10 rounded-[10px]",
+                        active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      
+                      <Icon className="h-4 w-4" />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1131,7 +959,7 @@ export function SideNavigation() {
         ) : currentSection === "accounting" ? (
           <>
             {/* Updates Center Section */}
-            <div className="bg-[#fbe0e0] backdrop-blur-sm border border-green-500/30 rounded-[20px] p-3 text-gray-900">
+            <div className="hidden bg-[#fbe0e0] backdrop-blur-sm border border-green-500/30 rounded-[20px] p-3 text-gray-900">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-medium">Updates Center</h3>
               </div>
@@ -1175,9 +1003,9 @@ export function SideNavigation() {
             </div>
 
             {/* To Go Section */}
-            <div className="bg-white/55 backdrop-blur-sm border border-white/30 rounded-[20px] shadow-sm">
-              <div className="px-3 py-2 border-b border-gray-100">
-                <h3 className="text-sm font-medium text-gray-700">To Go</h3>
+            <div className="rounded-[20px] shadow-sm">
+              <div className="px-3 py-2">
+                <h3 className="text-sm font-medium text-white">To Go</h3>
               </div>
               <div className="p-1">
                 {[
@@ -1192,13 +1020,12 @@ export function SideNavigation() {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                        "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
+                        !active && "hover:bg-white/10 rounded-[10px]",
+                        active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      
+                      <Icon className="h-4 w-4" />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1207,9 +1034,9 @@ export function SideNavigation() {
             </div>
 
             {/* To Do Section */}
-            <div className="bg-white/55 backdrop-blur-sm border border-white/30 rounded-[20px] shadow-sm">
-              <div className="px-3 py-2 border-b border-gray-100">
-                <h3 className="text-sm font-medium text-gray-700">To Do</h3>
+            <div className="rounded-[20px] shadow-sm">
+              <div className="px-3 py-2">
+                <h3 className="text-sm font-medium text-white">To Do</h3>
               </div>
               <div className="p-1">
                 {[
@@ -1228,13 +1055,12 @@ export function SideNavigation() {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                        "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
+                        !active && "hover:bg-white/10 rounded-[10px]",
+                        active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      
+                      <Icon className="h-4 w-4" />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1247,43 +1073,13 @@ export function SideNavigation() {
           <>
             <AdminNotifications />
 
-            <div className="bg-white/55 backdrop-blur-sm border border-white/30 rounded-[20px] shadow-sm">
-              <div className="px-3 py-2 border-b border-gray-100">
-                <h3 className="text-sm font-medium text-gray-700">To Go</h3>
-              </div>
+            {/* Flat Navigation */}
+            <div className="rounded-[20px] shadow-sm">
               <div className="p-1">
                 {[
                   { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
                   { title: "Bulletin Board", href: "/admin/project-bulletin", icon: Monitor },
                   { title: "Planner", href: "/admin/planner", icon: Calendar },
-                ].map((item) => {
-                  const Icon = item.icon
-                  const active = isActive(pathname, item.href)
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                      )}
-                    >
-        
-                      <span className="flex-1">{item.title}</span>
-                    </Link>
-                  )
-                })}
-              </div>
-            </div>
-        
-            <div className="bg-white/55 backdrop-blur-sm border border-white/30 rounded-[20px] shadow-sm">
-              <div className="px-3 py-2 border-b border-gray-100">
-                <h3 className="text-sm font-medium text-gray-700">To Do</h3>
-              </div>
-              <div className="p-1">
-                {[
                   { title: "Company", href: "/admin/company", icon: Users },
                   { title: "Clients", href: "/admin/clients", icon: Users },
                   { title: "Assets", href: "/admin/assets", icon: Package },
@@ -1299,13 +1095,12 @@ export function SideNavigation() {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                        "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
+                        !active && "hover:bg-white/10 rounded-[10px]",
+                        active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-        
+                      <Icon className="h-4 w-4" />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1318,85 +1113,52 @@ export function SideNavigation() {
             <>
               <SalesNotifications />
 
-             {/* To Go Section */}
-             <div className="bg-white/55 backdrop-blur-sm border border-white/30 rounded-[20px] shadow-sm">
-               <div className="px-3 py-2 border-b border-gray-100">
-                 <h3 className="text-sm font-medium text-gray-700">To Go</h3>
-               </div>
-               <div className="p-1">
-                 {[
-                   { title: "Dashboard", href: "/sales/dashboard", icon: LayoutDashboard },
-                   { title: "Bulletin Board", href: "/sales/project-monitoring", icon: Monitor },
-                   { title: "Planner", href: "/sales/planner", icon: Calendar },
-                 ].map((item) => {
-                   const Icon = item.icon
-                   const active = isActive(pathname, item.href)
-                   return (
-                     <Link
-                       key={item.href}
-                       href={item.href}
-                       className={cn(
-                         "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                         active
-                           ? "bg-white/40 text-gray-900 font-medium"
-                           : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                       )}
-                     >
-                       
-                       <span className="flex-1">{item.title}</span>
-                     </Link>
-                   )
-                 })}
-               </div>
-             </div>
+              {/* Flat Navigation */}
+              <div className="rounded-[20px] shadow-sm">
+                <div className="p-1">
+                  {[
+                    { title: "Dashboard", href: "/sales/dashboard", icon: LayoutDashboard },
+                    { title: "Bulletin Board", href: "/sales/project-monitoring", icon: Monitor },
+                    { title: "Planner", href: "/sales/planner", icon: Calendar },
+                    { title: "Proposals", href: "/sales/proposals", icon: FileCheck },
+                    { title: "Cost Estimates", href: "/sales/cost-estimates", icon: Calculator },
+                    { title: "Quotations", href: "/sales/quotations-list", icon: FileText },
+                    { title: "Reservations", href: "/sales/reservation", icon: CalendarCheck },
+                    { title: "Job Orders", href: "/sales/job-orders", icon: ClipboardList },
+                    { title: "Clients", href: "/sales/clients", icon: Users },
+                    { title: "Reports", href: "/sales/reports", icon: BarChart3 },
+                    { title: "Price Listing", href: "/sales/price-listing", icon: DollarSign },
+                    { title: "To-do-list", href: "/sales/todo-list", icon: ClipboardList },
+                  ].map((item) => {
+                    const Icon = item.icon
+                    const active = isActive(pathname, item.href)
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
+                          !active && "hover:bg-white/10 rounded-[10px]",
+                          active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span className="flex-1">{item.title}</span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
 
-             {/* To Do Section */}
-             <div className="bg-white/55 backdrop-blur-sm border border-white/30 rounded-[20px] shadow-sm">
-               <div className="px-3 py-2 border-b border-gray-100">
-                 <h3 className="text-sm font-medium text-gray-700">To Do</h3>
-               </div>
-               <div className="p-1">
-                 {[
-                   { title: "Proposals", href: "/sales/proposals", icon: FileCheck },
-                   { title: "Cost Estimates", href: "/sales/cost-estimates", icon: Calculator },
-                   { title: "Quotations", href: "/sales/quotations-list", icon: FileText },
-                   { title: "Reservations", href: "/sales/reservation", icon: CalendarCheck },
-                   { title: "Job Orders", href: "/sales/job-orders", icon: ClipboardList },
-                   { title: "Clients", href: "/sales/clients", icon: Users },
-                   { title: "Reports", href: "/sales/reports", icon: BarChart3 },
-                   { title: "Price Listing", href: "/sales/price-listing", icon: DollarSign },
-                   { title: "To-do-list", href: "/sales/todo-list", icon: ClipboardList },
-                 ].map((item) => {
-                   const Icon = item.icon
-                   const active = isActive(pathname, item.href)
-                   return (
-                     <Link
-                       key={item.href}
-                       href={item.href}
-                       className={cn(
-                         "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                         active
-                           ? "bg-white/40 text-gray-900 font-medium"
-                           : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                       )}
-                     >
-                       
-                       <span className="flex-1">{item.title}</span>
-                     </Link>
-                   )
-                 })}
-               </div>
-             </div>
-
-           </>
+            </>
         ) : currentSection === "treasury" ? (
           <>
             <AdminNotifications />
 
             {/* To Go Section */}
-            <div className="bg-white/55 backdrop-blur-sm border border-white/30 rounded-[20px] shadow-sm">
-              <div className="px-3 py-2 border-b border-gray-100">
-                <h3 className="text-sm font-medium text-gray-700">To Go</h3>
+            <div className="rounded-[20px] shadow-sm">
+              <div className="px-3 py-2">
+                <h3 className="text-sm font-medium text-white">To Go</h3>
               </div>
               <div className="p-1">
                 {[
@@ -1412,13 +1174,12 @@ export function SideNavigation() {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                        "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
+                        !active && "hover:bg-white/10 rounded-[10px]",
+                        active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      
+                      <Icon className="h-4 w-4" />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1427,9 +1188,9 @@ export function SideNavigation() {
             </div>
 
             {/* To Do Section */}
-            <div className="bg-white/55 backdrop-blur-sm border border-white/30 rounded-[20px] shadow-sm">
-              <div className="px-3 py-2 border-b border-gray-100">
-                <h3 className="text-sm font-medium text-gray-700">To Do</h3>
+            <div className="rounded-[20px] shadow-sm">
+              <div className="px-3 py-2">
+                <h3 className="text-sm font-medium text-white">To Do</h3>
               </div>
               <div className="p-1">
                 {[
@@ -1443,13 +1204,12 @@ export function SideNavigation() {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                        "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
+                        !active && "hover:bg-white/10 rounded-[10px]",
+                        active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      
+                      <Icon className="h-4 w-4" />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1461,7 +1221,7 @@ export function SideNavigation() {
         ) : currentSection === "account" ? (
           <>
             {/* Account Menu */}
-            <div className="bg-white/55 backdrop-blur-sm border border-white/30 rounded-[20px] shadow-sm">
+            <div className="rounded-[20px] shadow-sm">
               <div className="p-1">
                 {[
                   { title: "Account Details", href: "/account", icon: User, isBold: false },
@@ -1475,13 +1235,13 @@ export function SideNavigation() {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        "flex items-center py-2 px-3 text-sm rounded-md transition-all duration-200 w-full",
-                        active
-                          ? "bg-white/40 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                        "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
+                        !active && "hover:bg-white/10 rounded-[10px]",
+                        active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                         item.isBold && "font-bold"
                       )}
                     >
+                      <Icon className="h-4 w-4" />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1490,9 +1250,9 @@ export function SideNavigation() {
             </div>
           </>
         ) : (
-          <div className="bg-white rounded-[20px] border border-gray-200 shadow-sm">
-            <div className="px-3 py-2 border-b border-gray-100">
-              <h3 className="text-sm font-medium text-gray-700">Navigation</h3>
+          <div className="rounded-[20px] shadow-sm">
+            <div className="px-3 py-2">
+              <h3 className="text-sm font-medium text-white">Navigation</h3>
             </div>
             <div className="p-1">
               {currentNavItem?.items?.map((item) => {
@@ -1503,13 +1263,12 @@ export function SideNavigation() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "flex items-center py-1 px-2 text-sm rounded-md transition-all duration-200 w-full",
-                      active
-                        ? "bg-white/40 text-gray-900 font-medium"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                      "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
+                      !active && "hover:bg-white/10 rounded-[10px]",
+                      active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                     )}
                   >
-
+                    <Icon className="h-4 w-4" />
                     <span className="flex-1">{item.title}</span>
                   </Link>
                 )
@@ -1518,6 +1277,13 @@ export function SideNavigation() {
           </div>
         )}
       </nav>
+
+      <div className="px-4 pb-10">
+        <div className="flex items-center justify-center gap-2">
+          <img src="/boohk-logo.png" alt="Boohk Logo" style={{ height: '31.271px' }} />
+          <img src="/boohk-text-login.png.png" alt="Boohk Text Login" style={{ height: '21px' }} />
+        </div>
+      </div>
 
       {showIntelligence && (
         <div className="absolute bottom-1 left-3 z-0">
@@ -1532,8 +1298,8 @@ export function SideNavigation() {
                   <ChevronLeft className="h-4 w-4 text-white" />
                 </button>
                 <div className="flex-1 grid grid-cols-2 gap-2">
-                  <div className="h-12 bg-white/55 rounded-md"></div>
-                  <div className="h-12 bg-white/55 rounded-md"></div>
+                  <div className="h-12 rounded-md"></div>
+                  <div className="h-12 rounded-md"></div>
                 </div>
                 <button className="p-1 hover:bg-white/10 rounded transition-colors">
                   <ChevronRight className="h-4 w-4 text-white" />

@@ -8,7 +8,6 @@ import { format } from "date-fns"
 import { useAuth } from "@/contexts/auth-context"
 import { useUnreadMessages } from "@/hooks/use-unread-messages"
 import { useIsAdmin } from "@/hooks/use-is-admin"
-import { DepartmentDropdown } from "@/components/department-dropdown"
 
 export function TopNavigation() {
   const [isOpen, setIsOpen] = useState(false)
@@ -239,7 +238,6 @@ export function TopNavigation() {
               </div>
             ) : (
               <div className="top-nav-logo flex items-center">
-                <DepartmentDropdown />
                 <h1 className="text-xl font-semibold text-white ml-4 hidden">
                   {(() => {
                     let title = pageTitle == "Admin - Subscriptions" ? "Admin - Plan Profile" : pageTitle.replace(/\bIt\b/g, "I.T")
