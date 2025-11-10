@@ -4458,12 +4458,12 @@ Date:   2025-09-24T10:15:02+08:00
 0	1	package-lock.json
 0	1	package.json
 -	-	public/register-image-1.png
--	-	public/login-image-2.png
+-	-	public/owen-face.png
 -	-	public/login-image-3.png
 -	-	public/login-image-4.png
--	-	public/login-image-5.png
+-	-	public/owen-face.png
 -	-	public/login-image-6.png
--	-	public/login-image-7.png
+-	-	public/owen-face.png
 -	-	public/onboarding-arrow.png
 -	-	public/onboarding-oscar-done.png
 -	-	public/onboarding-oscar.png
@@ -4751,7 +4751,7 @@ Date:   2025-09-23T14:21:17+08:00
 83	13	app/login/page.tsx
 63	0	app/login/welcome-page.tsx
 -	-	public/login-image-6.png
--	-	public/login-image-7.png
+-	-	public/owen-face.png
 
 commit c4e66c973235d50f905cd532ebd63c6cfc77acef
 Merge: 1cbbe7e9 ad454f2b
@@ -4967,10 +4967,10 @@ Date:   2025-09-22T20:50:41+08:00
 
 157	297	app/login/page.tsx
 4	4	components/route-protection.tsx
--	-	public/login-image-2.png
+-	-	public/owen-face.png
 -	-	public/login-image-3.png
 -	-	public/login-image-4.png
--	-	public/login-image-5.png
+-	-	public/owen-face.png
 
 commit 13a946dee7b60e543ba44c4bafad745170869427
 Merge: b5ce917a aec9323f

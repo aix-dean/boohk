@@ -206,7 +206,7 @@ export default function LogisticsWeatherPage() {
             </svg>
           </div>
           {/* <div className="flex items-center mb-4">
-            <img src="/login-image-5.png" alt="Oscar" className="w-9 h-9 mr-3" />
+            <img src="/owen-face.png" alt="Oscar" className="w-9 h-9 mr-3" />
             <span className="text-lg text-gray-600">Oscar</span>
           </div> */}
           {/* <div className="text-6xl font-bold text-green-500 text-center mb-6">No</div> */}

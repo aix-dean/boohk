@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { Mail, Lock, Eye, EyeOff, Upload, Car, Power, CheckCircle, Zap, Loader2, X } from "lucide-react"
+import { Mail, Lock, Upload, Car, Power, CheckCircle, Zap, Loader2, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { collection, getDocs, doc, setDoc, getDoc, addDoc, serverTimestamp, GeoPoint } from "firebase/firestore"
 import { createUserWithEmailAndPassword } from "firebase/auth"
@@ -20,6 +20,7 @@ import { assignRoleToUser } from "@/lib/hardcoded-access-service"
 import WelcomePage from "./welcome-page"
 import Step4Welcome from "./step-4-welcome"
 
+<style> @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap'); </style>
 const createAnalyticsDocument = async () => {
   try {
     // Get user's IP address (in a real app, you'd get this from a service)
@@ -65,8 +66,6 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [currentStep, setCurrentStep] = useState(1) // 1: email+password, 2: new password, 3: file upload
   const [isActivated, setIsActivated] = useState(false)
   const [fileName, setFileName] = useState("")
@@ -775,24 +774,24 @@ export default function LoginPage() {
         <div className="max-w-xl w-full space-y-6">
           {/* Avatar */}
           <Image
-            src="/login-image-5.png"
+            src="/owen-face.png"
             alt="User avatar"
-            width={64}
-            height={64}
+            width={49}
+            height={49}
             className="rounded-full"
           />
 
           {/* Heading */}
           <div>
-            <h1 className="text-6xl font-bold text-gray-900 leading-tight mb-4">
+            <h1 style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '30px', fontStyle: 'normal', fontWeight: 700, lineHeight: '100%' }} className="mb-4">
               Alright {pointPersonDataRef.current?.point_person?.first_name || "User"},
               <br />
               {"we're almost"}
               <br />
               set!
             </h1>
-            <p className="text-gray-600 text-xl leading-relaxed">
-              Just upload the license key from your <span className="font-semibold text-gray-900">OHPlus Key</span> so
+            <p style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '16px', fontStyle: 'normal', fontWeight: 300, lineHeight: '120%' }}>
+              Just upload the license key from your <span style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '16px', fontStyle: 'normal', fontWeight: 700, lineHeight: '120%' }}>Boohk Key</span> so
               we can unlock your account.
             </p>
           </div>
@@ -807,6 +806,7 @@ export default function LoginPage() {
           fill
           className="object-cover -z-10"
         />
+        <img src="/boohk-logo.png" width="72" height="90" style={{position: 'absolute', top: '20px', right: '20px', flexShrink: 0, padding: '16px'}} />
         {/* Floating geometric shapes */}
         <div className="absolute inset-0">
           {/* Various floating cubes and rectangles */}
@@ -820,12 +820,12 @@ export default function LoginPage() {
 
         {/* Main upload area */}
         <div className="flex-1 flex items-center justify-center p-8">
-          <div className="relative max-w-sm w-full -mt-16 ml-32">
+          <div className="relative max-w-sm w-full -mt-16  flex flex-col items-center justify-center">
             <Image
-              src="/login-image-4.png"
+              src="/login-image-4.svg"
               alt="License upload area"
-              width={240}
-              height={180}
+              width={85}
+              height={85}
               className={`rounded-2xl transition-all duration-300 cursor-pointer ${
                 isDragOver ? "scale-105 shadow-lg ring-4 ring-cyan-400" : ""
               } ${isActivated ? "ring-4 ring-green-400" : ""}`}
@@ -833,6 +833,18 @@ export default function LoginPage() {
               onDragLeave={handleDragLeaveStep3}
               onDrop={handleDropStep3}
               onClick={() => document.getElementById('activation-file-upload')?.click()}
+            />
+            <div
+              style={{
+                color: 'var(--Foundational-Colors-White, #FFF)',
+                textAlign: 'center',
+                fontFamily: 'Inter',
+                fontSize: '16px',
+                fontStyle: 'normal',
+                fontWeight: 600,
+                lineHeight: '100%'
+              }}
+              dangerouslySetInnerHTML={{ __html: "Drag & Drop<br>or browse" }}
             />
             <input
               type="file"
@@ -861,15 +873,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Fun fact at bottom */}
-        <div className="p-8">
-          <div className="bg-blue-800/30 backdrop-blur-sm rounded-lg p-4">
-            <p className="text-white text-lg leading-relaxed text-center font-bold">
-              <span className="font-bold">FUN FACT:</span> The Philippines is one of the top OOH markets in Southeast
-              Asia, with EDSA alone hosting more than 2,000 billboards! {"It's"} like the Times Square of Manila.
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   ) : (
@@ -878,7 +881,7 @@ export default function LoginPage() {
       <div className="md:hidden w-full p-6 bg-white border-b border-gray-200">
         <div className="flex flex-col items-center text-center">
           <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2 mb-4">
-            <div className="text-gray-900 font-bold text-xl">Boohk</div>
+            <img src="/boohk-text-login.png" alt="boohk" style={{width: 'auto', height: '24px'}} />
           </div>
           <h2 className="text-xl font-light text-gray-700 leading-tight">
             Powering smarter site management
@@ -970,24 +973,24 @@ export default function LoginPage() {
             priority
           />
         </div>
-        <img src="/boohk-logo.svg" width="62" height="77.5" style={{position: 'absolute', top: '20px', right: '20px', flexShrink: 0, padding: '16px'}} />
-        <div style={{position: 'absolute', bottom: 50, left: 20, color: '#FFF', fontFamily: 'Bricolage Grotesque', fontSize: '60px', fontStyle: 'normal', fontWeight: 800, lineHeight: '100%', paddingLeft: '20px', paddingBottom: '20px'}}>Boohk</div>
+        <img src="/boohk-logo.png" width="72" height="90" style={{position: 'absolute', top: '20px', right: '20px', flexShrink: 0, padding: '16px'}} />
+        <img src="/boohk-text-login.png" alt="boohk" style={{position: 'absolute', bottom: 50, left: 20, width: 'auto', height: '60px', paddingLeft: '20px', paddingBottom: '20px'}} />
         <div style={{position: 'absolute', bottom: 20, left: 20, color: '#FFF', fontFamily: 'Inter', fontSize: '25.734px', fontWeight: 600, lineHeight: '100%', paddingLeft: '20px', paddingBottom: '20px'}}>OOH Retail Solutions</div>
       </div>
 
       {/* Password Setup Dialog */}
       <Dialog open={currentStep === 2} onOpenChange={(open) => { if (!open) setCurrentStep(1); }}>
-        <DialogContent className="bg-white rounded-[50px] shadow-lg p-8 max-w-4xl w-full flex">
-<div className="flex-1 p-4 flex items-center justify-center">
+        <DialogContent className="bg-white rounded-[50px] shadow-lg p-8 w-full flex" style={{width: '800px', height: '359px', flexShrink: 0}}>
+<div className="flex-1 flex items-center justify-center flex-shrink-0">
   <Image
-    src="/login-image-2.png"
+    src="/owen-face.png"
     alt="Login illustration"
-    width={320}
-    height={320}
+    width={160}
+    height={160}
     className="rounded-lg"
   />
 </div>
-            <div className="flex-1 p-4 space-y-4">
+            <div className="flex-1  space-y-4">
               <div className="flex justify-end">
                 <Button
                   type="button"
@@ -1000,13 +1003,13 @@ export default function LoginPage() {
                 </Button>
               </div>
               <div>
-                <h1 className="text-5xl font-bold text-gray-900 mb-3">Hey {pointPersonDataRef.current?.point_person?.first_name || email}!</h1>
-                <p className="text-gray-600 text-xl leading-relaxed">
+                <h1 style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '30px', fontStyle: 'normal', fontWeight: 700, lineHeight: '100%' }}>Hey {pointPersonDataRef.current?.point_person?.first_name || email}!</h1>
+                <p style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '16px', fontStyle: 'normal', fontWeight: 300, lineHeight: '100%' }}>
                   {"It's great to finally meet you. I'm "}
-                  <span className="font-semibold text-gray-900">Oscar</span>
+                  <span style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '16px', fontStyle: 'normal', fontWeight: 700, lineHeight: '100%' }}>Ohwen</span>
                   {", your OHPlus buddy."}
                 </p>
-                <p className="text-gray-600 text-xl leading-relaxed mt-3">
+                <p style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '16px', fontStyle: 'normal', fontWeight: 300, lineHeight: '100%' }}>
                   {
                     "Before we jump into the exciting stuff, let's set up a new password to keep your account safe and secure."
                   }
@@ -1019,45 +1022,29 @@ export default function LoginPage() {
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
-                <div className="relative">
+                <div>
                   <Input
-                    type={showNewPassword ? "text" : "password"}
+                    type="password"
                     placeholder="New password"
-                    className="h-11 border-gray-200 rounded-lg text-xl pr-10"
+                    className="h-11 border-gray-200 rounded-lg text-[12.004px] placeholder:text-[#A1A1A1] placeholder:font-[Inter] placeholder:text-[12.004px] placeholder:font-medium placeholder:leading-[100%]"
+                    style={{ width: '275px', height: '24px', flexShrink: 0, textAlign: 'left', verticalAlign: 'middle' }}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 hover:bg-transparent"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                  >
-                    {showNewPassword ? <EyeOff className="h-4 w-4 text-gray-500" /> : <Eye className="h-4 w-4 text-gray-500" />}
-                  </Button>
                 </div>
-                <div className="relative">
+                <div>
                   <Input
-                    type={showConfirmPassword ? "text" : "password"}
+                    type="password"
                     placeholder="Confirm new password"
-                    className="h-11 border-gray-200 rounded-lg text-xl pr-10"
+                    className="h-11 border-gray-200 rounded-lg text-[12.004px] placeholder:text-[#A1A1A1] placeholder:font-[Inter] placeholder:text-[12.004px] placeholder:font-medium placeholder:leading-[100%]"
+                    style={{ width: '275px', height: '24px', flexShrink: 0, textAlign: 'left', verticalAlign: 'middle' }}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 hover:bg-transparent"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4 text-gray-500" /> : <Eye className="h-4 w-4 text-gray-500" />}
-                  </Button>
                 </div>
-                <Button className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg mt-4" type="submit" disabled={isLoading}>
+                <Button className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg mt-4" style={{ width: '275px', height: '24px', flexShrink: 0, borderRadius: '10px', background: '#1D0BEB' }} type="submit" disabled={isLoading}>
                   {isLoading ? "Processing..." : "OK"}
                 </Button>
               </form>

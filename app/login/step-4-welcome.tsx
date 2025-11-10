@@ -68,7 +68,7 @@ export default function Step4Welcome({ onNext }: Step4WelcomeProps) {
           {/* User icon image */}
           <div className="flex justify-start">
             <img
-              src="/login-image-7.png"
+              src="/owen-face.png"
               alt="User icon"
               className="w-16 h-16 rounded-full"
             />

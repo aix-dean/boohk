@@ -327,7 +327,7 @@ async function resolveCompanyLogo(userData?: any, projectData?: any): Promise<st
 
   // Default fallback to Boohk logo
   console.log("Using default Boohk logo")
-  return "public/boohk-logo.svg"
+  return "public/boohk-logo.png"
 }
 
 // Service Assignment interface for PDF generation
@@ -2403,7 +2403,7 @@ export async function generateReportPDF(
     const logoY = yPosition - 5
 
     // Resolve company logo and prepared by name
-    let companyLogoUrl = "public/boohk-logo.svg"
+    let companyLogoUrl = "public/boohk-logo.png"
     let preparedByName = "User"
 
     // Query companies collection for logo and name
@@ -2447,7 +2447,7 @@ export async function generateReportPDF(
                 companyLogoUrl = companyData.photo_url
               } else {
                 console.log("PDF: No company photo_url found, using default Boohk logo")
-                companyLogoUrl = "public/boohk-logo.svg"
+                companyLogoUrl = "public/boohk-logo.png"
               }
             } else {
               console.log("PDF: Company document not found for company_id:", fullUserData.company_id)
@@ -2458,7 +2458,7 @@ export async function generateReportPDF(
                 userData?.displayName ||
                 userData?.email?.split("@")[0] ||
                 "User"
-              companyLogoUrl = "public/boohk-logo.svg"
+              companyLogoUrl = "public/boohk-logo.png"
             }
           } else {
             console.log("PDF: No company_id found in user data")
@@ -2469,18 +2469,18 @@ export async function generateReportPDF(
               userData?.displayName ||
               userData?.email?.split("@")[0] ||
               "User"
-            companyLogoUrl = "public/boohk-logo.svg"
+            companyLogoUrl = "public/boohk-logo.png"
           }
         } else {
           console.log("PDF: User document not found for uid:", userId)
           // Final fallback to provided userData or default
           preparedByName = userData?.displayName || userData?.email?.split("@")[0] || "User"
-          companyLogoUrl = "public/boohk-logo.svg"
+          companyLogoUrl = "public/boohk-logo.png"
         }
       } catch (error) {
         console.error("PDF: Error fetching company data:", error)
         preparedByName = userData?.displayName || userData?.email?.split("@")[0] || "User"
-        companyLogoUrl = "public/boohk-logo.svg"
+        companyLogoUrl = "public/boohk-logo.png"
       }
     }
 

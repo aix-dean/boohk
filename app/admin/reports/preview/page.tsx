@@ -41,7 +41,7 @@ export default function AdminReportPreviewPage() {
   const [preparedByName, setPreparedByName] = useState<string>("")
   const { user } = useAuth()
   const { toast } = useToast()
-  const [companyLogo, setCompanyLogo] = useState<string>("public/boohk-logo.svg")
+  const [companyLogo, setCompanyLogo] = useState<string>("public/boohk-logo.png")
 
   useEffect(() => {
     loadPreviewData()
@@ -93,7 +93,7 @@ export default function AdminReportPreviewPage() {
               setCompanyLogo(companyData.photo_url)
             } else {
               console.log("No company photo_url found, using default Boohk logo")
-              setCompanyLogo("public/boohk-logo.svg")
+              setCompanyLogo("public/boohk-logo.png")
             }
             return
           } else {
@@ -111,16 +111,16 @@ export default function AdminReportPreviewPage() {
           "User"
 
         setPreparedByName(fallbackName)
-        setCompanyLogo("public/boohk-logo.svg")
+        setCompanyLogo("public/boohk-logo.png")
       } else {
         console.log("User document not found for uid:", user.uid)
         setPreparedByName(user.displayName || user.email?.split("@")[0] || "User")
-        setCompanyLogo("public/boohk-logo.svg")
+        setCompanyLogo("public/boohk-logo.png")
       }
     } catch (error) {
       console.error("Error fetching prepared by name:", error)
       setPreparedByName(user.displayName || user.email?.split("@")[0] || "User")
-      setCompanyLogo("public/boohk-logo.svg")
+      setCompanyLogo("public/boohk-logo.png")
     }
   }
 
@@ -642,7 +642,7 @@ export default function AdminReportPreviewPage() {
                     className="max-h-full max-w-full object-contain"
                     onError={(e) => {
                       console.error("Company logo failed to load:", companyLogo)
-                      setCompanyLogo("public/boohk-logo.svg")
+                      setCompanyLogo("public/boohk-logo.png")
                     }}
                   />
                 </div>

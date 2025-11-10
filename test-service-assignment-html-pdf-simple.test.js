@@ -208,7 +208,7 @@ async function testServiceAssignmentHTMLPDF() {
       }
 
       async function resolveCompanyLogo(userData, projectData) {
-        return "public/boohk-logo.svg";
+        return "public/boohk-logo.png";
       }
 
       // Main PDF generation function

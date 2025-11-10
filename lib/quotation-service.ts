@@ -436,7 +436,7 @@ export async function generateQuotationPDF(quotation: Quotation, returnBlob: boo
       }
 
       // Add Company Logo with proper aspect ratio handling
-      const logoUrl = "public/boohk-logo.svg"
+      const logoUrl = "public/boohk-logo.png"
       const logoBase64 = await loadImageAsBase64(logoUrl)
       if (logoBase64) {
         // Get actual logo dimensions

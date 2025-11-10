@@ -390,7 +390,7 @@ function formatCurrency(amount) {
 }
 
 async function resolveCompanyLogo(userData, projectData) {
-  return "public/boohk-logo.svg";
+  return "public/boohk-logo.png";
 }
 
 // Run the test
