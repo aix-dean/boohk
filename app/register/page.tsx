@@ -458,6 +458,7 @@ export default function AccountCreationPage() {
   const [showWelcome, setShowWelcome] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
   const [termsDialogOpen, setTermsDialogOpen] = useState(false)
+  const [isStartingTour, setIsStartingTour] = useState(false)
 
   const { register, user, userData, getRoleDashboardPath } = useAuth()
   const router = useRouter()
@@ -688,11 +689,29 @@ export default function AccountCreationPage() {
 
             {/* Start Tour button */}
             <div className="pt-6 flex justify-end">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-medium text-lg flex items-center gap-3" onClick={() => router.push("/admin/dashboard")}>
-                Start Tour
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-medium text-lg flex items-center gap-3"
+                onClick={async () => {
+                  setIsStartingTour(true)
+                  // Add a small delay for loading animation
+                  await new Promise(resolve => setTimeout(resolve, 1000))
+                  router.push("/it/onboarding")
+                }}
+                disabled={isStartingTour}
+              >
+                {isStartingTour ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Starting Tour...
+                  </>
+                ) : (
+                  <>
+                    Start Tour
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -705,29 +724,30 @@ export default function AccountCreationPage() {
     <div className="min-h-screen flex">
       {/* Left Side - Illustration */}
       <div className="hidden md:flex flex-1 relative">
-        <div className="w-full h-full rounded-[50px] p-4">
+        <div className="w-full h-full rounded-[50px]">
           <Image
-            src="/register-image-1"
+            src="/register-image-1.png"
             alt="Registration illustration"
             fill
-            className="rounded-[46px] p-8"
+            className=""
             priority
           />
         </div>
+        <img src="/boohk-logo.png" style={{width: '62px', height: '77.5px', flexShrink: 0, position: 'absolute', bottom: '40px', left: '40px'}} />
       </div>
 
       {/* Right Side - Form */}
       <div className="flex-1 bg-white flex items-center justify-center p-8">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold text-gray-900">Let's create your account</h1>
+            <h1 style={{color: '#333', fontFamily: 'Inter', fontSize: '30px', fontWeight: 700, lineHeight: '100%'}}>Let's create your account</h1>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-1">
             {/* First Name and Last Name Row */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="firstName" style={{color: '#333', fontFamily: 'Inter', fontSize: '12.004px', fontWeight: 500, lineHeight: '100%'}}>
                   First Name
                 </Label>
                 <Input
@@ -736,11 +756,11 @@ export default function AccountCreationPage() {
                   placeholder="First Name"
                   value={formData.firstName}
                   onChange={(e) => handleInputChange("firstName", e.target.value)}
-                  className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  style={{height: '24px', borderRadius: '10px', border: '1.2px solid #C4C4C4', background: '#FFF'}}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="lastName" style={{color: '#333', fontFamily: 'Inter', fontSize: '12.004px', fontWeight: 500, lineHeight: '100%'}}>
                   Last Name
                 </Label>
                 <Input
@@ -749,14 +769,14 @@ export default function AccountCreationPage() {
                   placeholder="Last Name"
                   value={formData.lastName}
                   onChange={(e) => handleInputChange("lastName", e.target.value)}
-                  className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  style={{height: '24px', borderRadius: '10px', border: '1.2px solid #C4C4C4', background: '#FFF'}}
                 />
               </div>
             </div>
 
             {/* Middle Name */}
             <div className="space-y-2">
-              <Label htmlFor="middleName" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="middleName" style={{color: '#333', fontFamily: 'Inter', fontSize: '12.004px', fontWeight: 500, lineHeight: '100%'}}>
                 Middle Name (Optional)
               </Label>
               <Input
@@ -765,18 +785,18 @@ export default function AccountCreationPage() {
                 placeholder="Middle Name"
                 value={formData.middleName}
                 onChange={(e) => handleInputChange("middleName", e.target.value)}
-                className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                style={{height: '24px', borderRadius: '10px', border: '1.2px solid #C4C4C4', background: '#FFF'}}
               />
             </div>
 
             {/* Cellphone Number */}
             <div className="space-y-2">
-              <Label htmlFor="cellphone" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="cellphone" style={{color: '#333', fontFamily: 'Inter', fontSize: '12.004px', fontWeight: 500, lineHeight: '100%'}}>
                 Cellphone Number
               </Label>
               <div className="flex gap-2">
                 <Select value={formData.countryCode} onValueChange={(value) => handleInputChange("countryCode", value)}>
-                  <SelectTrigger className="w-20 h-12 border-gray-300">
+                  <SelectTrigger className="w-20" style={{height: '24px', border: 'none', background: 'transparent'}}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -794,14 +814,14 @@ export default function AccountCreationPage() {
                     const value = e.target.value.replace(/\D/g, "").slice(0, 10)
                     handleInputChange("cellphone", value)
                   }}
-                  className="flex-1 h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  style={{height: '24px', borderRadius: '10px', border: '1.2px solid #C4C4C4', background: '#FFF'}}
                 />
               </div>
             </div>
 
             {/* Email Address */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="email" style={{color: '#333', fontFamily: 'Inter', fontSize: '12.004px', fontWeight: 500, lineHeight: '100%'}}>
                 Email Address {invitationEmail && ""}
               </Label>
               <Input
@@ -811,9 +831,7 @@ export default function AccountCreationPage() {
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
                 disabled={!!invitationEmail}
-                className={`h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 ${
-                  invitationEmail ? "bg-gray-100 cursor-not-allowed" : ""
-                }`}
+                style={{height: '24px', borderRadius: '10px', border: '1.2px solid #C4C4C4', background: '#FFF'}}
               />
               {invitationEmail && (
                 <p className="text-sm text-gray-500">
@@ -824,7 +842,7 @@ export default function AccountCreationPage() {
 
             {/* Password */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="password" style={{color: '#333', fontFamily: 'Inter', fontSize: '12.004px', fontWeight: 500, lineHeight: '100%'}}>
                 Password
               </Label>
               <Input
@@ -833,13 +851,13 @@ export default function AccountCreationPage() {
                 placeholder="Password"
                 value={formData.password}
                 onChange={(e) => handleInputChange("password", e.target.value)}
-                className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                style={{height: '24px', borderRadius: '10px', border: '1.2px solid #C4C4C4', background: '#FFF'}}
               />
             </div>
 
             {/* Confirm Password */}
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="confirmPassword" style={{color: '#333', fontFamily: 'Inter', fontSize: '12.004px', fontWeight: 500, lineHeight: '100%'}}>
                 Confirm Password
               </Label>
               <Input
@@ -848,23 +866,23 @@ export default function AccountCreationPage() {
                 placeholder="Confirm password"
                 value={formData.confirmPassword}
                 onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                style={{height: '24px', borderRadius: '10px', border: '1.2px solid #C4C4C4', background: '#FFF'}}
               />
             </div>
 
             {/* Terms and Conditions */}
-            <div className="flex items-start space-x-2 pt-2">
+            <div className="flex items-start space-x-2 py-5">
               <Checkbox
                 id="terms"
                 checked={formData.agreeToTerms}
                 onCheckedChange={(checked) => handleInputChange("agreeToTerms", checked as boolean)}
                 className="mt-1"
               />
-              <Label htmlFor="terms" className="text-sm text-gray-600 leading-relaxed">
+              <Label htmlFor="terms" style={{color: '#333', fontFamily: 'Inter', fontSize: '10px', fontWeight: 400, lineHeight: '100%'}}>
                 By signing up, I hereby acknowledge that I have read, understood, and agree to abide by the{" "}
                 <Dialog open={termsDialogOpen} onOpenChange={setTermsDialogOpen}>
                   <DialogTrigger asChild>
-                    <span className="text-blue-600 underline cursor-pointer">Terms and Conditions</span>
+                    <span style={{color: '#2D3FFF', fontFamily: 'Inter', fontSize: '10px', fontWeight: 500, lineHeight: '100%', textDecorationLine: 'underline'}}>Terms and Conditions</span>
                   </DialogTrigger>
                   <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
                     <DialogHeader>
@@ -886,18 +904,20 @@ export default function AccountCreationPage() {
                       </Button>
                     </div>
                   </DialogContent>
-                </Dialog>{" "}
+                </Dialog>{" set by Boohk."}
               </Label>
             </div>
 
             {/* Submit Button */}
-            <Button
-              type="submit"
-              className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg mt-6"
-              disabled={loading || !isInvitationValid}
-            >
-              {loading ? "Creating Account..." : "Confirm"}
-            </Button>
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                style={{width: '140px', height: '23.493px', borderRadius: '6.024px', background: '#1D0BEB'}}
+                disabled={loading}
+              >
+                {loading ? "Creating Account..." : "Confirm"}
+              </Button>
+            </div>
           </form>
 
           {errorMessage && (

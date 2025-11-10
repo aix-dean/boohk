@@ -966,7 +966,7 @@ export default function LoginPage() {
       <div className="hidden md:flex flex-1 relative order-2 md:order-2">
         <div className="w-full h-full">
           <Image
-            src="/register-image-1.png"
+            src="/login-image-1.png"
             alt="Login illustration"
             fill
 
