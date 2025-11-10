@@ -29,7 +29,7 @@ export default function ClientLayout({
   }
 
   return (
-    <div className="min-h-screen flex bg-gray-50 relative">
+   <div className="h-screen flex bg-gray-50 relative">
       {/* Mobile sidebar backdrop */}
       {isSmallScreen && sidebarOpen && (
         <div className="fixed inset-0 bg-black/30 z-40" onClick={() => setSidebarOpen(false)} />
@@ -73,7 +73,7 @@ export default function ClientLayout({
 
         {/* Router content area */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
-          <div className={`${pathname === "/account" ? "p-0" : "py-6 px-2 sm:px-4 lg:px-8"} min-h-full`}>
+          <div className={`${pathname === "/account" ? "p-0" : "py-6 px-2 sm:px-4 lg:px-8"} h-full flex flex-col`}>
             {children}
           </div>
         </div>
