@@ -1686,24 +1686,6 @@ function SalesDashboardContent() {
                         : "Dashboard"}
                     </h1>
 
-                    {/* Navigation Tabs */}
-                    <div className="flex gap-2">
-                      <Button variant="outline" className="bg-white border-[#d9d9d9] text-[#333333] hover:bg-gray-50" onClick={handleInitiateProposalFlow}>
-                        Proposal
-                      </Button>
-                      <Button variant="outline" className="bg-white border-[#d9d9d9] text-[#333333] hover:bg-gray-50" onClick={handleCeMode}>
-                        Cost Estimate
-                      </Button>
-                      <Button variant="outline" className="bg-white border-[#d9d9d9] text-[#333333] hover:bg-gray-50" onClick={handleQuoteMode}>
-                        Quotation
-                      </Button>
-                      <Button variant="outline" className="bg-white border-[#d9d9d9] text-[#333333] hover:bg-gray-50" onClick={() => router.push("/sales/job-orders/select-booking")}>
-                        Job Order
-                      </Button>
-                      <Button variant="outline" className="bg-white border-[#d9d9d9] text-[#333333] hover:bg-gray-50" onClick={() => setIsCollabPartnerDialogOpen(true)}>
-                        Collab
-                      </Button>
-                    </div>
                   </div>
 
                   {/* Search and View Controls */}

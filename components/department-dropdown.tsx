@@ -49,7 +49,7 @@ const departmentMapping: Partial<Record<RoleType, DepartmentOption>> = {
   },
   business: {
     name: "Business Dev",
-    path: "/business/dashboard",
+    path: "/business/inventory",
     role: "business",
     color: "bg-purple-500"
   },
