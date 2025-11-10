@@ -36,6 +36,7 @@ import {
   Tag,
   Smile,
   ChevronDown,
+  ArrowLeft,
 } from "lucide-react"
 import { useUnreadMessages } from "@/hooks/use-unread-messages"
 import { useAuth } from "@/contexts/auth-context"
@@ -269,7 +270,14 @@ export function SideNavigation() {
   return (
     <div className="h-screen w-[234px] bg-gradient-to-b from-[#1a0f5c] via-[#4a1d7f] via-[#6b2d9e] to-[#2d4a9e] shadow-sm flex flex-col relative">
       <div className="h-16 flex items-center px-6">
-        <DepartmentDropdown />
+        {pathname === '/account' ? (
+          <Link href="/" className="flex items-center gap-2 text-white hover:text-white/80 transition-colors">
+            <ArrowLeft className="h-4 w-4" />
+            <span>Account Setting</span>
+          </Link>
+        ) : (
+          <DepartmentDropdown />
+        )}
       </div>
       <div className="h-px bg-white/30 mx-6"></div>
       <nav className="px-4 flex-1 min-h-0 overflow-y-auto pb-16">
@@ -1281,7 +1289,7 @@ export function SideNavigation() {
       <div className="px-4 pb-10">
         <div className="flex items-center justify-center gap-2">
           <img src="/boohk-logo.png" alt="Boohk Logo" style={{ height: '31.271px' }} />
-          <img src="/boohk-text-login.png.png" alt="Boohk Text Login" style={{ height: '21px' }} />
+          <img src="/boohk-text-login.png" alt="Boohk Text Login" style={{ height: '21px' }} />
         </div>
       </div>
 
@@ -1315,7 +1323,7 @@ export function SideNavigation() {
 
       <button
         onClick={() => setShowIntelligence(!showIntelligence)}
-        className="fixed bottom-4 left-4 z-50 bg-gradient-to-br from-purple-500 to-purple-600 text-white p-3 w-12 h-12 rounded-full shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center"
+        className="hidden fixed bottom-4 left-4 z-50 bg-gradient-to-br from-purple-500 to-purple-600 text-white p-3 w-12 h-12 rounded-full shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center"
       >
         <Sparkles className="h-5 w-5 text-white" />
       </button>
