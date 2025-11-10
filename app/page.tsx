@@ -10,7 +10,7 @@ export default function Home() {
   useEffect(() => {
     if (!loading) {
       if (user) {
-        redirect("/admin/dashboard")
+        redirect("/sales/dashboard")
       } else {
         redirect("/login")
       }

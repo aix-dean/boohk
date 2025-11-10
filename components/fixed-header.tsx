@@ -124,10 +124,10 @@ export function FixedHeader({ onMenuClick, className, ...props }: FixedHeaderPro
     const segments = path.split("/").filter(Boolean)
     const breadcrumbs: BreadcrumbItemData[] = []
 
-    if (path === "/admin/dashboard") {
+    if (path === "/sales/dashboard") {
       breadcrumbs.push({ label: "Admin - Dashboard", isPage: true })
     } else if (path.startsWith("/admin/")) {
-      breadcrumbs.push({ label: "Admin - Dashboard", href: "/admin/dashboard" })
+      breadcrumbs.push({ label: "Admin - Dashboard", href: "/sales/dashboard" })
       const adminSubPath = segments[1]
       if (adminSubPath) {
         const pageLabel = adminSubPath
@@ -138,10 +138,10 @@ export function FixedHeader({ onMenuClick, className, ...props }: FixedHeaderPro
         breadcrumbs.push({ label: pageLabel, isPage: true })
       }
     } else if (path.startsWith("/sales/dashboard")) {
-      breadcrumbs.push({ label: "Admin - Dashboard", href: "/admin/dashboard" })
+      breadcrumbs.push({ label: "Admin - Dashboard", href: "/sales/dashboard" })
       breadcrumbs.push({ label: "Sales - Dashboard", isPage: true })
     } else if (path.startsWith("/logistics/dashboard")) {
-      breadcrumbs.push({ label: "Admin - Dashboard", href: "/admin/dashboard" })
+      breadcrumbs.push({ label: "Admin - Dashboard", href: "/sales/dashboard" })
       breadcrumbs.push({ label: "Logistics - Dashboard", isPage: true })
     } else if (segments.length === 0) {
       breadcrumbs.push({ label: "Dashboard", isPage: true })
@@ -214,7 +214,7 @@ export function FixedHeader({ onMenuClick, className, ...props }: FixedHeaderPro
   const breadcrumbs = getBreadcrumbs(pathname)
 
   const showAdminBackButton =
-    (pathname.startsWith("/admin/") && pathname !== "/admin/dashboard") ||
+    (pathname.startsWith("/admin/") && pathname !== "/sales/dashboard") ||
     pathname.startsWith("/sales/dashboard") ||
     pathname.startsWith("/logistics/dashboard")
 
@@ -229,7 +229,7 @@ export function FixedHeader({ onMenuClick, className, ...props }: FixedHeaderPro
     >
       {/* New: Back button for admin sub-pages, sales dashboard, and logistics dashboard */}
       {showAdminBackButton && (
-        <Link href="/admin/dashboard" passHref>
+        <Link href="/sales/dashboard" passHref>
           <Button
             variant="default"
             className="bg-black hover:bg-black/90 text-white rounded-full px-4 py-2 flex items-center gap-1"
