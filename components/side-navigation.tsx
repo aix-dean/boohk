@@ -37,6 +37,7 @@ import {
   Smile,
   ChevronDown,
   ArrowLeft,
+  SquarePen,
 } from "lucide-react"
 import { useUnreadMessages } from "@/hooks/use-unread-messages"
 import { useAuth } from "@/contexts/auth-context"
@@ -161,9 +162,8 @@ const navigationItems = [
     title: "Accounting",
     icon: DollarSign,
     items: [
-      { title: "Sales Record", href: "/accounting/sales-record", icon: FileText },
-      { title: "Sales and Collection", href: "/accounting/sales-and-collection", icon: Receipt },
-      { title: "Encashment", href: "/accounting/encashment", icon: CreditCard },
+      { title: "Transactions", href: "/accounting/transactions", icon: TransactionsIcon },
+      { title: "Payouts", href: "/accounting/payouts", icon: PayoutsIcon },
     ],
   },
   {
@@ -196,8 +196,9 @@ const navigationItems = [
     title: "Account",
     icon: User,
     items: [
-      { title: "Transactions", href: "/account/transactions", icon: TransactionsIcon },
-      { title: "Payouts", href: "/account/payouts", icon: PayoutsIcon },
+      { title: "Profile", href: "/account", icon: User },
+      { title: "Change Password", href: "/account/change-password", icon: Settings },
+      { title: "Signature", href: "/account/signature", icon: SquarePen },
     ],
   },
 ]
@@ -693,16 +694,8 @@ export function SideNavigation() {
                   )
                 })}
                 {currentSection === "accounting" && [
-                  { title: "Sales Record", href: "/accounting/sales-record", icon: FileText },
-                  { title: "Sales and Collection", href: "/accounting/sales-and-collection", icon: Receipt },
-                  { title: "Encashment", href: "/accounting/encashment", icon: CreditCard },
-                  { title: "Invoices", href: "/accounting/invoices", icon: Receipt },
-                  { title: "Expenses", href: "/accounting/expenses", icon: CreditCard },
-                  { title: "Requests", href: "/accounting/requests", icon: ClipboardList },
-                  { title: "Payments", href: "/accounting/payments", icon: DollarSign },
-                  { title: "Tax Management", href: "/accounting/tax", icon: FileText },
-                  { title: "Financial Analysis", href: "/accounting/analysis", icon: TrendingUp },
-                  { title: "Settings", href: "/accounting/settings", icon: Cog },
+                  { title: "Transactions", href: "/accounting/transactions", icon: TransactionsIcon },
+                  { title: "Payouts", href: "/accounting/payouts", icon: PayoutsIcon },
                 ].map((item) => {
                   const Icon = item.icon
                   const active = isActive(pathname, item.href)
@@ -1033,9 +1026,8 @@ export function SideNavigation() {
               </div>
               <div className="p-1">
                 {[
-                  { title: "Sales Record", href: "/accounting/sales-record", icon: FileText },
-                  { title: "Sales and Collection", href: "/accounting/sales-and-collection", icon: Receipt },
-                  { title: "Encashment", href: "/accounting/encashment", icon: CreditCard },
+                  { title: "Transactions", href: "/accounting/transactions", icon: TransactionsIcon },
+                  { title: "Payouts", href: "/accounting/payouts", icon: PayoutsIcon },
                 ].map((item) => {
                   const Icon = item.icon
                   const active = isActive(pathname, item.href)
@@ -1057,40 +1049,6 @@ export function SideNavigation() {
               </div>
             </div>
 
-            {/* To Do Section */}
-            <div className="rounded-[20px] shadow-sm">
-              <div className="px-3 py-2">
-                <h3 className="text-sm font-medium text-white">To Do</h3>
-              </div>
-              <div className="p-1">
-                {[
-                  { title: "Invoices", href: "/accounting/invoices", icon: Receipt },
-                  { title: "Expenses", href: "/accounting/expenses", icon: CreditCard },
-                  { title: "Requests", href: "/accounting/requests", icon: ClipboardList },
-                  { title: "Payments", href: "/accounting/payments", icon: DollarSign },
-                  { title: "Tax Management", href: "/accounting/tax", icon: FileText },
-                  { title: "Financial Analysis", href: "/accounting/analysis", icon: TrendingUp },
-                  { title: "Settings", href: "/accounting/settings", icon: Cog },
-                ].map((item) => {
-                  const Icon = item.icon
-                  const active = isActive(pathname, item.href)
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
-                        !active && "hover:bg-white/10 rounded-[10px]",
-                        active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span className="flex-1">{item.title}</span>
-                    </Link>
-                  )
-                })}
-              </div>
-            </div>
 
           </>
         ) : currentSection === "admin" ? (
@@ -1101,7 +1059,7 @@ export function SideNavigation() {
             <div className="rounded-[20px] shadow-sm">
               <div className="p-1">
                 {[
-                  { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+                  { title: "Dashboard", href: "/sales/dashboard", icon: LayoutDashboard },
                   { title: "Bulletin Board", href: "/admin/project-bulletin", icon: Monitor },
                   { title: "Planner", href: "/admin/planner", icon: Calendar },
                   { title: "Company", href: "/admin/company", icon: Users },
@@ -1239,8 +1197,9 @@ export function SideNavigation() {
             <div className="rounded-[20px] shadow-sm">
               <div className="p-1">
                 {[
-                  { title: "Transactions", href: "/account/transactions", icon: TransactionsIcon },
-                  { title: "Payouts", href: "/account/payouts", icon: PayoutsIcon },
+                  { title: "Profile", href: "/account", icon: User },
+                  { title: "Change Password", href: "/account/change-password", icon: Settings },
+                  { title: "Signature", href: "/account/signature", icon: SquarePen },
                 ].map((item) => {
                   const Icon = item.icon
                   const active = isActive(pathname, item.href)
@@ -1254,7 +1213,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
+                      <Icon className="h-4 w-4" />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )

@@ -29,7 +29,7 @@ import type { Todo } from "@/lib/types/todo"
 import { bookingService } from "@/lib/booking-service"
 import type { Booking } from "@/lib/booking-service"
 
-// Existing imports and content of app/admin/dashboard/page.tsx
+// Existing imports and content of app/sales/dashboard/page.tsx
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -139,7 +139,7 @@ export default function AdminDashboardPage() {
       setShowSuccessDialog(true);
       sessionStorage.setItem(dialogShownKey, "true"); // Mark as shown for this session
       // Remove the query parameter immediately
-      router.replace("/admin/dashboard", undefined);
+      router.replace("/sales/dashboard", undefined);
     }
   }, [searchParams, router]);
 

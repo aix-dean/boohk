@@ -450,7 +450,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       let licenseKey = generateLicenseKey()
       let companyId = null
-      let assignedRoles: RoleType[] = ["admin", "it"] // Default to admin and it for new org creators
+      let assignedRoles: RoleType[] = ["sales", "it", "business", "accounting"] // Default roles for new org creators
       let invitationPermissions: string[] = [] // Initialize permissions array
       let invitationEmail: string = "" // Initialize invitation email
 
@@ -788,46 +788,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null
     }
 
-    // Priority order: admin > it > sales > logistics > cms > business > treasury > accounting > finance
-    if (roles.includes("admin")) {
-      console.log("Admin role found, redirecting to admin dashboard")
-      return "/admin/dashboard"
-    }
-    if (roles.includes("it")) {
-      console.log("IT role found, redirecting to IT user management dashboard")
-      return "/it/user-management"
-    }
-    if (roles.includes("sales")) {
-      console.log("Sales role found, redirecting to sales dashboard")
-      return "/sales/dashboard"
-    }
-    if (roles.includes("logistics")) {
-      console.log("Logistics role found, redirecting to logistics dashboard")
-      return "/logistics/dashboard"
-    }
-    if (roles.includes("cms")) {
-      console.log("CMS role found, redirecting to cms dashboard")
-      return "/cms/dashboard"
-    }
-    if (roles.includes("business")) {
-      console.log("Business role found, redirecting to business dashboard")
-      return "/business"
-    }
-    if (roles.includes("treasury")) {
-      console.log("Treasury role found, redirecting to treasury dashboard")
-      return "/treasury"
-    }
-    if (roles.includes("accounting")) {
-      console.log("Accounting role found, redirecting to accounting dashboard")
-      return "/accounting"
-    }
-    if (roles.includes("finance")) {
-      console.log("Finance role found, redirecting to finance dashboard")
-      return "/finance"
-    }
-
-    console.log("No matching roles found, returning null")
-    return null
+    // Always redirect to sales dashboard regardless of roles
+    console.log("Redirecting to sales dashboard")
+    return "/sales/dashboard"
   }, [])
 
   // Debug function to check current user permissions

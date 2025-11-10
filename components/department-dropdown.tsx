@@ -19,7 +19,7 @@ interface DepartmentOption {
 const departmentMapping: Partial<Record<RoleType, DepartmentOption>> = {
   admin: {
     name: "Admin",
-    path: "/admin/dashboard",
+    path: "/sales/dashboard",
     role: "admin",
     color: "bg-purple-500"
   },

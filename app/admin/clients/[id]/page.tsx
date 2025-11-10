@@ -2043,7 +2043,7 @@ interface Quotation {
                      />
                    </div>
                    <Button
-                     onClick={() => router.push(`/admin/dashboard?mode=proposal&clientId=${clientId}`)}
+                     onClick={() => router.push(`/sales/dashboard?mode=proposal&clientId=${clientId}`)}
                      className="bg-blue-600 hover:bg-blue-700 text-white flex items-center space-x-2"
                    >
                      <Plus className="h-4 w-4" />
@@ -2124,7 +2124,7 @@ interface Quotation {
                      />
                    </div>
                    <Button
-                     onClick={() => router.push(`/admin/dashboard?mode=cost_estimate&clientId=${clientId}`)}
+                     onClick={() => router.push(`/sales/dashboard?mode=cost_estimate&clientId=${clientId}`)}
                      className="bg-blue-600 hover:bg-blue-700 text-white flex items-center space-x-2"
                    >
                      <Plus className="h-4 w-4" />
@@ -2211,7 +2211,7 @@ interface Quotation {
                      />
                    </div>
                    <Button
-                     onClick={() => router.push(`/admin/dashboard?mode=quotation&clientId=${clientId}`)}
+                     onClick={() => router.push(`/sales/dashboard?mode=quotation&clientId=${clientId}`)}
                      className="bg-blue-600 hover:bg-blue-700 text-white flex items-center space-x-2"
                    >
                      <Plus className="h-4 w-4" />
