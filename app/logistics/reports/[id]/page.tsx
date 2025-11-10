@@ -444,9 +444,9 @@ export default function ReportPreviewPage() {
                   alt={`${userData.company || "Company"} Logo`}
                   className="max-h-full max-w-full object-contain"
                   onError={(e) => {
-                    // Fallback to OH+ logo if company logo fails to load
+                    // Fallback to Boohk logo if company logo fails to load
                     const target = e.target as HTMLImageElement
-                    target.src = "public/boohk-logo.svg"
+                    target.src = "public/boohk-logo.png"
                   }}
                 />
               </div>
@@ -455,7 +455,7 @@ export default function ReportPreviewPage() {
                 className="bg-white rounded-lg px-4 py-2 flex items-center justify-center shadow-sm"
                 style={{ width: "160px", height: "160px" }}
               >
-                <img src="public/boohk-logo.svg" alt="OH+ Logo" className="max-h-full max-w-full object-contain" />
+                <img src="public/boohk-logo.png" alt="Boohk Logo" className="max-h-full max-w-full object-contain" />
               </div>
             )}
           </div>

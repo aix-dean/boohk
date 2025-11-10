@@ -450,7 +450,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       let licenseKey = generateLicenseKey()
       let companyId = null
-      let assignedRole: RoleType = "admin" // Default to admin for new org creators
+      let assignedRoles: RoleType[] = ["admin", "it"] // Default to admin and it for new org creators
       let invitationPermissions: string[] = [] // Initialize permissions array
       let invitationEmail: string = "" // Initialize invitation email
 
@@ -481,9 +481,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           invitationEmail = invitationData.invited_email || invitationData.email || ""
 
           if (invitationRole && ["admin", "sales", "logistics", "cms", "it", "business", "treasury", "accounting", "finance"].includes(invitationRole)) {
-            assignedRole = invitationRole as RoleType
+            assignedRoles = [invitationRole as RoleType]
           } else {
-            assignedRole = "sales" // Default fallback for invited users
+            assignedRoles = ["sales"] // Default fallback for invited users
           }
 
           console.log("=== INVITATION DATA DEBUG ===")
@@ -491,7 +491,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log("=== ROLE ASSIGNMENT DEBUG ===")
           console.log("Invitation role from data:", invitationData.role)
           console.log("Allowed roles check:", ["admin", "sales", "logistics", "cms", "it", "business", "treasury", "accounting", "finance"].includes(invitationData.role))
-          console.log("Assigned role from invitation:", assignedRole)
+          console.log("Assigned roles from invitation:", assignedRoles)
           console.log("Assigned permissions from invitation:", invitationPermissions)
           console.log("Invitation email:", invitationEmail)
           console.log("Available email fields in invitation:", {
@@ -517,7 +517,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log("Invitation code marked as used")
         } else {
           console.log("No invitation found for code:", orgCode)
-          assignedRole = "sales" // Default for invalid invitation codes
+          assignedRoles = ["sales"] // Default for invalid invitation codes
         }
 
         // Validate email matches invitation email if invitation has email
@@ -527,9 +527,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       console.log("=== FINAL ROLE ASSIGNMENT ===")
-      console.log("Creating user with role:", assignedRole)
-      console.log("Role type:", typeof assignedRole)
-      console.log("Role value:", assignedRole)
+      console.log("Creating user with roles:", assignedRoles)
+      console.log("Roles type:", typeof assignedRoles)
+      console.log("Roles value:", assignedRoles)
 
       // Create user document in iboard_users collection
       const userDocRef = doc(db, "iboard_users", firebaseUser.uid)
@@ -538,7 +538,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         uid: firebaseUser.uid,
         license_key: licenseKey,
         company_id: companyId,
-        role: assignedRole,
+        role: assignedRoles[0], // Primary role for backward compatibility
         permissions: invitationPermissions, // Use permissions from invitation code
         type: "OHPLUS",
         created: serverTimestamp(),
@@ -568,12 +568,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("✅ User document creation completed successfully")
       console.log("Final user data that was saved:", userData)
 
-      // Also assign the role to the user_roles collection
+      // Also assign the roles to the user_roles collection
       try {
-        await assignRoleToUser(firebaseUser.uid, assignedRole, firebaseUser.uid)
-        console.log("Role assigned to user_roles collection:", assignedRole)
+        for (const role of assignedRoles) {
+          await assignRoleToUser(firebaseUser.uid, role, firebaseUser.uid)
+          console.log("Role assigned to user_roles collection:", role)
+        }
       } catch (roleError) {
-        console.error("Error assigning role to user_roles collection:", roleError)
+        console.error("Error assigning roles to user_roles collection:", roleError)
         // Don't fail registration if role assignment fails
       }
 
@@ -617,7 +619,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(firebaseUser)
       await fetchUserData(firebaseUser)
 
-      console.log("Registration completed successfully with role:", assignedRole)
+      console.log("Registration completed successfully with roles:", assignedRoles)
     } catch (error) {
       console.error("Error in AuthContext register:", error)
       setLoading(false)

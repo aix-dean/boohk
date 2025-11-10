@@ -436,7 +436,7 @@ export async function generateQuotationPDF(quotation: Quotation, returnBlob: boo
       }
 
       // Add Company Logo with proper aspect ratio handling
-      const logoUrl = "public/boohk-logo.svg"
+      const logoUrl = "public/boohk-logo.png"
       const logoBase64 = await loadImageAsBase64(logoUrl)
       if (logoBase64) {
         // Get actual logo dimensions
@@ -826,7 +826,7 @@ export async function generateQuotationPDF(quotation: Quotation, returnBlob: boo
     align: "center",
   })
   pdf.text(
-    `© ${new Date().getFullYear()} OH+ Outdoor Advertising. All rights reserved.`,
+    `© ${new Date().getFullYear()} Boohk Outdoor Advertising. All rights reserved.`,
     pageWidth / 2,
     pageHeight - 10,
     { align: "center" },

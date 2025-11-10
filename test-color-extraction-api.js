@@ -7,7 +7,7 @@ async function testColorExtractionAPI() {
     console.log('Testing the fixed color extraction implementation...');
 
     // Read a test logo file
-    const logoPath = 'public/boohk-logo.svg';
+    const logoPath = 'public/boohk-logo.png';
     if (!fs.existsSync(logoPath)) {
       console.log('Logo file not found, trying alternative...');
       return;

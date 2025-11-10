@@ -470,7 +470,7 @@ export default function ComposeEmailPage({ params }: ComposeEmailPageProps) {
       formData.append("userDisplayName", displayName)
 
       // Pass the company logo from URL parameter or fetch from database
-      let companyLogoToUse = "public/boohk-logo.svg"
+      let companyLogoToUse = "public/boohk-logo.png"
 
       // Use logo from URL parameter if provided
       if (logoFromUrl) {
@@ -498,7 +498,7 @@ export default function ComposeEmailPage({ params }: ComposeEmailPageProps) {
         }
       }
 
-      if (companyLogoToUse && companyLogoToUse !== "public/boohk-logo.svg") {
+      if (companyLogoToUse && companyLogoToUse !== "public/boohk-logo.png") {
         formData.append("companyLogo", companyLogoToUse)
       }
 

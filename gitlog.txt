@@ -4457,17 +4457,17 @@ Date:   2025-09-24T10:15:02+08:00
 10	0	middleware.ts
 0	1	package-lock.json
 0	1	package.json
--	-	public/login-image-1.png
--	-	public/login-image-2.png
+-	-	public/register-image-1.png
+-	-	public/owen-face.png
 -	-	public/login-image-3.png
 -	-	public/login-image-4.png
--	-	public/login-image-5.png
+-	-	public/owen-face.png
 -	-	public/login-image-6.png
--	-	public/login-image-7.png
+-	-	public/owen-face.png
 -	-	public/onboarding-arrow.png
 -	-	public/onboarding-oscar-done.png
 -	-	public/onboarding-oscar.png
--	-	public/register-image-1.png
+-	-	public/register-image-1
 
 commit 9d56322ddb96bb32c56aa14aef9f5c6c8d55f777
 Author: aix-dean <68581352+aix-dean@users.noreply.github.com>
@@ -4689,7 +4689,7 @@ Date:   2025-09-23T17:01:32+08:00
 
 284	424	app/register/page.tsx
 1	3	middleware.ts
--	-	public/register-image-1.png
+-	-	public/register-image-1
 
 commit aad0ce58c7f685d5d07d0c9b0406f34bea64e1cd
 Author: aix-dean <68581352+aix-dean@users.noreply.github.com>
@@ -4751,7 +4751,7 @@ Date:   2025-09-23T14:21:17+08:00
 83	13	app/login/page.tsx
 63	0	app/login/welcome-page.tsx
 -	-	public/login-image-6.png
--	-	public/login-image-7.png
+-	-	public/owen-face.png
 
 commit c4e66c973235d50f905cd532ebd63c6cfc77acef
 Merge: 1cbbe7e9 ad454f2b
@@ -4967,10 +4967,10 @@ Date:   2025-09-22T20:50:41+08:00
 
 157	297	app/login/page.tsx
 4	4	components/route-protection.tsx
--	-	public/login-image-2.png
+-	-	public/owen-face.png
 -	-	public/login-image-3.png
 -	-	public/login-image-4.png
--	-	public/login-image-5.png
+-	-	public/owen-face.png
 
 commit 13a946dee7b60e543ba44c4bafad745170869427
 Merge: b5ce917a aec9323f
@@ -4996,7 +4996,7 @@ Date:   2025-09-22T17:54:22+08:00
     (update) login first step ui
 
 205	259	app/login/page.tsx
--	-	public/login-image-1.png
+-	-	public/register-image-1.png
 
 commit b5ce917ad879e9cf810b33528f4a3f79a34628dd
 Author: aix-dean <JhonPatrick.masan@aix.ph>
@@ -40724,7 +40724,7 @@ commit 26e7f3eeacea38202caa1b889e80340a18f30614
 Author: v0 <v0[bot]@users.noreply.github.com>
 Date:   2025-07-14T03:04:53+00:00
 
-    feat: update fallback logo to OH+ branding
+    feat: update fallback logo to Boohk branding
     
     Change fallback logo to ohplus-new-logo.png for better branding consistency
     

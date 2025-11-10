@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter, Bricolage_Grotesque } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/contexts/auth-context"
 import { FleetProvider } from "@/contexts/fleet-context"
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   title: "Boohk",
   description: "Manage your outdoor advertising sites",
   icons: {
-    icon: "public/boohk-logo.svg",
+    icon: "public/boohk-logo.png",
   },
   generator: "v0.dev",
 }
