@@ -121,6 +121,12 @@ export function DepartmentDropdown() {
     .map(role => departmentMapping[role])
     .filter((dept): dept is DepartmentOption => dept !== undefined)
     .filter(dept => ['Sales', 'IT', 'Business Dev', 'Accounting'].includes(dept.name))
+    .sort((a, b) => {
+      // Prioritize Sales to be at the top
+      if (a.name === 'Sales') return -1
+      if (b.name === 'Sales') return 1
+      return 0
+    })
 
   if (accessibleDepartments.length === 0) {
     return null
