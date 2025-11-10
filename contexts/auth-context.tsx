@@ -9,7 +9,7 @@ import {
   sendPasswordResetEmail,
   type User as FirebaseUser,
 } from "firebase/auth"
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, Timestamp } from "firebase/firestore"
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, Timestamp, writeBatch } from "firebase/firestore"
 import { tenantAuth, auth, db, TENANT_ID } from "@/lib/firebase"
 import { generateLicenseKey } from "@/lib/utils"
 import { assignRoleToUser, getUserRoles, type RoleType } from "@/lib/hardcoded-access-service"
@@ -219,15 +219,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           // Create the user document with uid field
           const userDocRef = doc(db, "iboard_users", firebaseUser.uid)
-          await setDoc(
-            userDocRef,
-            {
-              ...fetchedUserData,
-              created: serverTimestamp(),
-              updated: serverTimestamp(),
-            },
-            { merge: true },
-          )
+          const userData = {
+            ...fetchedUserData,
+            created: serverTimestamp(),
+            updated: serverTimestamp(),
+          }
+
+          // Create wallet document atomically with user document
+          const walletDocRef = doc(db, "wallets", firebaseUser.uid)
+          const walletData = {
+            balance: 0,
+            created: serverTimestamp(),
+            seller_id: firebaseUser.uid,
+            seller_reference: userDocRef,
+            updated: serverTimestamp(),
+          }
+
+          // Use batch to create both documents atomically
+          const batch = writeBatch(db)
+          batch.set(userDocRef, userData, { merge: true })
+          batch.set(walletDocRef, walletData)
+          await batch.commit()
+
+          console.log("Basic user document created in iboard_users collection")
+          console.log("Wallet document created in wallets collection")
+          console.log("✅ Basic user and wallet documents creation completed successfully atomically")
         }
 
         console.log("Final fetchedUserData with roles:", fetchedUserData)
@@ -563,10 +579,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userData.company_id = firebaseUser.uid
       }
 
-      await setDoc(userDocRef, userData)
+      // Create wallet document atomically with user document
+      const walletDocRef = doc(db, "wallets", firebaseUser.uid)
+      const walletData = {
+        balance: 0,
+        created: serverTimestamp(),
+        seller_id: firebaseUser.uid,
+        seller_reference: userDocRef,
+        updated: serverTimestamp(),
+      }
+
+      // Use batch to create both documents atomically
+      const batch = writeBatch(db)
+      batch.set(userDocRef, userData)
+      batch.set(walletDocRef, walletData)
+      await batch.commit()
+
       console.log("User document created in iboard_users collection")
-      console.log("✅ User document creation completed successfully")
+      console.log("Wallet document created in wallets collection")
+      console.log("✅ User and wallet documents creation completed successfully atomically")
       console.log("Final user data that was saved:", userData)
+      console.log("Final wallet data that was saved:", walletData)
 
       // Also assign the roles to the user_roles collection
       try {

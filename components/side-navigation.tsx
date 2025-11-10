@@ -229,36 +229,49 @@ export function SideNavigation() {
 
   // Determine the current section from the pathname
   let currentSection = pathname?.split("/")[1] || "dashboard"
+  console.log("DEBUG: pathname =", pathname)
+  console.log("DEBUG: initial currentSection =", currentSection)
   if (pathname?.startsWith("/sales")) {
     currentSection = "sales"
+    console.log("DEBUG: set to sales")
   }
   if (pathname?.startsWith("/logistics")) {
     currentSection = "logistics"
+    console.log("DEBUG: set to logistics")
   }
   if (pathname?.startsWith("/cms")) {
     currentSection = "cms"
+    console.log("DEBUG: set to cms")
   }
   if (pathname?.startsWith("/admin")) {
     currentSection = "admin"
+    console.log("DEBUG: set to admin")
   }
   if (pathname?.startsWith("/it")) {
     currentSection = "it"
+    console.log("DEBUG: set to it")
   }
   if (pathname?.startsWith("/finance")) {
     currentSection = "finance"
+    console.log("DEBUG: set to finance")
   }
   if (pathname?.startsWith("/accounting")) {
     currentSection = "accounting"
+    console.log("DEBUG: set to accounting")
   }
   if (pathname?.startsWith("/treasury")) {
     currentSection = "treasury"
+    console.log("DEBUG: set to treasury")
   }
   if (pathname?.startsWith("/business")) {
     currentSection = "business"
+    console.log("DEBUG: set to business")
   }
-  if (pathname?.startsWith("/account")) {
+  if (pathname?.startsWith("/account") && !pathname?.startsWith("/accounting")) {
     currentSection = "account"
+    console.log("DEBUG: set to account")
   }
+  console.log("DEBUG: final currentSection =", currentSection)
 
   // Find the navigation item for the current section
   const currentNavItem = navigationItems.find((item) => item.section === currentSection)
