@@ -31,7 +31,7 @@ export default function UnauthorizedPage() {
     // If user has roles, try to navigate to their dashboard
     if (userData?.roles && userData.roles.length > 0) {
       if (userData.roles.includes("admin")) {
-        router.push("/admin/dashboard")
+        router.push("/sales/dashboard")
       } else if (userData.roles.includes("sales")) {
         router.push("/sales/dashboard")
       } else if (userData.roles.includes("logistics")) {

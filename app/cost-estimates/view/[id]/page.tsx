@@ -33,7 +33,7 @@ const CompanyLogo: React.FC<{ className?: string }> = ({ className }) => {
   useEffect(() => {
     const fetchCompanyLogo = async () => {
       if (!userData?.company_id) {
-        setCompanyLogo("/ohplus-new-logo.png") // Default fallback
+        setCompanyLogo("public/boohk-logo.png") // Default fallback
         setLoading(false)
         return
       }
@@ -47,14 +47,14 @@ const CompanyLogo: React.FC<{ className?: string }> = ({ className }) => {
           if (companyData.photo_url && companyData.photo_url.trim() !== "") {
             setCompanyLogo(companyData.photo_url)
           } else {
-            setCompanyLogo("/ohplus-new-logo.png") // Default fallback
+            setCompanyLogo("public/boohk-logo.png") // Default fallback
           }
         } else {
-          setCompanyLogo("/ohplus-new-logo.png") // Default fallback
+          setCompanyLogo("public/boohk-logo.png") // Default fallback
         }
       } catch (error) {
         console.error("Error fetching company logo:", error)
-        setCompanyLogo("/ohplus-new-logo.png") // Default fallback
+        setCompanyLogo("public/boohk-logo.png") // Default fallback
       } finally {
         setLoading(false)
       }
@@ -79,7 +79,7 @@ const CompanyLogo: React.FC<{ className?: string }> = ({ className }) => {
       onError={(e) => {
         // Fallback to default logo if image fails to load
         const target = e.target as HTMLImageElement
-        target.src = "/ohplus-new-logo.png"
+        target.src = "public/boohk-logo.png"
       }}
     />
   )
@@ -612,7 +612,7 @@ export default function PublicCostEstimateViewPage() {
               {/* Document Footer */}
               <div className="mt-12 pt-6 border-t border-gray-200 text-center text-xs text-gray-500">
                 <p>This cost estimate is subject to final approval and may be revised based on project requirements.</p>
-                <p className="mt-1">© {new Date().getFullYear()} OH+ Outdoor Advertising. All rights reserved.</p>
+                <p className="mt-1">© {new Date().getFullYear()} Boohk Outdoor Advertising. All rights reserved.</p>
               </div>
             </div>
           </div>

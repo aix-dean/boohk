@@ -13,7 +13,7 @@ function OnboardingHeader() {
   return (
     <header className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800">
       <div className="flex items-center">
-        <Image src="/oh-plus-logo.png" alt="OHPlus Logo" width={100} height={30} />
+        <Image src="public/boohk-logo.png" alt="OHPlus Logo" width={100} height={30} />
       </div>
       <Button variant="outline" onClick={() => router.push("/login")}>
         Exit

@@ -44,9 +44,9 @@ export function SendQuotationDialog({
 
   useEffect(() => {
     if (isOpen && quotation) {
-      setSubject(`Quotation ${quotation.quotation_number} - OOH+ Operator`)
+      setSubject(`Quotation ${quotation.quotation_number} - OBoohk Operator`)
       setBody(
-        `Dear ${quotation.client_name || "Valued Client"},\n\nPlease find your quotation attached and linked below. You can accept or decline it directly via the links.\n\nBest regards,\nThe OOH+ Operator Team`,
+        `Dear ${quotation.client_name || "Valued Client"},\n\nPlease find your quotation attached and linked below. You can accept or decline it directly via the links.\n\nBest regards,\nThe OBoohk Operator Team`,
       )
       if (userData?.email) {
         setReplyToEmail(userData.email)
@@ -139,7 +139,7 @@ export function SendQuotationDialog({
             <Label htmlFor="from" className="text-right">
               From
             </Label>
-            <Input id="from" value="OOH+ Operator <noreply@resend.dev>" readOnly className="col-span-3" />
+            <Input id="from" value="OBoohk Operator <noreply@resend.dev>" readOnly className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="replyTo" className="text-right">
@@ -162,7 +162,7 @@ export function SendQuotationDialog({
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               className="col-span-3"
-              placeholder={`Quotation ${quotation?.quotation_number || ""} - OOH+ Operator`}
+              placeholder={`Quotation ${quotation?.quotation_number || ""} - OBoohk Operator`}
             />
           </div>
           <div className="grid grid-cols-4 items-start gap-4">
@@ -174,7 +174,7 @@ export function SendQuotationDialog({
               value={body}
               onChange={(e) => setBody(e.target.value)}
               className="col-span-3 min-h-[150px]"
-              placeholder="e.g., Dear [Client Name],\n\nPlease find your quotation attached...\n\nBest regards,\nThe OOH+ Operator Team"
+              placeholder="e.g., Dear [Client Name],\n\nPlease find your quotation attached...\n\nBest regards,\nThe OBoohk Operator Team"
             />
           </div>
         </div>

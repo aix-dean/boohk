@@ -3600,7 +3600,7 @@ Date:   2025-09-26T14:38:44+08:00
     Updated dashboard pages and components (event-dialog, side-navigation) for consistency
     Minor updates to todo service and business todo-list page
 
-176	22	app/admin/dashboard/page.tsx
+176	22	app/sales/dashboard/page.tsx
 575	373	app/admin/planner/page.tsx
 753	516	app/business-dev/planner/page.tsx
 377	42	app/business/dashboard/page.tsx
@@ -3735,7 +3735,7 @@ Date:   2025-09-26T10:36:17+08:00
 
     Fix Treasury Requests navigation, Admin Dashboard Petty cash into real time, redirect to treasury dashboard
 
-65	27	app/admin/dashboard/page.tsx
+65	27	app/sales/dashboard/page.tsx
 17	71	app/treasury/page.tsx
 2	2	components/side-navigation.tsx
 
@@ -4192,9 +4192,9 @@ Date:   2025-09-24T23:29:55+08:00
     Files modified:
     - lib/petty-cash-service.ts: Remove 10MB file size validation
     - app/admin/planner/page.tsx: Remove hour/minute views, fix time formatting
-    - app/admin/dashboard/page.tsx: Add events integration and display
+    - app/sales/dashboard/page.tsx: Add events integration and display
 
-166	39	app/admin/dashboard/page.tsx
+166	39	app/sales/dashboard/page.tsx
 96	296	app/admin/planner/page.tsx
 144	154	components/{active-users-table.tsx => active-users-grid.tsx}
 228	0	components/sales-quota-breakdown-dialog.tsx
@@ -4254,7 +4254,7 @@ Date:   2025-09-24T17:09:10+08:00
     - useUserActivity hook - Global activity tracking
     - Enhanced auth context with activity update functionality
 
-6	76	app/admin/dashboard/page.tsx
+6	76	app/sales/dashboard/page.tsx
 66	0	app/api/admin/active-users/route.ts
 32	0	app/api/admin/force-logout/route.ts
 4	0	app/clientLayout.tsx
@@ -4408,7 +4408,7 @@ Date:   2025-09-24T10:15:02+08:00
     fixing modules
 
 4	1	app/accounting/dashboard/page.tsx
-999	131	app/admin/dashboard/page.tsx
+999	131	app/sales/dashboard/page.tsx
 45	2	app/admin/department/[name]/page.tsx
 9	14	app/admin/petty-cash/page.tsx
 2	1	app/admin/project-bulletin/details/[id]/page.tsx
@@ -4457,17 +4457,17 @@ Date:   2025-09-24T10:15:02+08:00
 10	0	middleware.ts
 0	1	package-lock.json
 0	1	package.json
--	-	public/login-image-1.png
--	-	public/login-image-2.png
+-	-	public/register-image-1.png
+-	-	public/owen-face.png
 -	-	public/login-image-3.png
 -	-	public/login-image-4.png
--	-	public/login-image-5.png
+-	-	public/owen-face.png
 -	-	public/login-image-6.png
--	-	public/login-image-7.png
+-	-	public/owen-face.png
 -	-	public/onboarding-arrow.png
 -	-	public/onboarding-oscar-done.png
 -	-	public/onboarding-oscar.png
--	-	public/register-image-1.png
+-	-	public/register-image-1
 
 commit 9d56322ddb96bb32c56aa14aef9f5c6c8d55f777
 Author: aix-dean <68581352+aix-dean@users.noreply.github.com>
@@ -4689,7 +4689,7 @@ Date:   2025-09-23T17:01:32+08:00
 
 284	424	app/register/page.tsx
 1	3	middleware.ts
--	-	public/register-image-1.png
+-	-	public/register-image-1
 
 commit aad0ce58c7f685d5d07d0c9b0406f34bea64e1cd
 Author: aix-dean <68581352+aix-dean@users.noreply.github.com>
@@ -4724,7 +4724,7 @@ Date:   2025-09-23T15:29:33+08:00
 
     Duplicate Admin To-do list to Sales, Treasury, Business Dev, IT
 
-58	59	app/admin/dashboard/page.tsx
+58	59	app/sales/dashboard/page.tsx
 11	1	app/admin/todo-list/page.tsx
 1247	0	app/business/todo-list/page.tsx
 1219	0	app/it/todo-list/page.tsx
@@ -4751,7 +4751,7 @@ Date:   2025-09-23T14:21:17+08:00
 83	13	app/login/page.tsx
 63	0	app/login/welcome-page.tsx
 -	-	public/login-image-6.png
--	-	public/login-image-7.png
+-	-	public/owen-face.png
 
 commit c4e66c973235d50f905cd532ebd63c6cfc77acef
 Merge: 1cbbe7e9 ad454f2b
@@ -4839,7 +4839,7 @@ Date:   2025-09-23T11:16:11+08:00
 
     updated admin dashboard
 
-183	110	app/admin/dashboard/page.tsx
+183	110	app/sales/dashboard/page.tsx
 4	1	components/ui/pagination.tsx
 99	0	lib/firebase-service.ts
 
@@ -4940,7 +4940,7 @@ Date:   2025-09-22T22:00:30+08:00
     5. service assignment algolia search
     6. occupany index
 
-927	131	app/admin/dashboard/page.tsx
+927	131	app/sales/dashboard/page.tsx
 9	14	app/admin/petty-cash/page.tsx
 344	0	lib/firebase-service.ts
 
@@ -4967,10 +4967,10 @@ Date:   2025-09-22T20:50:41+08:00
 
 157	297	app/login/page.tsx
 4	4	components/route-protection.tsx
--	-	public/login-image-2.png
+-	-	public/owen-face.png
 -	-	public/login-image-3.png
 -	-	public/login-image-4.png
--	-	public/login-image-5.png
+-	-	public/owen-face.png
 
 commit 13a946dee7b60e543ba44c4bafad745170869427
 Merge: b5ce917a aec9323f
@@ -4996,7 +4996,7 @@ Date:   2025-09-22T17:54:22+08:00
     (update) login first step ui
 
 205	259	app/login/page.tsx
--	-	public/login-image-1.png
+-	-	public/register-image-1.png
 
 commit b5ce917ad879e9cf810b33528f4a3f79a34628dd
 Author: aix-dean <JhonPatrick.masan@aix.ph>
@@ -8167,7 +8167,7 @@ Date:   2025-09-03T06:15:44+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-37	7	app/admin/dashboard/page.tsx
+37	7	app/sales/dashboard/page.tsx
 2	2	app/logistics/dashboard/all-sites.tsx
 2	2	app/logistics/dashboard/led-sites.tsx
 2	2	app/logistics/dashboard/static-sites.tsx
@@ -8198,7 +8198,7 @@ Date:   2025-09-03T06:02:52+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-1	1	app/admin/dashboard/page.tsx
+1	1	app/sales/dashboard/page.tsx
 
 commit 4ca8686cef308dbd247dc27f58bad9f148f7de9d
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -8212,7 +8212,7 @@ Date:   2025-09-03T06:00:21+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-1	1	app/admin/dashboard/page.tsx
+1	1	app/sales/dashboard/page.tsx
 
 commit 5cbce6c239fd0f96a000e4ebdde1c5f2675e7161
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -11644,7 +11644,7 @@ Date:   2025-08-29T02:14:33+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-3	2	app/admin/dashboard/page.tsx
+3	2	app/sales/dashboard/page.tsx
 198	6	app/api/accuweather/route.ts
 0	245	app/api/cost-estimates/send-email/route.ts
 382	0	app/api/cost-estimates/send-email/route.tsx
@@ -15546,7 +15546,7 @@ Date:   2025-08-22T02:41:57+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-3	2	app/admin/dashboard/page.tsx
+3	2	app/sales/dashboard/page.tsx
 198	6	app/api/accuweather/route.ts
 224	179	app/cost-estimates/view/[id]/page.tsx
 0	0	app/{treasury/collectibles => finance/collectibles/create}/loading.tsx
@@ -15912,7 +15912,7 @@ Date:   2025-08-21T05:31:43+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-4	1	app/admin/dashboard/page.tsx
+4	1	app/sales/dashboard/page.tsx
 369	390	app/quotations/[id]/page.tsx
 258	0	app/treasury/page.tsx
 119	1	components/side-navigation.tsx
@@ -15972,7 +15972,7 @@ Date:   2025-08-21T05:06:48+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-3	2	app/admin/dashboard/page.tsx
+3	2	app/sales/dashboard/page.tsx
 198	6	app/api/accuweather/route.ts
 224	179	app/cost-estimates/view/[id]/page.tsx
 765	426	app/sales/cost-estimates/[id]/page.tsx
@@ -16001,7 +16001,7 @@ Date:   2025-08-21T04:51:08+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-4	1	app/admin/dashboard/page.tsx
+4	1	app/sales/dashboard/page.tsx
 258	0	app/treasury/page.tsx
 119	1	components/side-navigation.tsx
 
@@ -17741,7 +17741,7 @@ Date:   2025-08-19T08:21:37+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-3	1	app/admin/dashboard/page.tsx
+3	1	app/sales/dashboard/page.tsx
 21	3	app/it/inventory/new/page.tsx
 45	2	app/logistics/dashboard/led-sites-content.tsx
 30	55	app/logistics/reports/preview/page.tsx
@@ -18244,7 +18244,7 @@ Date:   2025-08-19T05:27:01+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-1	3	app/admin/dashboard/page.tsx
+1	3	app/sales/dashboard/page.tsx
 368	425	app/sales/cost-estimates/[id]/page.tsx
 69	62	app/sales/dashboard/page.tsx
 0	726	app/treasury/collectibles/create/page.tsx
@@ -18589,7 +18589,7 @@ Date:   2025-08-18T08:11:59+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-2	0	app/admin/dashboard/page.tsx
+2	0	app/sales/dashboard/page.tsx
 
 commit c277a338e00a3866035690abd1f00a7020340ac4
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -18636,7 +18636,7 @@ Date:   2025-08-18T07:38:16+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-1	1	app/admin/dashboard/page.tsx
+1	1	app/sales/dashboard/page.tsx
 
 commit 67139aa9ccb8f8615688c14c9c0e28aa2bf0d914
 Merge: 9d87f370 31195beb
@@ -22946,7 +22946,7 @@ Date:   2025-08-08T07:50:36+00:00
 18	0	app/accounting/encashment/page.tsx
 11	0	app/accounting/sales-and-collection/page.tsx
 30	0	app/accounting/sales-record/page.tsx
-2	1	app/admin/dashboard/page.tsx
+2	1	app/sales/dashboard/page.tsx
 29	0	app/finance/expenses/loading.tsx
 384	0	app/finance/expenses/page.tsx
 563	303	app/finance/requests/create/page.tsx
@@ -23713,7 +23713,7 @@ Date:   2025-08-08T02:47:46+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-1	0	app/admin/dashboard/page.tsx
+1	0	app/sales/dashboard/page.tsx
 -	-	public/abstract-geometric-sculpture.png
 -	-	public/bridge-under-construction.png
 -	-	public/broadsign-logo.png
@@ -23840,7 +23840,7 @@ Date:   2025-08-08T02:18:50+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-1	1	app/admin/dashboard/page.tsx
+1	1	app/sales/dashboard/page.tsx
 
 commit b0e8aae8ec7f17df8562c75224ea47e9821f8ab6
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -24314,7 +24314,7 @@ Date:   2025-08-07T03:51:55+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-1	0	app/admin/dashboard/page.tsx
+1	0	app/sales/dashboard/page.tsx
 
 commit 8ea5f18bbba2c0ad432388a605675816ee953935
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -24328,7 +24328,7 @@ Date:   2025-08-07T03:49:03+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-0	1	app/admin/dashboard/page.tsx
+0	1	app/sales/dashboard/page.tsx
 1	4	app/admin/user-management/page.tsx
 0	13	app/finance/layout.tsx
 0	82	app/finance/loading.tsx
@@ -24366,7 +24366,7 @@ Date:   2025-08-07T03:37:57+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-1	0	app/admin/dashboard/page.tsx
+1	0	app/sales/dashboard/page.tsx
 
 commit e0a0df329ac5ab68b76a938adbfa2011695a43b2
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -24400,7 +24400,7 @@ Date:   2025-08-07T03:23:03+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-356	29	app/admin/dashboard/page.tsx
+356	29	app/sales/dashboard/page.tsx
 55	100	app/finance/dashboard/loading.tsx
 284	349	app/finance/dashboard/page.tsx
 10	8	app/finance/layout.tsx
@@ -24419,7 +24419,7 @@ Date:   2025-08-07T03:08:10+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-29	357	app/admin/dashboard/page.tsx
+29	357	app/sales/dashboard/page.tsx
 113	80	app/finance/dashboard/loading.tsx
 327	262	app/finance/dashboard/page.tsx
 8	4	app/finance/layout.tsx
@@ -24438,7 +24438,7 @@ Date:   2025-08-07T02:30:43+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-2	1	app/admin/dashboard/page.tsx
+2	1	app/sales/dashboard/page.tsx
 76	35	app/finance/dashboard/loading.tsx
 285	303	app/finance/dashboard/page.tsx
 14	0	app/finance/layout.tsx
@@ -24504,7 +24504,7 @@ Date:   2025-08-07T02:14:17+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-1	1	app/admin/dashboard/page.tsx
+1	1	app/sales/dashboard/page.tsx
 
 commit b87115dee07f2bf5d966e15bf09d76dcfd784ee4
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -26141,7 +26141,7 @@ Date:   2025-08-04T08:47:15+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-331	243	app/admin/dashboard/page.tsx
+331	243	app/sales/dashboard/page.tsx
 126	224	app/it/page.tsx
 
 commit 17d1f678297500d574ac6adf9bf7561302b702e3
@@ -26156,7 +26156,7 @@ Date:   2025-08-04T08:39:17+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-243	331	app/admin/dashboard/page.tsx
+243	331	app/sales/dashboard/page.tsx
 184	185	app/it/page.tsx
 
 commit 884543747f0e4999ff7fbd1d0a86dee8b6dd2189
@@ -26171,7 +26171,7 @@ Date:   2025-08-04T08:38:30+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-1	0	app/admin/dashboard/page.tsx
+1	0	app/sales/dashboard/page.tsx
 257	158	app/it/page.tsx
 
 commit 7f1c69bb296d804bb7c6db11248daaa5e345f73c
@@ -26203,7 +26203,7 @@ Date:   2025-08-04T08:27:34+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-0	1	app/admin/dashboard/page.tsx
+0	1	app/sales/dashboard/page.tsx
 1	1	app/it/layout.tsx
 101	45	app/it/loading.tsx
 236	330	app/it/page.tsx
@@ -26235,7 +26235,7 @@ Date:   2025-08-04T08:13:40+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-1	1	app/admin/dashboard/page.tsx
+1	1	app/sales/dashboard/page.tsx
 
 commit d70b18e71357d1493acb93d2c0f70dc813141493
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -26250,7 +26250,7 @@ Date:   2025-08-04T08:08:44+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-1	0	app/admin/dashboard/page.tsx
+1	0	app/sales/dashboard/page.tsx
 
 commit 10e3ef43df684fd498bb4045882725cc5fad9bb3
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -26281,7 +26281,7 @@ Date:   2025-08-04T07:51:19+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-1	1	app/admin/dashboard/page.tsx
+1	1	app/sales/dashboard/page.tsx
 
 commit 5882f3c74764cec8107f0249aaa8ecb6723e0cf6
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -26477,7 +26477,7 @@ Date:   2025-08-04T05:43:12+00:00
 
 387	112	app/account/page.tsx
 134	41	app/admin/access-management/page.tsx
-146	88	app/admin/dashboard/page.tsx
+146	88	app/sales/dashboard/page.tsx
 214	100	app/admin/inventory/page.tsx
 795	342	app/admin/products/create/page.tsx
 38	2	app/admin/subscriptions/choose-plan/page.tsx
@@ -31223,7 +31223,7 @@ Date:   2025-07-17T06:36:23+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-1	0	app/admin/dashboard/page.tsx
+1	0	app/sales/dashboard/page.tsx
 
 commit 667f1b94e440b2c4a4e22a385b605078e8610bbd
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -31237,7 +31237,7 @@ Date:   2025-07-17T06:17:17+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-1	1	app/admin/dashboard/page.tsx
+1	1	app/sales/dashboard/page.tsx
 
 commit 3e2f91aef572f9073fa75ab8f2925b47b64eb1b3
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -31943,8 +31943,8 @@ Date:   2025-07-17T00:08:13+00:00
 384	142	app/account/page.tsx
 53	21	app/admin/access-management/loading.tsx
 132	145	app/admin/access-management/page.tsx
-3	0	app/admin/dashboard/loading.tsx
-359	0	app/admin/dashboard/page.tsx
+3	0	app/sales/dashboard/loading.tsx
+359	0	app/sales/dashboard/page.tsx
 34	0	app/admin/documents/loading.tsx
 102	0	app/admin/documents/page.tsx
 3	0	app/admin/inventory/loading.tsx
@@ -32296,7 +32296,7 @@ Date:   2025-07-16T11:08:27+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-334	306	app/admin/dashboard/page.tsx
+334	306	app/sales/dashboard/page.tsx
 1	1	components/route-protection.tsx
 
 commit 86265f7c07d746d8d879aefc871a8b1ea828b74e
@@ -32311,7 +32311,7 @@ Date:   2025-07-16T11:06:18+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-306	334	app/admin/dashboard/page.tsx
+306	334	app/sales/dashboard/page.tsx
 
 commit afdafb3d93858ec9f19e0b49766940a1327c038a
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -33148,7 +33148,7 @@ Date:   2025-07-16T06:46:43+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-28	84	app/admin/dashboard/page.tsx
+28	84	app/sales/dashboard/page.tsx
 70	119	app/login/page.tsx
 216	271	app/register/page.tsx
 4	74	app/sales/dashboard/page.tsx
@@ -33197,7 +33197,7 @@ Date:   2025-07-16T06:41:41+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-84	28	app/admin/dashboard/page.tsx
+84	28	app/sales/dashboard/page.tsx
 139	330	app/login/page.tsx
 291	372	app/register/page.tsx
 74	4	app/sales/dashboard/page.tsx
@@ -33246,7 +33246,7 @@ Date:   2025-07-16T06:33:00+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-51	48	app/admin/dashboard/page.tsx
+51	48	app/sales/dashboard/page.tsx
 13	1	app/auth-layout.tsx
 315	305	app/cms/dashboard/page.tsx
 17	4	app/login/page.tsx
@@ -33685,7 +33685,7 @@ Date:   2025-07-16T05:21:31+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-9	9	app/admin/dashboard/page.tsx
+9	9	app/sales/dashboard/page.tsx
 
 commit 662d60a385dbbcba0059d84b7bd055ebd74b205c
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -33723,7 +33723,7 @@ Date:   2025-07-16T05:17:47+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-0	4	app/admin/dashboard/page.tsx
+0	4	app/sales/dashboard/page.tsx
 
 commit 1ec7e28f7c5817bfe1c6f92155ca8c5e86a87a7f
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -33737,7 +33737,7 @@ Date:   2025-07-16T05:15:37+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-17	17	app/admin/dashboard/page.tsx
+17	17	app/sales/dashboard/page.tsx
 
 commit 25939c55d8efba0aae067501d0db2525186fca7c
 Merge: 48335ea8 33abf627
@@ -35686,7 +35686,7 @@ Date:   2025-07-15T16:33:51+08:00
     Revert "Warrent auth UI update"
 
 2	2	app/admin/access-management/page.tsx
-78	21	app/admin/dashboard/page.tsx
+78	21	app/sales/dashboard/page.tsx
 46	31	app/admin/inventory/page.tsx
 38	2	app/admin/subscriptions/choose-plan/page.tsx
 105	16	app/admin/subscriptions/page.tsx
@@ -36445,7 +36445,7 @@ Date:   2025-07-15T07:06:18+00:00
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
 2	2	app/admin/access-management/page.tsx
-21	78	app/admin/dashboard/page.tsx
+21	78	app/sales/dashboard/page.tsx
 31	46	app/admin/inventory/page.tsx
 2	38	app/admin/subscriptions/choose-plan/page.tsx
 16	105	app/admin/subscriptions/page.tsx
@@ -40247,7 +40247,7 @@ Date:   2025-07-14T03:56:18+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-2	2	app/admin/dashboard/page.tsx
+2	2	app/sales/dashboard/page.tsx
 
 commit 86115e5930433927099aa754ce52af86d36c3f2a
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -40369,7 +40369,7 @@ Date:   2025-07-14T03:44:28+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-1	1	app/admin/dashboard/page.tsx
+1	1	app/sales/dashboard/page.tsx
 
 commit cc66cb3471ba817c29e5a840a6fb5da5dea9f3ba
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -40426,7 +40426,7 @@ Date:   2025-07-14T03:42:16+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-1	1	app/admin/dashboard/page.tsx
+1	1	app/sales/dashboard/page.tsx
 
 commit 02ee202088a44ba70a40543b14c023ec45284eb7
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -40454,7 +40454,7 @@ Date:   2025-07-14T03:41:22+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-1	1	app/admin/dashboard/page.tsx
+1	1	app/sales/dashboard/page.tsx
 
 commit 93fc737c9bf4034290f14c926fa4a11c31ef681e
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -40552,7 +40552,7 @@ Date:   2025-07-14T03:31:13+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-4	2	app/admin/dashboard/page.tsx
+4	2	app/sales/dashboard/page.tsx
 
 commit d34c2041920fd5943cc088ebf2d83a1cbb1702e4
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -40724,7 +40724,7 @@ commit 26e7f3eeacea38202caa1b889e80340a18f30614
 Author: v0 <v0[bot]@users.noreply.github.com>
 Date:   2025-07-14T03:04:53+00:00
 
-    feat: update fallback logo to OH+ branding
+    feat: update fallback logo to Boohk branding
     
     Change fallback logo to ohplus-new-logo.png for better branding consistency
     
@@ -40746,7 +40746,7 @@ Date:   2025-07-14T03:02:12+00:00
     
     Co-authored-by: null <68581352+aix-dean@users.noreply.github.com>
 
-3	1	app/admin/dashboard/page.tsx
+3	1	app/sales/dashboard/page.tsx
 3	2	app/cms/dashboard/page.tsx
 9	0	app/logistics/dashboard/page.tsx
 
@@ -41017,7 +41017,7 @@ Date:   2025-07-14T01:36:09+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-328	332	app/admin/dashboard/page.tsx
+328	332	app/sales/dashboard/page.tsx
 26	43	app/sales/dashboard/page.tsx
 
 commit 13f2e3299d223db22318416effd30c0df20df0bf
@@ -41046,7 +41046,7 @@ Date:   2025-07-14T01:34:47+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-332	328	app/admin/dashboard/page.tsx
+332	328	app/sales/dashboard/page.tsx
 44	24	app/sales/dashboard/page.tsx
 
 commit b81583028605a6f8f0bdae15c758cdb97f104068
@@ -41061,7 +41061,7 @@ Date:   2025-07-14T01:27:35+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-0	7	app/admin/dashboard/page.tsx
+0	7	app/sales/dashboard/page.tsx
 
 commit e6e08db101177fbd939d0e4833a073142563046a
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -41075,7 +41075,7 @@ Date:   2025-07-14T01:23:45+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-72	12	app/admin/dashboard/page.tsx
+72	12	app/sales/dashboard/page.tsx
 
 commit 8992b6a8716a6925d0227c2403af3b84877cbd40
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -42261,7 +42261,7 @@ Date:   2025-07-10T05:53:03+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-1	0	app/admin/dashboard/page.tsx
+1	0	app/sales/dashboard/page.tsx
 
 commit 5676ce9aa08fc213e7b6f933b92b3e7f00708c1e
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -47810,7 +47810,7 @@ Date:   2025-07-08T18:21:29+08:00
 
 0	25	app/admin/calendar/loading.tsx
 0	12	app/admin/calendar/page.tsx
-37	62	app/admin/dashboard/page.tsx
+37	62	app/sales/dashboard/page.tsx
 1	4	app/admin/inventory/page.tsx
 1	20	app/admin/layout.tsx
 13	8	app/clientLayout.tsx
@@ -47848,7 +47848,7 @@ Date:   2025-07-08T10:19:07+00:00
 
 0	25	app/admin/calendar/loading.tsx
 0	12	app/admin/calendar/page.tsx
-37	62	app/admin/dashboard/page.tsx
+37	62	app/sales/dashboard/page.tsx
 1	4	app/admin/inventory/page.tsx
 1	20	app/admin/layout.tsx
 13	8	app/clientLayout.tsx
@@ -47897,7 +47897,7 @@ Date:   2025-07-08T10:17:01+00:00
 
 25	0	app/admin/calendar/loading.tsx
 12	0	app/admin/calendar/page.tsx
-62	37	app/admin/dashboard/page.tsx
+62	37	app/sales/dashboard/page.tsx
 4	1	app/admin/inventory/page.tsx
 20	1	app/admin/layout.tsx
 8	13	app/clientLayout.tsx
@@ -47940,7 +47940,7 @@ Date:   2025-07-08T18:10:09+08:00
 
 0	25	app/admin/calendar/loading.tsx
 0	12	app/admin/calendar/page.tsx
-37	62	app/admin/dashboard/page.tsx
+37	62	app/sales/dashboard/page.tsx
 1	4	app/admin/inventory/page.tsx
 1	20	app/admin/layout.tsx
 13	8	app/clientLayout.tsx
@@ -47989,7 +47989,7 @@ Date:   2025-07-08T09:54:39+00:00
 
 25	0	app/admin/calendar/loading.tsx
 12	0	app/admin/calendar/page.tsx
-62	37	app/admin/dashboard/page.tsx
+62	37	app/sales/dashboard/page.tsx
 4	1	app/admin/inventory/page.tsx
 20	1	app/admin/layout.tsx
 8	13	app/clientLayout.tsx
@@ -48601,7 +48601,7 @@ Date:   2025-07-08T08:10:36+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-62	72	app/admin/dashboard/page.tsx
+62	72	app/sales/dashboard/page.tsx
 4	7	app/register/page.tsx
 0	44	components/onboarding-tour.tsx
 25	27	components/registration-success-dialog.tsx
@@ -48633,7 +48633,7 @@ Date:   2025-07-08T08:07:42+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-72	62	app/admin/dashboard/page.tsx
+72	62	app/sales/dashboard/page.tsx
 7	4	app/register/page.tsx
 44	0	components/onboarding-tour.tsx
 27	25	components/registration-success-dialog.tsx
@@ -49053,7 +49053,7 @@ Date:   2025-07-08T06:45:23+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-37	64	app/admin/dashboard/page.tsx
+37	64	app/sales/dashboard/page.tsx
 1	4	app/admin/inventory/page.tsx
 3	1	app/register/page.tsx
 0	193	components/onboarding-tour.tsx
@@ -49089,7 +49089,7 @@ Date:   2025-07-08T06:35:08+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-16	14	app/admin/dashboard/page.tsx
+16	14	app/sales/dashboard/page.tsx
 1	20	app/admin/layout.tsx
 51	117	components/onboarding-tour.tsx
 1	7	components/registration-success-dialog.tsx
@@ -49184,7 +49184,7 @@ Date:   2025-07-08T06:16:46+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-35	1	app/admin/dashboard/page.tsx
+35	1	app/sales/dashboard/page.tsx
 10	10	app/layout.tsx
 259	0	components/onboarding-tour.tsx
 8	2	components/registration-success-dialog.tsx
@@ -49204,7 +49204,7 @@ Date:   2025-07-08T06:11:10+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-1	35	app/admin/dashboard/page.tsx
+1	35	app/sales/dashboard/page.tsx
 0	259	components/onboarding-tour.tsx
 2	8	components/registration-success-dialog.tsx
 9	22	package.json
@@ -49825,7 +49825,7 @@ Date:   2025-07-04T06:43:41+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-303	82	app/admin/dashboard/page.tsx
+303	82	app/sales/dashboard/page.tsx
 17	3	app/admin/layout.tsx
 3	3	app/layout.tsx
 102	254	app/register/page.tsx
@@ -49860,7 +49860,7 @@ Date:   2025-07-04T06:37:32+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-82	303	app/admin/dashboard/page.tsx
+82	303	app/sales/dashboard/page.tsx
 5	7	app/admin/layout.tsx
 23	17	app/layout.tsx
 239	103	app/register/page.tsx
@@ -49879,7 +49879,7 @@ Date:   2025-07-04T06:30:44+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-317	99	app/admin/dashboard/page.tsx
+317	99	app/sales/dashboard/page.tsx
 8	23	app/admin/layout.tsx
 18	24	app/layout.tsx
 104	246	app/register/page.tsx
@@ -49899,7 +49899,7 @@ Date:   2025-07-04T06:28:08+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-99	317	app/admin/dashboard/page.tsx
+99	317	app/sales/dashboard/page.tsx
 3	10	app/admin/layout.tsx
 18	22	app/register/page.tsx
 
@@ -49945,7 +49945,7 @@ Date:   2025-07-04T06:07:56+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-14	16	app/admin/dashboard/page.tsx
+14	16	app/sales/dashboard/page.tsx
 
 commit 3a87b68461b05cc9ee368d5e54df5fdf48d17aad
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -50262,7 +50262,7 @@ Date:   2025-07-04T02:30:25+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-3	1	app/admin/dashboard/page.tsx
+3	1	app/sales/dashboard/page.tsx
 3	1	app/admin/inventory/page.tsx
 31	19	components/onboarding-tour.tsx
 
@@ -50278,7 +50278,7 @@ Date:   2025-07-04T02:24:40+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-1	3	app/admin/dashboard/page.tsx
+1	3	app/sales/dashboard/page.tsx
 424	45	app/admin/inventory/page.tsx
 19	46	components/onboarding-tour.tsx
 
@@ -50308,7 +50308,7 @@ Date:   2025-07-04T02:19:32+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-3	1	app/admin/dashboard/page.tsx
+3	1	app/sales/dashboard/page.tsx
 45	424	app/admin/inventory/page.tsx
 14	26	components/onboarding-tour.tsx
 405	27	components/side-navigation.tsx
@@ -50378,7 +50378,7 @@ Date:   2025-07-04T02:04:59+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-18	1	app/admin/dashboard/page.tsx
+18	1	app/sales/dashboard/page.tsx
 24	0	components/onboarding-tour.tsx
 
 commit 8f9a816b1a2dbcdfc57d67fde643f4819d06712c
@@ -50393,7 +50393,7 @@ Date:   2025-07-04T02:02:05+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-16	16	app/admin/dashboard/page.tsx
+16	16	app/sales/dashboard/page.tsx
 8	13	components/onboarding-tour.tsx
 
 commit 320b984fbfbeb19c87da61c5b56844602ac2a769
@@ -50408,7 +50408,7 @@ Date:   2025-07-04T01:59:07+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-7	7	app/admin/dashboard/page.tsx
+7	7	app/sales/dashboard/page.tsx
 4	5	components/onboarding-tour.tsx
 
 commit b6fabb0407b757229a8e0c4eab1c1e6c415fc403
@@ -50437,7 +50437,7 @@ Date:   2025-07-04T01:54:03+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-5	2	app/admin/dashboard/page.tsx
+5	2	app/sales/dashboard/page.tsx
 
 commit 160bac662994be10bbf964653ddb222aaf7565cf
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -50451,7 +50451,7 @@ Date:   2025-07-04T01:51:17+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-14	1	app/admin/dashboard/page.tsx
+14	1	app/sales/dashboard/page.tsx
 
 commit 814791aaaafb16a8caf2943751fc5e15c34cbd6a
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -50493,7 +50493,7 @@ Date:   2025-07-04T01:40:58+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-64	315	app/admin/dashboard/page.tsx
+64	315	app/sales/dashboard/page.tsx
 418	103	app/admin/inventory/page.tsx
 94	36	components/onboarding-tour.tsx
 387	437	components/side-navigation.tsx
@@ -50510,7 +50510,7 @@ Date:   2025-07-04T01:37:40+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-52	5	app/admin/dashboard/page.tsx
+52	5	app/sales/dashboard/page.tsx
 52	196	app/admin/inventory/page.tsx
 31	86	components/onboarding-tour.tsx
 59	34	components/side-navigation.tsx
@@ -50527,7 +50527,7 @@ Date:   2025-07-04T01:33:47+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-1	1	app/admin/dashboard/page.tsx
+1	1	app/sales/dashboard/page.tsx
 243	405	app/admin/inventory/page.tsx
 396	317	components/side-navigation.tsx
 
@@ -50543,7 +50543,7 @@ Date:   2025-07-04T01:31:39+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-269	65	app/admin/dashboard/page.tsx
+269	65	app/sales/dashboard/page.tsx
 113	122	app/admin/inventory/page.tsx
 100	140	components/onboarding-tour.tsx
 331	385	components/side-navigation.tsx
@@ -50562,7 +50562,7 @@ Date:   2025-07-04T01:21:10+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-5	6	app/admin/dashboard/page.tsx
+5	6	app/sales/dashboard/page.tsx
 2	4	app/register/page.tsx
 12	11	components/onboarding-tour.tsx
 1	1	components/registration-success-dialog.tsx
@@ -50579,7 +50579,7 @@ Date:   2025-07-04T01:20:12+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-4	4	app/admin/dashboard/page.tsx
+4	4	app/sales/dashboard/page.tsx
 188	174	app/register/page.tsx
 1	1	components/registration-success-dialog.tsx
 
@@ -50595,7 +50595,7 @@ Date:   2025-07-04T01:16:43+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-6	5	app/admin/dashboard/page.tsx
+6	5	app/sales/dashboard/page.tsx
 174	186	app/register/page.tsx
 24	22	components/onboarding-tour.tsx
 
@@ -50611,7 +50611,7 @@ Date:   2025-07-03T06:37:50+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-5	6	app/admin/dashboard/page.tsx
+5	6	app/sales/dashboard/page.tsx
 2	4	app/register/page.tsx
 22	24	components/onboarding-tour.tsx
 1	1	components/registration-success-dialog.tsx
@@ -50628,7 +50628,7 @@ Date:   2025-07-03T06:19:33+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-6	5	app/admin/dashboard/page.tsx
+6	5	app/sales/dashboard/page.tsx
 242	123	app/register/page.tsx
 24	23	components/onboarding-tour.tsx
 1	1	components/registration-success-dialog.tsx
@@ -50645,7 +50645,7 @@ Date:   2025-07-03T06:09:30+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-8	5	app/admin/dashboard/page.tsx
+8	5	app/sales/dashboard/page.tsx
 123	242	app/register/page.tsx
 29	35	components/onboarding-tour.tsx
 1	2	components/registration-success-dialog.tsx
@@ -50662,7 +50662,7 @@ Date:   2025-07-03T06:03:36+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-17	33	app/admin/dashboard/page.tsx
+17	33	app/sales/dashboard/page.tsx
 2	2	components/registration-success-dialog.tsx
 
 commit addb4c893ef984afab78279543cb92342ed7d5cd
@@ -50677,7 +50677,7 @@ Date:   2025-07-03T06:00:15+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-3	3	app/admin/dashboard/page.tsx
+3	3	app/sales/dashboard/page.tsx
 
 commit dd6dfe6af851cd8dc8eae507ff7b9afb459dc852
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -50691,7 +50691,7 @@ Date:   2025-07-03T05:57:49+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-14	13	app/admin/dashboard/page.tsx
+14	13	app/sales/dashboard/page.tsx
 4	22	app/register/page.tsx
 3	3	components/registration-success-dialog.tsx
 
@@ -50750,7 +50750,7 @@ Date:   2025-07-03T05:10:25+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-298	1	app/admin/dashboard/page.tsx
+298	1	app/sales/dashboard/page.tsx
 
 commit 8a7700f2533df6a9410c723eabfde2674e0ab5a7
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -50765,7 +50765,7 @@ Date:   2025-07-03T04:57:55+00:00
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
 306	165	app/account/page.tsx
-2	151	app/admin/dashboard/page.tsx
+2	151	app/sales/dashboard/page.tsx
 2	14	app/admin/inventory/page.tsx
 19	18	app/layout.tsx
 1	1	app/register/page.tsx
@@ -50787,7 +50787,7 @@ Date:   2025-07-03T03:57:31+00:00
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
 715	239	app/account/page.tsx
-125	30	app/admin/dashboard/page.tsx
+125	30	app/sales/dashboard/page.tsx
 0	33	app/admin/inventory/loading.tsx
 427	87	app/admin/inventory/page.tsx
 19	17	app/layout.tsx
@@ -50819,7 +50819,7 @@ Date:   2025-07-03T03:56:47+00:00
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
 254	244	app/account/page.tsx
-29	154	app/admin/dashboard/page.tsx
+29	154	app/sales/dashboard/page.tsx
 21	6	app/admin/inventory/loading.tsx
 86	189	app/admin/inventory/page.tsx
 12	46	app/layout.tsx
@@ -50851,7 +50851,7 @@ Date:   2025-07-03T03:53:24+00:00
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
 206	159	app/account/page.tsx
-150	182	app/admin/dashboard/page.tsx
+150	182	app/sales/dashboard/page.tsx
 10	20	app/admin/inventory/loading.tsx
 167	105	app/admin/inventory/page.tsx
 30	22	app/layout.tsx
@@ -50875,7 +50875,7 @@ Date:   2025-07-03T03:51:20+00:00
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
 195	125	app/account/page.tsx
-103	161	app/admin/dashboard/page.tsx
+103	161	app/sales/dashboard/page.tsx
 26	1	app/admin/inventory/loading.tsx
 103	255	app/admin/inventory/page.tsx
 41	23	app/layout.tsx
@@ -50897,7 +50897,7 @@ Date:   2025-07-03T03:44:01+00:00
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
 135	282	app/account/page.tsx
-232	117	app/admin/dashboard/page.tsx
+232	117	app/sales/dashboard/page.tsx
 3	0	app/admin/inventory/loading.tsx
 276	411	app/admin/inventory/page.tsx
 23	15	app/layout.tsx
@@ -50919,7 +50919,7 @@ Date:   2025-07-03T03:40:20+00:00
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
 218	231	app/account/page.tsx
-114	153	app/admin/dashboard/page.tsx
+114	153	app/sales/dashboard/page.tsx
 1	1	app/admin/inventory/page.tsx
 10	12	app/layout.tsx
 2	2	components/side-navigation.tsx
@@ -50940,7 +50940,7 @@ Date:   2025-07-03T03:36:53+00:00
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
 270	854	app/account/page.tsx
-180	280	app/admin/dashboard/page.tsx
+180	280	app/sales/dashboard/page.tsx
 1	0	app/admin/inventory/page.tsx
 18	19	app/layout.tsx
 1	0	components/side-navigation.tsx
@@ -51076,7 +51076,7 @@ Date:   2025-07-02T09:01:10+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-265	242	app/admin/dashboard/page.tsx
+265	242	app/sales/dashboard/page.tsx
 
 commit d95b16c3d471062828bc357cc3a8876b0f663d9a
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -51090,7 +51090,7 @@ Date:   2025-07-02T08:58:23+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-267	252	app/admin/dashboard/page.tsx
+267	252	app/sales/dashboard/page.tsx
 4	10	app/register/page.tsx
 4	6	components/registration-success-dialog.tsx
 -	-	public/celebration.png
@@ -51981,7 +51981,7 @@ Date:   2025-07-02T02:18:34+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-10	1	app/admin/dashboard/page.tsx
+10	1	app/sales/dashboard/page.tsx
 
 commit 3aa5510c561266d546ff484a2c1604f730d11409
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -51995,7 +51995,7 @@ Date:   2025-07-02T02:16:07+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-21	2	app/admin/dashboard/page.tsx
+21	2	app/sales/dashboard/page.tsx
 17	2	tailwind.config.ts
 
 commit a8499bb7fb1b8b51cdbbda27ce499c9350568b1e
@@ -52024,7 +52024,7 @@ Date:   2025-07-02T02:08:11+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-2	5	app/admin/dashboard/page.tsx
+2	5	app/sales/dashboard/page.tsx
 2	0	tailwind.config.ts
 
 commit 6f5f459661013d2eb5d677d2da50b9385414d570
@@ -52045,7 +52045,7 @@ Date:   2025-07-02T02:00:29+00:00
 157	56	app/admin/access-management/page.tsx
 36	21	app/admin/chat-analytics/loading.tsx
 236	206	app/admin/chat-analytics/page.tsx
-18	38	app/admin/dashboard/page.tsx
+18	38	app/sales/dashboard/page.tsx
 23	14	app/admin/inventory/[id]/loading.tsx
 493	232	app/admin/inventory/[id]/page.tsx
 31	17	app/admin/inventory/edit/[id]/loading.tsx
@@ -52141,7 +52141,7 @@ Date:   2025-07-02T01:53:39+00:00
 56	157	app/admin/access-management/page.tsx
 21	36	app/admin/chat-analytics/loading.tsx
 206	236	app/admin/chat-analytics/page.tsx
-13	13	app/admin/dashboard/page.tsx
+13	13	app/sales/dashboard/page.tsx
 14	23	app/admin/inventory/[id]/loading.tsx
 232	493	app/admin/inventory/[id]/page.tsx
 17	31	app/admin/inventory/edit/[id]/loading.tsx
@@ -52230,7 +52230,7 @@ Date:   2025-07-02T01:50:02+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-16	16	app/admin/dashboard/page.tsx
+16	16	app/sales/dashboard/page.tsx
 
 commit 69d367f4800b3b55470759a8f12f1a97fa4ff643
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -52696,7 +52696,7 @@ Date:   2025-07-01T08:44:23+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-121	106	app/admin/dashboard/page.tsx
+121	106	app/sales/dashboard/page.tsx
 0	11	app/sales/dashboard/page.tsx
 75	31	components/fixed-header.tsx
 317	26	components/top-navigation.tsx
@@ -52714,7 +52714,7 @@ Date:   2025-07-01T08:41:49+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-36	59	app/admin/dashboard/page.tsx
+36	59	app/sales/dashboard/page.tsx
 13	49	app/sales/dashboard/page.tsx
 9	12	app/sales/layout.tsx
 0	25	components/sales-breadcrumb-header.tsx
@@ -52733,7 +52733,7 @@ Date:   2025-07-01T08:40:37+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-262	12	app/admin/dashboard/page.tsx
+262	12	app/sales/dashboard/page.tsx
 1666	21	app/sales/dashboard/page.tsx
 12	9	app/sales/layout.tsx
 25	0	components/sales-breadcrumb-header.tsx
@@ -52751,7 +52751,7 @@ Date:   2025-07-01T08:40:17+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-12	279	app/admin/dashboard/page.tsx
+12	279	app/sales/dashboard/page.tsx
 21	1619	app/sales/dashboard/page.tsx
 7	15	app/sales/layout.tsx
 0	30	components/sales-breadcrumb-header.tsx
@@ -52769,7 +52769,7 @@ Date:   2025-07-01T08:34:14+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-101	61	app/admin/dashboard/page.tsx
+101	61	app/sales/dashboard/page.tsx
 1	12	app/sales/dashboard/page.tsx
 15	7	app/sales/layout.tsx
 30	0	components/sales-breadcrumb-header.tsx
@@ -52787,7 +52787,7 @@ Date:   2025-07-01T08:30:36+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-100	120	app/admin/dashboard/page.tsx
+100	120	app/sales/dashboard/page.tsx
 11	0	app/sales/dashboard/page.tsx
 19	22	tailwind.config.ts
 
@@ -52803,7 +52803,7 @@ Date:   2025-07-01T08:26:01+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-19	6	app/admin/dashboard/page.tsx
+19	6	app/sales/dashboard/page.tsx
 
 commit 342f524c98bd7e869a1f0f634456688120836629
 Author: v0 <v0[bot]@users.noreply.github.com>
@@ -52817,7 +52817,7 @@ Date:   2025-07-01T08:22:07+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-41	19	app/admin/dashboard/page.tsx
+41	19	app/sales/dashboard/page.tsx
 1	1	tailwind.config.ts
 
 commit 667047f6a489fe765c6b15713e9cad121ab20eaf
@@ -52856,7 +52856,7 @@ Date:   2025-07-01T08:16:10+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-157	66	app/admin/dashboard/page.tsx
+157	66	app/sales/dashboard/page.tsx
 16	15	tailwind.config.ts
 
 commit 7aa8361bce6ad868c2dd1f629fb61e58bd428c9a
@@ -52865,13 +52865,13 @@ Date:   2025-07-01T08:14:03+00:00
 
     feat: remove department cards from admin dashboard
     
-    Update `app/admin/dashboard/page.tsx` to exclude department cards.
+    Update `app/sales/dashboard/page.tsx` to exclude department cards.
     
     #VERCEL_SKIP
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-66	157	app/admin/dashboard/page.tsx
+66	157	app/sales/dashboard/page.tsx
 15	16	tailwind.config.ts
 
 commit 34ab5f272a89ff53544c823743854dd8c38319f6
@@ -52880,7 +52880,7 @@ Date:   2025-07-01T08:12:01+00:00
 
     refactor: update department cards with verified config and data
     
-    Replace `tailwind.config.ts` and `app/admin/dashboard/page.tsx` for accurate department cards.
+    Replace `tailwind.config.ts` and `app/sales/dashboard/page.tsx` for accurate department cards.
     
     #VERCEL_SKIP
     
@@ -52908,7 +52908,7 @@ Date:   2025-07-01T08:08:24+00:00
 
     refactor: update department cards with exact config and data
     
-    Replace `tailwind.config.ts` and `app/admin/dashboard/page.tsx` for accurate department card display.
+    Replace `tailwind.config.ts` and `app/sales/dashboard/page.tsx` for accurate department card display.
     
     #VERCEL_SKIP
     
@@ -52920,7 +52920,7 @@ Date:   2025-07-01T08:00:44+00:00
 
     refactor: update admin dashboard to match screenshot details
     
-    Replace `tailwind.config.ts` and `app/admin/dashboard/page.tsx` with verified versions.
+    Replace `tailwind.config.ts` and `app/sales/dashboard/page.tsx` with verified versions.
     
     #VERCEL_SKIP
     
@@ -52962,8 +52962,8 @@ Date:   2025-07-01T07:53:57+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-1	32	app/admin/dashboard/loading.tsx
-184	132	app/admin/dashboard/page.tsx
+1	32	app/sales/dashboard/loading.tsx
+184	132	app/sales/dashboard/page.tsx
 199	187	app/admin/subscriptions/page.tsx
 158	64	app/login/page.tsx
 378	277	components/side-navigation.tsx
@@ -52982,8 +52982,8 @@ Date:   2025-07-01T07:52:13+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-32	1	app/admin/dashboard/loading.tsx
-132	184	app/admin/dashboard/page.tsx
+32	1	app/sales/dashboard/loading.tsx
+132	184	app/sales/dashboard/page.tsx
 187	199	app/admin/subscriptions/page.tsx
 64	158	app/login/page.tsx
 268	283	components/side-navigation.tsx
@@ -53049,7 +53049,7 @@ Date:   2025-07-01T07:41:39+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-3	0	app/admin/dashboard/loading.tsx
+3	0	app/sales/dashboard/loading.tsx
 0	0	app/admin/{ => dashboard}/page.tsx
 4	4	app/login/page.tsx
 2	2	components/side-navigation.tsx
@@ -53081,7 +53081,7 @@ Date:   2025-07-01T07:33:04+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-0	3	app/admin/dashboard/loading.tsx
+0	3	app/sales/dashboard/loading.tsx
 6	15	app/admin/layout.tsx
 122	118	app/admin/page.tsx
 3	5	components/fixed-header.tsx
@@ -53137,9 +53137,9 @@ commit a2aa2a70178808c2b78a4570a6c89731466908f6
 Author: v0 <v0[bot]@users.noreply.github.com>
 Date:   2025-07-01T07:14:21+00:00
 
-    feat: update admin route to /admin/dashboard
+    feat: update admin route to /sales/dashboard
     
-    Change admin link to /admin/dashboard and update page title.
+    Change admin link to /sales/dashboard and update page title.
     
     #VERCEL_SKIP
     
@@ -53205,7 +53205,7 @@ Date:   2025-07-01T06:54:53+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-0	225	app/admin/dashboard/page.tsx
+0	225	app/sales/dashboard/page.tsx
 224	3	app/admin/page.tsx
 
 commit 4b8e804ffcb19ed3c4a314a2d641249dc2ad3180
@@ -53220,8 +53220,8 @@ Date:   2025-07-01T06:52:09+00:00
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
-3	0	app/admin/dashboard/loading.tsx
-225	0	app/admin/dashboard/page.tsx
+3	0	app/sales/dashboard/loading.tsx
+225	0	app/sales/dashboard/page.tsx
 12	1	app/admin/layout.tsx
 3	359	app/admin/page.tsx
 133	0	components/side-navigation.tsx

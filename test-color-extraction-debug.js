@@ -6,14 +6,14 @@ async function testColorExtraction() {
     console.log('Testing color extraction with a sample logo...');
 
     // Test with one of the logo files
-    const imagePath = './public/oh-plus-logo.png';
+    const imagePath = 'public/boohk-logo.png';
     console.log('Reading image file:', imagePath);
 
     if (!fs.existsSync(imagePath)) {
       console.log('Image file not found, trying alternative paths...');
       const alternativePaths = [
-        './public/oh--company-logo.jpg',
-        './public/ohplus-new-logo.png',
+        'public/boohk-logo.png',
+        'public/boohk-logo.png',
         './public/placeholder-logo.svg'
       ];
 

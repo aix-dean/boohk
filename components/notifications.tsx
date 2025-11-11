@@ -77,7 +77,7 @@ export function Notifications({ config }: NotificationsProps) {
 
   if (loading) {
     return (
-      <div className={`rounded-[20px] p-3 text-gray-900 ${getGradientClasses()}`}>
+      <div className={`hidden rounded-[20px] p-3 text-gray-900 ${getGradientClasses()}`}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium">Updates Center</h3>
           {unreadCount > 0 && (
@@ -103,7 +103,7 @@ export function Notifications({ config }: NotificationsProps) {
   }
 
   return (
-    <div className={`rounded-[20px] p-3 text-gray-900 ${getGradientClasses()}`}>
+    <div className={`hidden rounded-[20px] p-3 text-gray-900 ${getGradientClasses()}`}>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-medium">Updates Center</h3>
         {unreadCount > 0 && (

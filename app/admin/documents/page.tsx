@@ -19,7 +19,7 @@ export default function AdminDocumentsPage() {
       <div className="flex flex-col gap-6">
         {/* Header with back button */}
         <div className="flex items-center gap-4">
-          <Link href="/admin/dashboard">
+          <Link href="/sales/dashboard">
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <ArrowLeft className="h-4 w-4" />
             </Button>

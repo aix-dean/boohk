@@ -9,7 +9,7 @@ import {
   sendPasswordResetEmail,
   type User as FirebaseUser,
 } from "firebase/auth"
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, Timestamp } from "firebase/firestore"
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, Timestamp, writeBatch } from "firebase/firestore"
 import { tenantAuth, auth, db, TENANT_ID } from "@/lib/firebase"
 import { generateLicenseKey } from "@/lib/utils"
 import { assignRoleToUser, getUserRoles, type RoleType } from "@/lib/hardcoded-access-service"
@@ -219,15 +219,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           // Create the user document with uid field
           const userDocRef = doc(db, "iboard_users", firebaseUser.uid)
-          await setDoc(
-            userDocRef,
-            {
-              ...fetchedUserData,
-              created: serverTimestamp(),
-              updated: serverTimestamp(),
-            },
-            { merge: true },
-          )
+          const userData = {
+            ...fetchedUserData,
+            created: serverTimestamp(),
+            updated: serverTimestamp(),
+          }
+
+          // Create wallet document atomically with user document
+          const walletDocRef = doc(db, "wallets", firebaseUser.uid)
+          const walletData = {
+            balance: 0,
+            created: serverTimestamp(),
+            seller_id: firebaseUser.uid,
+            seller_reference: userDocRef,
+            updated: serverTimestamp(),
+          }
+
+          // Use batch to create both documents atomically
+          const batch = writeBatch(db)
+          batch.set(userDocRef, userData, { merge: true })
+          batch.set(walletDocRef, walletData)
+          await batch.commit()
+
+          console.log("Basic user document created in iboard_users collection")
+          console.log("Wallet document created in wallets collection")
+          console.log("✅ Basic user and wallet documents creation completed successfully atomically")
         }
 
         console.log("Final fetchedUserData with roles:", fetchedUserData)
@@ -450,7 +466,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       let licenseKey = generateLicenseKey()
       let companyId = null
-      let assignedRole: RoleType = "admin" // Default to admin for new org creators
+      let assignedRoles: RoleType[] = ["sales", "it", "business", "accounting"] // Default roles for new org creators
       let invitationPermissions: string[] = [] // Initialize permissions array
       let invitationEmail: string = "" // Initialize invitation email
 
@@ -481,9 +497,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           invitationEmail = invitationData.invited_email || invitationData.email || ""
 
           if (invitationRole && ["admin", "sales", "logistics", "cms", "it", "business", "treasury", "accounting", "finance"].includes(invitationRole)) {
-            assignedRole = invitationRole as RoleType
+            assignedRoles = [invitationRole as RoleType]
           } else {
-            assignedRole = "sales" // Default fallback for invited users
+            assignedRoles = ["sales"] // Default fallback for invited users
           }
 
           console.log("=== INVITATION DATA DEBUG ===")
@@ -491,7 +507,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log("=== ROLE ASSIGNMENT DEBUG ===")
           console.log("Invitation role from data:", invitationData.role)
           console.log("Allowed roles check:", ["admin", "sales", "logistics", "cms", "it", "business", "treasury", "accounting", "finance"].includes(invitationData.role))
-          console.log("Assigned role from invitation:", assignedRole)
+          console.log("Assigned roles from invitation:", assignedRoles)
           console.log("Assigned permissions from invitation:", invitationPermissions)
           console.log("Invitation email:", invitationEmail)
           console.log("Available email fields in invitation:", {
@@ -517,7 +533,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log("Invitation code marked as used")
         } else {
           console.log("No invitation found for code:", orgCode)
-          assignedRole = "sales" // Default for invalid invitation codes
+          assignedRoles = ["sales"] // Default for invalid invitation codes
         }
 
         // Validate email matches invitation email if invitation has email
@@ -527,9 +543,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       console.log("=== FINAL ROLE ASSIGNMENT ===")
-      console.log("Creating user with role:", assignedRole)
-      console.log("Role type:", typeof assignedRole)
-      console.log("Role value:", assignedRole)
+      console.log("Creating user with roles:", assignedRoles)
+      console.log("Roles type:", typeof assignedRoles)
+      console.log("Roles value:", assignedRoles)
 
       // Create user document in iboard_users collection
       const userDocRef = doc(db, "iboard_users", firebaseUser.uid)
@@ -538,7 +554,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         uid: firebaseUser.uid,
         license_key: licenseKey,
         company_id: companyId,
-        role: assignedRole,
+        role: assignedRoles[0], // Primary role for backward compatibility
         permissions: invitationPermissions, // Use permissions from invitation code
         type: "OHPLUS",
         created: serverTimestamp(),
@@ -563,17 +579,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userData.company_id = firebaseUser.uid
       }
 
-      await setDoc(userDocRef, userData)
-      console.log("User document created in iboard_users collection")
-      console.log("✅ User document creation completed successfully")
-      console.log("Final user data that was saved:", userData)
+      // Create wallet document atomically with user document
+      const walletDocRef = doc(db, "wallets", firebaseUser.uid)
+      const walletData = {
+        balance: 0,
+        created: serverTimestamp(),
+        seller_id: firebaseUser.uid,
+        seller_reference: userDocRef,
+        updated: serverTimestamp(),
+      }
 
-      // Also assign the role to the user_roles collection
+      // Use batch to create both documents atomically
+      const batch = writeBatch(db)
+      batch.set(userDocRef, userData)
+      batch.set(walletDocRef, walletData)
+      await batch.commit()
+
+      console.log("User document created in iboard_users collection")
+      console.log("Wallet document created in wallets collection")
+      console.log("✅ User and wallet documents creation completed successfully atomically")
+      console.log("Final user data that was saved:", userData)
+      console.log("Final wallet data that was saved:", walletData)
+
+      // Also assign the roles to the user_roles collection
       try {
-        await assignRoleToUser(firebaseUser.uid, assignedRole, firebaseUser.uid)
-        console.log("Role assigned to user_roles collection:", assignedRole)
+        for (const role of assignedRoles) {
+          await assignRoleToUser(firebaseUser.uid, role, firebaseUser.uid)
+          console.log("Role assigned to user_roles collection:", role)
+        }
       } catch (roleError) {
-        console.error("Error assigning role to user_roles collection:", roleError)
+        console.error("Error assigning roles to user_roles collection:", roleError)
         // Don't fail registration if role assignment fails
       }
 
@@ -617,7 +652,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(firebaseUser)
       await fetchUserData(firebaseUser)
 
-      console.log("Registration completed successfully with role:", assignedRole)
+      console.log("Registration completed successfully with roles:", assignedRoles)
     } catch (error) {
       console.error("Error in AuthContext register:", error)
       setLoading(false)
@@ -786,46 +821,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null
     }
 
-    // Priority order: admin > it > sales > logistics > cms > business > treasury > accounting > finance
-    if (roles.includes("admin")) {
-      console.log("Admin role found, redirecting to admin dashboard")
-      return "/admin/dashboard"
-    }
-    if (roles.includes("it")) {
-      console.log("IT role found, redirecting to IT user management dashboard")
-      return "/it/user-management"
-    }
-    if (roles.includes("sales")) {
-      console.log("Sales role found, redirecting to sales dashboard")
-      return "/sales/dashboard"
-    }
-    if (roles.includes("logistics")) {
-      console.log("Logistics role found, redirecting to logistics dashboard")
-      return "/logistics/dashboard"
-    }
-    if (roles.includes("cms")) {
-      console.log("CMS role found, redirecting to cms dashboard")
-      return "/cms/dashboard"
-    }
-    if (roles.includes("business")) {
-      console.log("Business role found, redirecting to business dashboard")
-      return "/business"
-    }
-    if (roles.includes("treasury")) {
-      console.log("Treasury role found, redirecting to treasury dashboard")
-      return "/treasury"
-    }
-    if (roles.includes("accounting")) {
-      console.log("Accounting role found, redirecting to accounting dashboard")
-      return "/accounting"
-    }
-    if (roles.includes("finance")) {
-      console.log("Finance role found, redirecting to finance dashboard")
-      return "/finance"
-    }
-
-    console.log("No matching roles found, returning null")
-    return null
+    // Always redirect to sales dashboard regardless of roles
+    console.log("Redirecting to sales dashboard")
+    return "/sales/dashboard"
   }, [])
 
   // Debug function to check current user permissions

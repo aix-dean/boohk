@@ -16,10 +16,10 @@ interface DepartmentOption {
   color: string
 }
 
-const departmentMapping: Record<RoleType, DepartmentOption> = {
+const departmentMapping: Partial<Record<RoleType, DepartmentOption>> = {
   admin: {
     name: "Admin",
-    path: "/admin/dashboard",
+    path: "/sales/dashboard",
     role: "admin",
     color: "bg-purple-500"
   },
@@ -48,8 +48,8 @@ const departmentMapping: Record<RoleType, DepartmentOption> = {
     color: "bg-orange-500"
   },
   business: {
-    name: "Business",
-    path: "/business/dashboard",
+    name: "Business Dev",
+    path: "/business/inventory",
     role: "business",
     color: "bg-purple-500"
   },
@@ -119,7 +119,18 @@ export function DepartmentDropdown() {
   // Get accessible departments based on user roles
   const accessibleDepartments = userRoles
     .map(role => departmentMapping[role])
-    .filter(Boolean)
+    .filter((dept): dept is DepartmentOption => dept !== undefined)
+    .filter(dept => ['Sales', 'IT', 'Business Dev', 'Accounting'].includes(dept.name))
+    .sort((a, b) => {
+      // Prioritize Sales to be at the top
+      if (a.name === 'Sales') return -1
+      if (b.name === 'Sales') return 1
+      return 0
+    })
+
+  if (accessibleDepartments.length === 0) {
+    return null
+  }
 
   // Find current department based on pathname
   const currentDepartment = accessibleDepartments.find(dept =>
@@ -167,17 +178,12 @@ export function DepartmentDropdown() {
         ref={buttonRef}
         onClick={hasMultipleRoles ? handleButtonClick : undefined}
         disabled={!hasMultipleRoles}
-        className={cn(
-          "flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors text-white",
-          hasMultipleRoles
-            ? "bg-white/10 hover:bg-white/20 cursor-pointer"
-            : "bg-white/5 cursor-default"
-        )}
+        className="flex items-center gap-2 text-white font-semibold text-lg w-full"
       >
         <Building2 className="h-4 w-4" />
-        <span className="text-sm font-medium">{currentDepartment.name}</span>
+        <span>{currentDepartment.name}</span>
         {hasMultipleRoles && (
-          <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+          <ChevronDown className={cn("w-5 h-5 transition-transform", isOpen && "rotate-180")} />
         )}
       </button>
 

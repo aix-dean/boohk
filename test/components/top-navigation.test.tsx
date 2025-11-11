@@ -80,7 +80,7 @@ describe('TopNavigation', () => {
     })
 
     it('displays correct title for admin dashboard', () => {
-      mockUsePathname.mockReturnValue('/admin/dashboard')
+      mockUsePathname.mockReturnValue('/sales/dashboard')
       render(<TopNavigation />)
       const titleElement = screen.getByText('Dashboard')
       expect(titleElement).toBeInTheDocument()
@@ -105,7 +105,7 @@ describe('TopNavigation', () => {
     })
 
     it('applies admin background color for admin section', () => {
-      mockUsePathname.mockReturnValue('/admin/dashboard')
+      mockUsePathname.mockReturnValue('/sales/dashboard')
       render(<TopNavigation />)
       const nav = screen.getByRole('navigation')
       expect(nav).toHaveClass('bg-[#2a31b4]')

@@ -263,7 +263,7 @@ Boohk
   useEffect(() => {
     if (successDialogOpen) {
       const timer = setTimeout(() => {
-        router.push("/admin/dashboard")
+        router.push("/sales/dashboard")
       }, 3000) // 3 seconds delay
 
       return () => clearTimeout(timer)
