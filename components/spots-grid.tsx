@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { X } from "lucide-react"
+import { X, Loader2 } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogFooter } from "@/components/ui/dialog"
 import { useAuth } from "@/contexts/auth-context"
 import { db } from "@/lib/firebase"
-import { collection, query, where, getDocs } from "firebase/firestore"
+import { collection, query, where, getDocs, getDoc, updateDoc, doc } from "firebase/firestore"
 import type { Booking } from "@/lib/booking-service"
 import { formatBookingDates } from "@/lib/booking-service"
+import { createCMSContentDeployment } from "@/lib/cms-api"
+import { useToast } from "@/hooks/use-toast"
 
 interface Spot {
   id: string
@@ -32,12 +34,15 @@ interface SpotsGridProps {
   showSummary?: boolean
   bg?: boolean
   bookingRequests?: Booking[]
+  onBookingAccepted?: () => void
 }
 
-export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, productId, currentDate, router, selectedSpots, onSpotToggle, showSummary = true, bg = true, bookingRequests = [] }: SpotsGridProps) {
+export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, productId, currentDate, router, selectedSpots, onSpotToggle, showSummary = true, bg = true, bookingRequests = [], onBookingAccepted }: SpotsGridProps) {
   const { userData } = useAuth()
+  const { toast } = useToast()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
+  const [isAccepting, setIsAccepting] = useState(false)
   const [mediaError, setMediaError] = useState<string | null>(null)
   const [fallbackContent, setFallbackContent] = useState<React.JSX.Element | null>(null)
 
@@ -141,6 +146,81 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
   const handleSpotClick = (spotNumber: number) => {
     if (productId) {
       router?.push(`/sales/products/${productId}/spots/${spotNumber}`)
+    }
+  }
+
+  const handleAcceptBooking = async () => {
+    if (!selectedBooking) return
+
+    setIsAccepting(true)
+    try {
+      // Update booking to set for_screening = 1
+      await updateDoc(doc(db, "booking", selectedBooking.id), {
+        for_screening: 1,
+        updated: new Date()
+      })
+
+      toast({
+        title: "Booking accepted",
+        description: "The booking has been accepted and is now for screening."
+      })
+
+      // Fetch product data for CMS API
+      const productRef = doc(db, "products", productId!)
+      const productSnap = await getDoc(productRef)
+      const product: any = productSnap.exists() ? { id: productSnap.id, ...productSnap.data() } : null
+
+      if (product) {
+        // Call CMS API with booking and product data
+        // Construct basic parameters - this may need adjustment based on actual CMS requirements
+        const playerIds = ["24042e3027f34037a1af8ad3a46eab8c"]
+        const schedule = {
+          startDate: selectedBooking.start_date?.toDate?.()?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+          endDate: selectedBooking.end_date?.toDate?.()?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+          plans: [{
+            weekDays: [0,1,2,3,4,5,6], // All days
+            startTime: "00:00",
+            endTime: "23:59"
+          }]
+        }
+        const pages = selectedBooking.url ? [
+          {
+            name: `booking-${selectedBooking.id}-page`,
+            widgets: [
+              {
+                zIndex: 1,
+                type: "STREAM_MEDIA",
+                size: 12000,
+                md5: "placeholder-md5",
+                duration: 9000,
+                url: selectedBooking.url,
+                layout: {
+                  x: "0%",
+                  y: "0%",
+                  width: "100%",
+                  height: "100%"
+                }
+              }
+            ]
+          }
+        ] : []
+
+        await createCMSContentDeployment(playerIds, schedule, pages)
+      }
+
+      // Close dialog and refresh
+      setIsDialogOpen(false)
+      setSelectedBooking(null)
+      onBookingAccepted?.()
+    } catch (error) {
+      console.error("Error accepting booking:", error)
+      toast({
+        title: "Error",
+        description: "Failed to accept the booking. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsAccepting(false)
     }
   }
 
@@ -500,7 +580,9 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
             )}
             <DialogFooter>
               <Button variant="outline" className="w-[90px] h-[24px] px-[29px] rounded-[6px] border-[1.5px] border-[#C4C4C4] bg-white">Decline</Button>
-              <Button className="w-[90px] h-[24px] rounded-[6.024px] bg-[#30C71D]">Accept</Button>
+              <Button onClick={handleAcceptBooking} disabled={isAccepting} className="w-[120px] h-[24px] rounded-[6.024px] bg-[#30C71D]">
+                {isAccepting ? <><Loader2 className="animate-spin mr-1 h-4 w-4" />Accepting...</> : "Accept"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

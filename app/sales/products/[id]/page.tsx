@@ -920,7 +920,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     }
 
     fetchCurrentDayBookings()
-  }, [params.id])
+  }, [paramsData.id])
 
   // Fetch booking requests (pending bookings) for this product
   useEffect(() => {
@@ -1497,6 +1497,40 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 currentDate={currentDate}
                 router={router}
                 bookingRequests={bookingRequests}
+                onBookingAccepted={() => {
+                  // Refresh booking requests
+                  const fetchBookingRequests = async () => {
+                    setBookingRequestsLoading(true)
+                    try {
+                      const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
+                      const bookingRequestsQuery = query(
+                        collection(db, "booking"),
+                        where("seller_id", "==", userData?.uid),
+                        where("for_censorship", "==", 1),
+                        where("product_id", "==", productId),
+                        orderBy("created", "desc")
+                      )
+                      const bookingRequestsSnapshot = await getDocs(bookingRequestsQuery)
+                      const allBookingRequests: Booking[] = []
+
+                      bookingRequestsSnapshot.forEach((doc) => {
+                        const bookingData = doc.data() as any
+                        allBookingRequests.push({
+                          id: doc.id,
+                          ...bookingData,
+                        } as Booking)
+                      })
+
+                      setBookingRequests(allBookingRequests)
+                    } catch (error) {
+                      console.error("Error fetching booking requests:", error)
+                    } finally {
+                      setBookingRequestsLoading(false)
+                    }
+                  }
+
+                  fetchBookingRequests()
+                }}
               />
             </div>
           )}
