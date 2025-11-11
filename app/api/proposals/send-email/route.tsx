@@ -2,8 +2,6 @@ import { type NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
 import { generateProposalPDF } from "@/lib/pdf-service"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 // Function to convert image URL to base64 data URI
 async function imageUrlToDataUri(imageUrl: string): Promise<string | null> {
   try {
@@ -153,6 +151,8 @@ export async function POST(request: NextRequest) {
       console.error("RESEND_API_KEY not found in environment variables")
       return NextResponse.json({ error: "Email service not configured" }, { status: 500 })
     }
+
+    const resend = new Resend(process.env.RESEND_API_KEY)
 
     let formData
     try {

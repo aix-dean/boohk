@@ -81,7 +81,6 @@ export interface ReportData {
   siteImageUrl?: string
   logistics_report?: string
   reservation_number?: string
-  booking_id?: string
 }
 
 // Helper function to clean data by removing undefined values recursively
@@ -634,6 +633,37 @@ export async function getLatestReportsByBookingIds(bookingIds: string[]): Promis
     return reportsMap
   } catch (error) {
     console.error("Error fetching latest reports by booking IDs:", error)
+    throw error
+  }
+}
+
+export async function getReportsPerBooking(companyId: string): Promise<{ [bookingId: string]: ReportData[] }> {
+  try {
+    const q = query(collection(db, "reports"), where("companyId", "==", companyId), orderBy("created", "desc"))
+    const querySnapshot = await getDocs(q)
+
+    const reportsMap: { [bookingId: string]: ReportData[] } = {}
+
+    querySnapshot.docs.forEach((doc) => {
+      const data = doc.data()
+      const report: ReportData = {
+        id: doc.id,
+        ...data,
+        attachments: Array.isArray(data.attachments) ? data.attachments : [],
+      } as ReportData
+
+      // Group reports by booking_id
+      if (report.booking_id) {
+        if (!reportsMap[report.booking_id]) {
+          reportsMap[report.booking_id] = []
+        }
+        reportsMap[report.booking_id].push(report)
+      }
+    })
+
+    return reportsMap
+  } catch (error) {
+    console.error("Error fetching reports per booking:", error)
     throw error
   }
 }

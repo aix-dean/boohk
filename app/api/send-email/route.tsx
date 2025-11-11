@@ -3,8 +3,6 @@ import { Resend } from "resend"
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 // Gmail compatibility utilities
 interface EmailDomainInfo {
   domain: string
@@ -696,6 +694,12 @@ async function fetchUserData(userEmail: string) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error("RESEND_API_KEY environment variable is not set")
+    }
+
+    const resend = new Resend(process.env.RESEND_API_KEY)
+
     // Parse FormData
     const formData = await request.formData()
 
