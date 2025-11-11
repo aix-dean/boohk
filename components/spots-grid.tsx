@@ -37,20 +37,14 @@ interface SpotsGridProps {
   onBookingAccepted?: () => void
 }
 
-export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, productId, currentDate, router, selectedSpots, onSpotToggle, showSummary = true, bg = true, bookingRequests = [], onBookingAccepted }: SpotsGridProps) {
-  const { userData } = useAuth()
-  const { toast } = useToast()
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
-  const [isAccepting, setIsAccepting] = useState(false)
+interface MediaPlayerProps {
+  url?: string
+  className?: string
+}
+
+const MediaPlayer: React.FC<MediaPlayerProps> = ({ url, className = "w-full h-full object-contain rounded-[10px]" }) => {
   const [mediaError, setMediaError] = useState<string | null>(null)
   const [fallbackContent, setFallbackContent] = useState<React.JSX.Element | null>(null)
-
-  // Reset media error when booking changes
-  useEffect(() => {
-    setMediaError(null)
-    setFallbackContent(null)
-  }, [selectedBooking])
 
   // URL validation function
   const isValidUrl = (url: string): boolean => {
@@ -93,7 +87,9 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
       return 'embed'
     }
 
-    const extension = url.split('.').pop()?.toLowerCase()
+    // Remove query parameters and extract extension
+    const urlWithoutQuery = url.split('?')[0]
+    const extension = urlWithoutQuery.split('.').pop()?.toLowerCase()
     switch (extension) {
       case 'mp4':
         return 'video/mp4'
@@ -142,6 +138,166 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
         return undefined
     }
   }
+
+  if (!url) {
+    return <p className="text-gray-500 text-center">No media URL available</p>
+  }
+
+  if (!isValidUrl(url)) {
+    return <p className="text-red-500 text-center">Invalid media URL</p>
+  }
+
+  if (mediaError) {
+    return (
+      <div className="text-center">
+        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <p className="mt-2 text-sm text-gray-600">{mediaError}</p>
+        {fallbackContent}
+      </div>
+    )
+  }
+
+  const mimeType = getMimeType(url)
+
+  if (mimeType === 'embed') {
+    if (isYouTubeUrl(url)) {
+      const videoId = getYouTubeVideoId(url)
+      if (videoId) {
+        return (
+          <iframe
+            src={`https://www.youtube.com/embed/${videoId}`}
+            className={className}
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            onLoad={() => {
+              setMediaError(null)
+              setFallbackContent(null)
+            }}
+            onError={() => {
+              setMediaError('Failed to load YouTube video')
+              setFallbackContent(<p className="text-xs text-gray-500 mt-1">Check the YouTube URL</p>)
+            }}
+          />
+        )
+      }
+    } else if (isVimeoUrl(url)) {
+      const videoId = getVimeoVideoId(url)
+      if (videoId) {
+        return (
+          <iframe
+            src={`https://player.vimeo.com/video/${videoId}`}
+            className={className}
+            frameBorder="0"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+            onLoad={() => {
+              setMediaError(null)
+              setFallbackContent(null)
+            }}
+            onError={() => {
+              setMediaError('Failed to load Vimeo video')
+              setFallbackContent(<p className="text-xs text-gray-500 mt-1">Check the Vimeo URL</p>)
+            }}
+          />
+        )
+      }
+    }
+    // Fallback for unrecognized embed URLs
+    return (
+      <div className="text-center">
+        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+        </svg>
+        <p className="mt-2 text-sm text-gray-600">Unsupported embed URL</p>
+        <p className="text-xs text-gray-500 mt-1">Only YouTube and Vimeo embeds are supported</p>
+      </div>
+    )
+  } else if (mimeType?.startsWith('video/')) {
+    return (
+      <video
+        controls
+        autoPlay
+        preload="metadata"
+        className={className}
+        onError={(e) => {
+          const target = e.target as HTMLVideoElement
+          let errorMessage = 'Video failed to load'
+          let fallback = null
+
+          if (target.error) {
+            switch (target.error.code) {
+              case MediaError.MEDIA_ERR_ABORTED:
+                errorMessage = 'Video loading was aborted'
+                break
+              case MediaError.MEDIA_ERR_NETWORK:
+                errorMessage = 'Network error while loading video'
+                fallback = <p className="text-xs text-gray-500 mt-1">Check your internet connection</p>
+                break
+              case MediaError.MEDIA_ERR_DECODE:
+                errorMessage = 'Video format not supported by your browser'
+                fallback = <p className="text-xs text-gray-500 mt-1">Try a different browser or format</p>
+                break
+              case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                errorMessage = 'Video source not supported'
+                fallback = <p className="text-xs text-gray-500 mt-1">Unsupported video format</p>
+                break
+              default:
+                errorMessage = 'Unknown video error'
+                break
+            }
+          }
+
+          setMediaError(errorMessage)
+          setFallbackContent(fallback)
+        }}
+        onLoadedData={() => {
+          setMediaError(null)
+          setFallbackContent(null)
+        }}
+      >
+        <source src={url} type={mimeType} />
+        Your browser does not support the video tag.
+      </video>
+    )
+  } else if (mimeType?.startsWith('image/')) {
+    return (
+      <img
+        src={url}
+        alt="Media content"
+        className={className}
+        onError={() => {
+          setMediaError('Image failed to load')
+          setFallbackContent(<p className="text-xs text-gray-500 mt-1">Check the image URL or format</p>)
+        }}
+        onLoad={() => {
+          setMediaError(null)
+          setFallbackContent(null)
+        }}
+      />
+    )
+  } else {
+    return (
+      <div className="text-center">
+        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+        </svg>
+        <p className="mt-2 text-sm text-gray-600">Unsupported media type</p>
+        <p className="text-xs text-gray-500 mt-1">Supported: videos, images, YouTube, Vimeo</p>
+      </div>
+    )
+  }
+}
+
+export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, productId, currentDate, router, selectedSpots, onSpotToggle, showSummary = true, bg = true, bookingRequests = [], onBookingAccepted }: SpotsGridProps) {
+  const { userData } = useAuth()
+  const { toast } = useToast()
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
+  const [isAccepting, setIsAccepting] = useState(false)
+
 
   const handleSpotClick = (spotNumber: number) => {
     if (productId) {
@@ -405,175 +561,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
                 <div className="w-[320px] space-y-2">
                   <label className="text-sm font-medium">Content</label>
                   <div className="h-[320px] flex-shrink-0 rounded-[10px] bg-gray-100 flex items-center justify-center">
-                    {(() => {
-                      const mediaUrl = selectedBooking.url;
-                      console.log('Video media_url:', mediaUrl);
-                      console.log('selectedBooking:', selectedBooking);
-
-                      if (!mediaUrl) {
-                        return <p className="text-gray-500 text-center">No media URL available</p>;
-                      }
-
-                      if (!isValidUrl(mediaUrl)) {
-                        return <p className="text-red-500 text-center">Invalid media URL</p>;
-                      }
-
-                      if (mediaError) {
-                        return (
-                          <div className="text-center">
-                            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <p className="mt-2 text-sm text-gray-600">{mediaError}</p>
-                            {fallbackContent}
-                          </div>
-                        );
-                      }
-
-                      const mimeType = getMimeType(mediaUrl);
-
-                      if (mimeType === 'embed') {
-                        if (isYouTubeUrl(mediaUrl)) {
-                          const videoId = getYouTubeVideoId(mediaUrl);
-                          if (videoId) {
-                            return (
-                              <iframe
-                                src={`https://www.youtube.com/embed/${videoId}`}
-                                className="w-full h-full rounded-[10px]"
-                                frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                                onLoad={() => {
-                                  console.log('YouTube iframe loaded:', mediaUrl);
-                                  setMediaError(null);
-                                  setFallbackContent(null);
-                                }}
-                                onError={() => {
-                                  console.error('YouTube iframe failed to load:', mediaUrl);
-                                  setMediaError('Failed to load YouTube video');
-                                  setFallbackContent(<p className="text-xs text-gray-500 mt-1">Check the YouTube URL</p>);
-                                }}
-                              />
-                            );
-                          }
-                        } else if (isVimeoUrl(mediaUrl)) {
-                          const videoId = getVimeoVideoId(mediaUrl);
-                          if (videoId) {
-                            return (
-                              <iframe
-                                src={`https://player.vimeo.com/video/${videoId}`}
-                                className="w-full h-full rounded-[10px]"
-                                frameBorder="0"
-                                allow="autoplay; fullscreen; picture-in-picture"
-                                allowFullScreen
-                                onLoad={() => {
-                                  console.log('Vimeo iframe loaded:', mediaUrl);
-                                  setMediaError(null);
-                                  setFallbackContent(null);
-                                }}
-                                onError={() => {
-                                  console.error('Vimeo iframe failed to load:', mediaUrl);
-                                  setMediaError('Failed to load Vimeo video');
-                                  setFallbackContent(<p className="text-xs text-gray-500 mt-1">Check the Vimeo URL</p>);
-                                }}
-                              />
-                            );
-                          }
-                        }
-                        // Fallback for unrecognized embed URLs
-                        return (
-                          <div className="text-center">
-                            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                            </svg>
-                            <p className="mt-2 text-sm text-gray-600">Unsupported embed URL</p>
-                            <p className="text-xs text-gray-500 mt-1">Only YouTube and Vimeo embeds are supported</p>
-                          </div>
-                        );
-                      } else if (mimeType?.startsWith('video/')) {
-                        return (
-                          <video
-                            controls
-                            autoPlay
-                            preload="metadata"
-                            className="w-full h-full object-contain rounded-[10px]"
-                            onError={(e) => {
-                              console.error('Video failed to load:', mediaUrl, e);
-                              const target = e.target as HTMLVideoElement;
-                              console.log('Video error details:', target.error);
-
-                              let errorMessage = 'Video failed to load';
-                              let fallback = null;
-
-                              if (target.error) {
-                                switch (target.error.code) {
-                                  case MediaError.MEDIA_ERR_ABORTED:
-                                    errorMessage = 'Video loading was aborted';
-                                    break;
-                                  case MediaError.MEDIA_ERR_NETWORK:
-                                    errorMessage = 'Network error while loading video';
-                                    fallback = <p className="text-xs text-gray-500 mt-1">Check your internet connection</p>;
-                                    break;
-                                  case MediaError.MEDIA_ERR_DECODE:
-                                    errorMessage = 'Video format not supported by your browser';
-                                    fallback = <p className="text-xs text-gray-500 mt-1">Try a different browser or format</p>;
-                                    break;
-                                  case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                                    errorMessage = 'Video source not supported';
-                                    fallback = <p className="text-xs text-gray-500 mt-1">Unsupported video format</p>;
-                                    break;
-                                  default:
-                                    errorMessage = 'Unknown video error';
-                                    break;
-                                }
-                              }
-
-                              setMediaError(errorMessage);
-                              setFallbackContent(fallback);
-                            }}
-                            onLoadStart={() => console.log('Video load started:', mediaUrl)}
-                            onLoadedData={() => {
-                              console.log('Video loaded data:', mediaUrl);
-                              setMediaError(null);
-                              setFallbackContent(null);
-                            }}
-                            onCanPlay={() => console.log('Video can play:', mediaUrl)}
-                          >
-                            <source src={mediaUrl} type={mimeType} />
-                            Your browser does not support the video tag.
-                          </video>
-                        );
-                      } else if (mimeType?.startsWith('image/')) {
-                        return (
-                          <Image
-                            src={mediaUrl}
-                            alt="Booking content"
-                            fill
-                            className="object-contain rounded-[10px]"
-                            onError={() => {
-                              console.error('Image failed to load:', mediaUrl);
-                              setMediaError('Image failed to load');
-                              setFallbackContent(<p className="text-xs text-gray-500 mt-1">Check the image URL or format</p>);
-                            }}
-                            onLoad={() => {
-                              console.log('Image loaded:', mediaUrl);
-                              setMediaError(null);
-                              setFallbackContent(null);
-                            }}
-                          />
-                        );
-                      } else {
-                        return (
-                          <div className="text-center">
-                            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                            </svg>
-                            <p className="mt-2 text-sm text-gray-600">Unsupported media type</p>
-                            <p className="text-xs text-gray-500 mt-1">Supported: videos, images, YouTube, Vimeo</p>
-                          </div>
-                        );
-                      }
-                    })()}
+                    <MediaPlayer url={selectedBooking.url} />
                   </div>
                 </div>
               </div>

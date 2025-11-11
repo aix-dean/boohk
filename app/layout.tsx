@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   title: "Boohk",
   description: "Manage your outdoor advertising sites",
   icons: {
-    icon: "public/boohk-logo.png",
+    icon: "/boohk-logo.png",
   },
   generator: "v0.dev",
 }
