@@ -36,6 +36,7 @@ import { getAllQuotations, type Quotation } from "@/lib/quotation-service"
 import { getAllJobOrders, type JobOrder } from "@/lib/job-order-service"
 import { getReportsByProductId, getLatestReportsByBookingIds, type ReportData } from "@/lib/report-service"
 import type { Booking } from "@/lib/booking-service"
+import { formatBookingDates } from "@/lib/booking-service"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
 import { loadGoogleMaps } from "@/lib/google-maps-loader"
@@ -549,6 +550,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [spotSelectionSpotsData, setSpotSelectionSpotsData] = useState<Record<string, any>>({})
   const [spotSelectionCurrentDate, setSpotSelectionCurrentDate] = useState("")
   const [spotSelectionType, setSpotSelectionType] = useState<"quotation" | "cost-estimate">("quotation")
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false)
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
+  const [bookingRequests, setBookingRequests] = useState<Booking[]>([])
+  const [bookingRequestsLoading, setBookingRequestsLoading] = useState(false)
 
   const currentDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
@@ -637,27 +642,37 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       if (!paramsData.id || activeTab !== "booking-summary") return
 
       setBookingsLoading(true)
+      setBookings([])
       try {
         const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
+        console.log('🔍 DEBUG fetchBookings: userData?.uid:', userData?.uid, 'productId:', productId)
         const bookingsQuery = query(
           collection(db, "booking"),
+          where("seller_id", "==", userData?.uid),
+          where("for_censorship", "==", 1),
           where("product_id", "==", productId),
           orderBy("created", "desc")
         )
+        console.log('🔍 DEBUG fetchBookings: Executing query with filters - seller_id:', userData?.uid, 'for_censorship: 2, product_id:', productId)
         const bookingsSnapshot = await getDocs(bookingsQuery)
+        console.log('🔍 DEBUG fetchBookings: Query returned', bookingsSnapshot.size, 'documents')
         const allBookings: Booking[] = []
 
         bookingsSnapshot.forEach((doc) => {
+          const bookingData = doc.data() as any
+          console.log('🔍 DEBUG fetchBookings: Booking id:', doc.id, 'reservation_id:', bookingData.reservation_id, 'seller_id:', bookingData.seller_id, 'for_censorship:', bookingData.for_censorship, 'product_id:', bookingData.product_id)
           allBookings.push({
             id: doc.id,
-            ...doc.data(),
+            ...bookingData,
           } as Booking)
         })
 
+        console.log('🔍 DEBUG fetchBookings: Total allBookings after processing:', allBookings.length)
         setBookingsTotal(allBookings.length)
         const offset = (bookingsPage - 1) * itemsPerPage
         const paginatedBookings = allBookings.slice(offset, offset + itemsPerPage)
         setBookings(paginatedBookings)
+        console.log('🔍 DEBUG fetchBookings: Paginated bookings for page', bookingsPage, ':', paginatedBookings.map(b => ({ id: b.id, reservation_id: b.reservation_id })))
       } catch (error) {
         console.error("Error fetching bookings:", error)
       } finally {
@@ -872,6 +887,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         // Query bookings where start_date <= today <= end_date and status is active
         const bookingsQuery = query(
           collection(db, "booking"),
+          where("seller_id", "==", userData?.uid),
+          where("for_censorship", "==", 2),
           where("product_id", "==", productId),
           where("status", "in", ["RESERVED", "COMPLETED"])
         )
@@ -903,7 +920,49 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     }
 
     fetchCurrentDayBookings()
-  }, [params.id])
+  }, [paramsData.id])
+
+  // Fetch booking requests (pending bookings) for this product
+  useEffect(() => {
+    const fetchBookingRequests = async () => {
+      if (!paramsData.id || paramsData.id === "new") return
+
+      setBookingRequestsLoading(true)
+      try {
+        const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
+        console.log('🔍 DEBUG fetchBookingRequests: userData?.uid:', userData?.uid, 'productId:', productId)
+        const bookingRequestsQuery = query(
+          collection(db, "booking"),
+          where("seller_id", "==", userData?.uid),
+          where("for_censorship", "==", 1), // Pending requests
+          where("product_id", "==", productId),
+          orderBy("created", "desc")
+        )
+        console.log('🔍 DEBUG fetchBookingRequests: Executing query with filters - seller_id:', userData?.uid, 'for_censorship: 1, product_id:', productId)
+        const bookingRequestsSnapshot = await getDocs(bookingRequestsQuery)
+        console.log('🔍 DEBUG fetchBookingRequests: Query returned', bookingRequestsSnapshot.size, 'documents')
+        const allBookingRequests: Booking[] = []
+
+        bookingRequestsSnapshot.forEach((doc) => {
+          const bookingData = doc.data() as any
+          console.log('🔍 DEBUG fetchBookingRequests: Booking id:', doc.id, 'reservation_id:', bookingData.reservation_id, 'seller_id:', bookingData.seller_id, 'for_censorship:', bookingData.for_censorship, 'product_id:', bookingData.product_id)
+          allBookingRequests.push({
+            id: doc.id,
+            ...bookingData,
+          } as Booking)
+        })
+
+        console.log('🔍 DEBUG fetchBookingRequests: Total allBookingRequests after processing:', allBookingRequests.length)
+        setBookingRequests(allBookingRequests)
+      } catch (error) {
+        console.error("Error fetching booking requests:", error)
+      } finally {
+        setBookingRequestsLoading(false)
+      }
+    }
+
+    fetchBookingRequests()
+  }, [paramsData.id])
 
   // Fetch latest reports for current day bookings
   useEffect(() => {
@@ -1437,6 +1496,41 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 productId={paramsData.id}
                 currentDate={currentDate}
                 router={router}
+                bookingRequests={bookingRequests}
+                onBookingAccepted={() => {
+                  // Refresh booking requests
+                  const fetchBookingRequests = async () => {
+                    setBookingRequestsLoading(true)
+                    try {
+                      const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
+                      const bookingRequestsQuery = query(
+                        collection(db, "booking"),
+                        where("seller_id", "==", userData?.uid),
+                        where("for_censorship", "==", 1),
+                        where("product_id", "==", productId),
+                        orderBy("created", "desc")
+                      )
+                      const bookingRequestsSnapshot = await getDocs(bookingRequestsQuery)
+                      const allBookingRequests: Booking[] = []
+
+                      bookingRequestsSnapshot.forEach((doc) => {
+                        const bookingData = doc.data() as any
+                        allBookingRequests.push({
+                          id: doc.id,
+                          ...bookingData,
+                        } as Booking)
+                      })
+
+                      setBookingRequests(allBookingRequests)
+                    } catch (error) {
+                      console.error("Error fetching booking requests:", error)
+                    } finally {
+                      setBookingRequestsLoading(false)
+                    }
+                  }
+
+                  fetchBookingRequests()
+                }}
               />
             </div>
           )}
@@ -1454,110 +1548,64 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </TabsList>
             </div>
 
-            <TabsContent value="booking-summary" className="mt-0">
+            <TabsContent key={productId} value="booking-summary" className="mt-0">
+              {(() => { console.log('Current bookings state in render:', bookings); return null; })()}
               <Card className="rounded-xl shadow-sm border-none px-4">
-                <CardContent className="p-0">
+                <CardContent className="pb-4 overflow-x-auto">
                   {bookingsLoading ? (
-                    <div className="text-center py-8">
+                    <div className="p-8 text-center">
                       <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
                       <p className="text-gray-500">Loading bookings...</p>
                     </div>
-                  ) : bookings.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <p>No bookings found for this site.</p>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="grid grid-cols-7 gap-4 p-4 bg-white border-b border-gray-200 text-xs sm:text-sm font-medium text-gray-700">
-                        <div className="flex items-center text-center break-all min-w-0">Date</div>
-                        <div className="flex items-center text-center break-all min-w-0">Reservation ID</div>
-                        <div className="flex items-center text-center break-all min-w-0">Client</div>
-                        <div className="flex items-center text-center break-all min-w-0">Project Name</div>
-                        <div className="flex items-center text-center break-all min-w-0">Price</div>
-                        <div className="flex items-center text-center break-all min-w-0">Total</div>
-                        <div className="flex items-center text-center break-all min-w-0">Status</div>
-                      </div>
-
-                      <div className="space-y-2 pb-4 overflow-x-auto">
-                        {bookings.map((booking, index) => {
-                          const getStatusLabel = (status: string) => {
-                            switch (status?.toUpperCase()) {
-                              case "COMPLETED":
-                                return "Completed"
-                              case "RESERVED":
-                                return "Ongoing"
-                              default:
-                                return status || "Not Set"
-                            }
-                          }
-
-                          const getStatusBadge = (status: string) => {
-                            const label = getStatusLabel(status)
-                            if (label === "Completed") {
-                              return <div className="text-[#30C71D]">Completed</div>
-                            } else if (label === "Ongoing") {
-                              return <div className="text-[#00D0FF]">Ongoing</div>
-                            } else {
-                              return <div variant="outline">{label}</div>
-                            }
-                          }
-
-                          return (
-                            <div key={booking.id} className={`grid grid-cols-7 gap-4 p-4 text-xs sm:text-sm bg-[#F6F9FF] border-2 border-[#B8D9FF] rounded-[10px] hover:bg-gray-50 cursor-pointer transition-colors ${index === 0 ? 'mt-4' : ''}`} onClick={() => router.push(`/sales/reservation/${booking.id}`)}>
-                              <div className="flex items-center text-center break-all min-w-0 text-gray-600">
-                                {booking.start_date ? formatFirebaseDate(booking.start_date) : "N/A"} to
-                                <br />
-                                {booking.end_date ? formatFirebaseDate(booking.end_date) : "N/A"}
+                  ) : bookings.length > 0 ? (
+                    <>
+                      <div className="space-y-4 p-4">
+                        {bookings.map((booking) => (
+                          <Card key={booking.id} className="cursor-pointer" onClick={() => { setSelectedBooking(booking); setBookingDialogOpen(true); }}>
+                            <CardContent className="p-4">
+                              <div className="flex justify-between items-center">
+                                <div className="font-medium text-gray-900">BK#{booking.reservation_id || booking.id.slice(-8)}</div>
+                                <div className="text-gray-600">{formatBookingDates(booking.start_date, booking.end_date)}</div>
+                                <div className="font-semibold text-gray-900">P{booking.total_cost}</div>
                               </div>
-                              <div className="flex items-center text-center break-all min-w-0 text-gray-900">{booking.reservation_id || booking.id}</div>
-                              <div className="flex items-center text-center break-all min-w-0 text-gray-900">{booking.client?.name || "N/A"}</div>
-                              <div className="flex items-center text-center break-all min-w-0 text-gray-900">{booking.project_name || booking.product_name || "N/A"}</div>
-                              <div className="flex items-center text-center break-all min-w-0 text-gray-900">
-                                ₱{booking.costDetails?.pricePerMonth?.toLocaleString() || "0"}/month
-                                <br />
-                              </div>
-                              <div className="flex items-center text-center break-all min-w-0 text-gray-900">₱{booking.total_cost?.toLocaleString() || "0"}</div>
-                              <div className="flex items-center text-center break-all min-w-0">
-                                {getStatusBadge(booking.status)}
-                              </div>
-                            </div>
-                          )
-                        })}
+                            </CardContent>
+                          </Card>
+                        ))}
                       </div>
-                    </div>
-                  )}
+                  
+                      {bookingsTotal > itemsPerPage && (
+                        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+                          <div className="text-sm text-gray-700">
+                            Showing {((bookingsPage - 1) * itemsPerPage) + 1} to {Math.min(bookingsPage * itemsPerPage, bookingsTotal)} of {bookingsTotal} bookings
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setBookingsPage(prev => Math.max(1, prev - 1))}
+                              disabled={bookingsPage === 1}
+                            >
+                              Previous
+                            </Button>
+                            <span className="text-sm text-gray-600">
+                              Page {bookingsPage} of {Math.ceil(bookingsTotal / itemsPerPage)}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setBookingsPage(prev => Math.min(Math.ceil(bookingsTotal / itemsPerPage), prev + 1))}
+                              disabled={bookingsPage === Math.ceil(bookingsTotal / itemsPerPage)}
+                            >
+                              Next
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : null}
 
-                  {/* Pagination */}
-                  {bookingsTotal > itemsPerPage && (
-                    <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-                      <div className="text-sm text-gray-700">
-                        Showing {((bookingsPage - 1) * itemsPerPage) + 1} to {Math.min(bookingsPage * itemsPerPage, bookingsTotal)} of {bookingsTotal} bookings
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setBookingsPage(prev => Math.max(1, prev - 1))}
-                          disabled={bookingsPage === 1}
-                        >
-                          Previous
-                        </Button>
-                        <span className="text-sm text-gray-600">
-                          Page {bookingsPage} of {Math.ceil(bookingsTotal / itemsPerPage)}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setBookingsPage(prev => Math.min(Math.ceil(bookingsTotal / itemsPerPage), prev + 1))}
-                          disabled={bookingsPage === Math.ceil(bookingsTotal / itemsPerPage)}
-                        >
-                          Next
-                        </Button>
-                      </div>
-                    </div>
-                  )}
                 
-              
+               
                 </CardContent>
                 </Card>
             </TabsContent>
@@ -2070,6 +2118,34 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         type={spotSelectionType}
         nonDynamicSites={[]}
       />
+      <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Booking Details</DialogTitle>
+          </DialogHeader>
+          {selectedBooking && (
+            <div className="space-y-4">
+              <div>
+                <label className="font-medium">Booking Code:</label>
+                <p>BK#{selectedBooking.reservation_id || selectedBooking.id.slice(-8)}</p>
+              </div>
+              <div>
+                <label className="font-medium">Dates:</label>
+                <p>{formatBookingDates(selectedBooking.start_date, selectedBooking.end_date)}</p>
+              </div>
+              <div>
+                <label className="font-medium">Price:</label>
+                <p>P{selectedBooking.total_cost}</p>
+              </div>
+              <div>
+                <label className="font-medium">Client:</label>
+                <p>{selectedBooking.client?.name || 'N/A'}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
+
