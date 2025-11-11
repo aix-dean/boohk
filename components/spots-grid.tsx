@@ -329,7 +329,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
       if (product) {
         // Call CMS API with booking and product data
         // Construct basic parameters - this may need adjustment based on actual CMS requirements
-        const playerIds = ["24042e3027f34037a1af8ad3a46eab8c"]
+        const playerIds = product.playerIds
         const schedule = {
           startDate: selectedBooking.start_date?.toDate?.()?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
           endDate: selectedBooking.end_date?.toDate?.()?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
