@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogFooter } from "@/components/ui/dialog"
 import { useAuth } from "@/contexts/auth-context"
 import { db } from "@/lib/firebase"
-import { collection, query, where, getDocs, getDoc, updateDoc, doc } from "firebase/firestore"
+import { collection, query, where, getDocs, getDoc, updateDoc, doc, addDoc, serverTimestamp, orderBy, limit } from "firebase/firestore"
 import type { Booking } from "@/lib/booking-service"
 import { formatBookingDates } from "@/lib/booking-service"
 import { createCMSContentDeployment } from "@/lib/cms-api"
@@ -327,16 +327,44 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
       const product: any = productSnap.exists() ? { id: productSnap.id, ...productSnap.data() } : null
 
       if (product) {
+        // Query the latest playlist for this product and playerIds
+        const playlistQuery = query(
+          collection(db, "playlist"),
+          where("product_id", "==", product.id),
+          where("playerIds", "==", product.playerIds),
+          orderBy("created", "desc"),
+          limit(1)
+        )
+        const playlistSnap = await getDocs(playlistQuery)
+        let existingPages = []
+        if (!playlistSnap.empty) {
+          const latestPlaylist = playlistSnap.docs[0].data()
+          existingPages = latestPlaylist.pages || []
+        }
+
+        // Filter out expired pages (where any schedule has endDate in the past)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0) // Set to start of today
+        const activePages = existingPages.filter((page: any) =>
+          page.schedules?.every((schedule: any) => {
+            let scheduleEndDate = schedule.endDate?.toDate
+              ? schedule.endDate.toDate()
+              : new Date(schedule.endDate)
+            scheduleEndDate.setHours(0, 0, 0, 0) // Set to start of that day
+            return scheduleEndDate >= today
+          })
+        )
+
         // Call CMS API with booking and product data
         // Construct basic parameters - this may need adjustment based on actual CMS requirements
-        const playerIds = ["24042e3027f34037a1af8ad3a46eab8c"]
+        const duration = product.cms.spot_duration * 1000 || 9000 // in milliseconds
         const schedule = {
           startDate: selectedBooking.start_date?.toDate?.()?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
           endDate: selectedBooking.end_date?.toDate?.()?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
           plans: [{
-            weekDays: [0,1,2,3,4,5,6], // All days
-            startTime: "00:00",
-            endTime: "23:59"
+            weekDays: [0, 1, 2, 3, 4, 5, 6], // All days
+            startTime: product.cms.start_time || "00:00",
+            endTime: product.cms.end_time || "23:59"
           }]
         }
         const pages = selectedBooking.url ? [
@@ -348,7 +376,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
                 type: "STREAM_MEDIA",
                 size: 12000,
                 md5: "placeholder-md5",
-                duration: 9000,
+                duration: duration,
                 url: selectedBooking.url,
                 layout: {
                   x: "0%",
@@ -361,7 +389,40 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
           }
         ] : []
 
-        await createCMSContentDeployment(playerIds, schedule, pages)
+        // Combine active existing pages with new booking pages
+        const newPages = [...activePages, ...pages]
+
+        // Create playlist document for specific product
+        if (product.id) {
+          const playlistDoc = {
+            playerIds: product.playerIds,
+            product_id: product.id,
+            company_id: product.company_id,
+            created: serverTimestamp(),
+            pages: [
+              ...activePages,
+              ...pages.map(page => ({
+                ...page,
+                schedules: [schedule],
+                client_id: selectedBooking.client.id,
+                client_name: selectedBooking.client.name || selectedBooking.client?.name,
+                acceptByUid: userData?.uid,
+                acceptBy: `${userData?.first_name || ""} ${userData?.last_name || ""}`,
+                booking_id: selectedBooking.id
+              }))
+            ]
+          }
+          await addDoc(collection(db, "playlist"), playlistDoc)
+          const playerIds = product.playerIds || []
+          // Prepare pages for CMS (only name and widgets)
+          const cmsPages = playlistDoc.pages.map(page => ({
+            name: page.name,
+            schedules: page.schedules,
+            widgets: page.widgets
+          }))
+
+          await createCMSContentDeployment(playerIds, schedule, cmsPages)
+        }
       }
 
       // Close dialog and refresh
@@ -382,77 +443,75 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
 
   const spotsContent = (
     <div className="flex gap-[13.758px] overflow-x-scroll pb-4 w-full pr-4">
-    {spots.map((spot) => (
-      <div
-        key={spot.id}
-        className="relative flex-shrink-0 w-[110px] h-[197px] bg-white p-1.5 rounded-[14px] shadow-[-1px_3px_7px_-1px_rgba(0,0,0,0.25)] border border-gray-200 overflow-hidden cursor-pointer hover:shadow-lg transition-shadow flex flex-col"
-        onClick={() => onSpotToggle ? onSpotToggle(spot.number) : handleSpotClick(spot.number)}
-      >
-        {onSpotToggle && (
-          <div className="absolute top-1 left-1 z-10">
-            <Checkbox
-              checked={selectedSpots?.includes(spot.number) || false}
-              onChange={() => onSpotToggle(spot.number)}
-              className="bg-white border-2 border-gray-300"
-            />
-          </div>
-        )}
-
-        {/* Image Section */}
-        <div className="flex-1 p-1 rounded-[10px] bg-white flex justify-center relative overflow-hidden">
-          {spot.imageUrl ? (
-            <>
-              {console.log(`Rendering image for spot ${spot.number}:`, spot.imageUrl)}
-              <Image
-                src={spot.imageUrl}
-                alt={`Spot ${spot.number} report image`}
-                fill
-                className="object-cover"
-                onError={(e) => {
-                  console.log(`Image failed to load for spot ${spot.number}:`, spot.imageUrl)
-                  const target = e.target as HTMLImageElement
-                  target.style.display = 'none'
-                  const parent = target.parentElement
-                  if (parent) {
-                    const fallback = document.createElement('span')
-                    fallback.className = 'text-gray-400 text-xs'
-                    fallback.textContent = `Spot ${spot.number}`
-                    parent.appendChild(fallback)
-                  }
-                }}
+      {spots.map((spot) => (
+        <div
+          key={spot.id}
+          className="relative flex-shrink-0 w-[110px] h-[197px] bg-white p-1.5 rounded-[14px] shadow-[-1px_3px_7px_-1px_rgba(0,0,0,0.25)] border border-gray-200 overflow-hidden cursor-pointer hover:shadow-lg transition-shadow flex flex-col"
+          onClick={() => onSpotToggle ? onSpotToggle(spot.number) : handleSpotClick(spot.number)}
+        >
+          {onSpotToggle && (
+            <div className="absolute top-1 left-1 z-10">
+              <Checkbox
+                checked={selectedSpots?.includes(spot.number) || false}
+                onChange={() => onSpotToggle(spot.number)}
+                className="bg-white border-2 border-gray-300"
               />
-            </>
-          ) : (
-            <>
-              {console.log(`No imageUrl for spot ${spot.number}`)}
-              <span className="text-gray-400 text-xs">Spot {spot.number}</span>
-            </>
+            </div>
           )}
+
+          {/* Image Section */}
+          <div className="flex-1 p-1 rounded-[10px] bg-white flex justify-center relative overflow-hidden">
+            {spot.imageUrl ? (
+              <>
+                {console.log(`Rendering image for spot ${spot.number}:`, spot.imageUrl)}
+                <Image
+                  src={spot.imageUrl}
+                  alt={`Spot ${spot.number} report image`}
+                  fill
+                  className="object-cover"
+                  onError={(e) => {
+                    console.log(`Image failed to load for spot ${spot.number}:`, spot.imageUrl)
+                    const target = e.target as HTMLImageElement
+                    target.style.display = 'none'
+                    const parent = target.parentElement
+                    if (parent) {
+                      const fallback = document.createElement('span')
+                      fallback.className = 'text-gray-400 text-xs'
+                      fallback.textContent = `Spot ${spot.number}`
+                      parent.appendChild(fallback)
+                    }
+                  }}
+                />
+              </>
+            ) : (
+              <>
+                {console.log(`No imageUrl for spot ${spot.number}`)}
+                <span className="text-gray-400 text-xs">Spot {spot.number}</span>
+              </>
+            )}
+          </div>
+
+          {/* Content Section */}
+          <div className="flex flex-col p-1 bg-white">
+            {/* Spot Number */}
+            <div className="text-[11px] font-semibold text-black">
+              {spot.number}/{totalSpots}
+            </div>
+
+            {/* Status */}
+            <div className={`text-[11px] font-semibold ${spot.status === "occupied" ? "text-[#00d0ff]" : "text-[#a1a1a1]"
+              }`}>
+              {spot.status === "occupied" ? "Occupied" : "Vacant"}
+            </div>
+
+            {/* Client Name */}
+            <div className={`text-[11px] font-semibold truncate ${spot.status === "occupied" ? "text-black" : "text-[#a1a1a1]"
+              }`}>
+              {spot.clientName || "Filler Content 1"}
+            </div>
+          </div>
         </div>
-
-        {/* Content Section */}
-        <div className="flex flex-col p-1 bg-white">
-          {/* Spot Number */}
-          <div className="text-[11px] font-semibold text-black">
-            {spot.number}/{totalSpots}
-          </div>
-
-          {/* Status */}
-          <div className={`text-[11px] font-semibold ${
-            spot.status === "occupied" ? "text-[#00d0ff]" : "text-[#a1a1a1]"
-          }`}>
-            {spot.status === "occupied" ? "Occupied" : "Vacant"}
-          </div>
-
-          {/* Client Name */}
-          <div className={`text-[11px] font-semibold truncate ${
-            spot.status === "occupied" ? "text-black" : "text-[#a1a1a1]"
-          }`}>
-            {spot.clientName || "Filler Content 1"}
-          </div>
-        </div>
-      </div>
-    ))}
+      ))}
     </div>
   )
 
@@ -463,8 +522,8 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
           <>
             <div style={{ color: '#333', fontFamily: 'Inter', fontSize: '12px', fontWeight: '700', lineHeight: '100%' }}>Booking Requests</div>
             {/* Booking Requests Cards */}
-            <div className="space-y-2 mb-4">
-              {bookingRequests.map((booking) => {
+            <div className="mb-4 flex space-x-4 overflow-x-scroll pb-2">
+              {bookingRequests.filter(booking => booking.for_screening === 0).map((booking) => {
                 return (
                   <div
                     key={booking.id}
@@ -476,19 +535,19 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
                   >
                     <div className="flex items-center gap-3 p-3">
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M9 7V15L16 11L9 7ZM21 3H3C1.9 3 1 3.9 1 5V17C1 18.1 1.9 19 3 19H8V21H16V19H21C22.1 19 23 18.1 23 17V5C23 3.9 22.1 3 21 3ZM21 17H3V5H21V17Z" fill="#333333"/>
+                        <path d="M9 7V15L16 11L9 7ZM21 3H3C1.9 3 1 3.9 1 5V17C1 18.1 1.9 19 3 19H8V21H16V19H21C22.1 19 23 18.1 23 17V5C23 3.9 22.1 3 21 3ZM21 17H3V5H21V17Z" fill="#333333" />
                       </svg>
                       <div className="flex flex-col">
-                        <div style={{fontSize:'12px', fontWeight:700, lineHeight:'132%', color:'#333', fontFamily:'Inter'}}>BK#{booking.reservation_id || booking.id.slice(-8)}</div>
-                        <div style={{fontSize:'12px', fontWeight:400, lineHeight:'132%', color:'#333', fontFamily:'Inter'}}>{formatBookingDates(booking.start_date, booking.end_date)}</div>
-                        <div style={{fontSize:'12px', fontWeight:700, lineHeight:'132%', color:'#333', fontFamily:'Inter'}}>P{booking.total_cost?.toLocaleString() || booking.cost?.toLocaleString() || "0"}</div>
+                        <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>BK#{booking.reservation_id || booking.id.slice(-8)}</div>
+                        <div style={{ fontSize: '12px', fontWeight: 400, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{formatBookingDates(booking.start_date, booking.end_date)}</div>
+                        <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>P{booking.total_cost?.toLocaleString() || booking.cost?.toLocaleString() || "0"}</div>
                       </div>
                     </div>
                     <div className="absolute top-2 right-2">
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="8" cy="2" r="1.5" fill="#333333"/>
-                        <circle cx="8" cy="8" r="1.5" fill="#333333"/>
-                        <circle cx="8" cy="14" r="1.5" fill="#333333"/>
+                        <circle cx="8" cy="2" r="1.5" fill="#333333" />
+                        <circle cx="8" cy="8" r="1.5" fill="#333333" />
+                        <circle cx="8" cy="14" r="1.5" fill="#333333" />
                       </svg>
                     </div>
                   </div>
