@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { MapPin, Loader2 } from "lucide-react"
 import { loadGoogleMaps } from "@/lib/google-maps-loader"
+import { GeoPoint } from "firebase/firestore"
 
 interface GooglePlacesAutocompleteProps {
   value: string
   onChange: (value: string) => void
-  onGeopointChange?: (geopoint: [number, number] | null) => void
+  onGeopointChange?: (geopoint: GeoPoint | null) => void
   placeholder?: string
   className?: string
   enableMap?: boolean
@@ -92,7 +93,7 @@ export function GooglePlacesAutocomplete({
         const lat = event.latLng.lat()
         const lng = event.latLng.lng()
         if (onGeopointChange) {
-          onGeopointChange([lat, lng])
+          onGeopointChange(new GeoPoint(lat, lng))
         }
         // Reverse geocode to get address
         const geocoder = new window.google.maps.Geocoder()
@@ -165,7 +166,7 @@ export function GooglePlacesAutocomplete({
         if (status === window.google.maps.places.PlacesServiceStatus.OK && place.geometry) {
           const lat = place.geometry.location.lat()
           const lng = place.geometry.location.lng()
-          onGeopointChange([lat, lng])
+          onGeopointChange(new GeoPoint(lat, lng))
 
           // Update map marker if map is enabled
           if (map && marker) {

@@ -120,7 +120,7 @@ export default function SiteInformation({
             <div>
               <div className="text-sm text-gray-900 mb-1">Geopoint</div>
               <div className="text-base font-bold text-gray-800">
-                {product?.specs_rental?.geopoint ? `${product.specs_rental.geopoint[0]}, ${product.specs_rental.geopoint[1]}` : "Not Set"}
+                {product?.specs_rental?.geopoint ? `${product.specs_rental.geopoint.latitude}, ${product.specs_rental.geopoint.longitude}` : "Not Set"}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

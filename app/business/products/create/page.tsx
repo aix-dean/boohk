@@ -30,7 +30,7 @@ import { toast } from "@/components/ui/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/contexts/auth-context"
 import { subscriptionService } from "@/lib/subscription-service"
-import { Timestamp } from "firebase/firestore"
+import { Timestamp, GeoPoint } from "firebase/firestore"
 
 // Audience types for the dropdown
 const AUDIENCE_TYPES = [
@@ -115,7 +115,7 @@ export default function BusinessProductCreatePage() {
     specs_rental: {
       audience_type: "",
       audience_types: [] as string[],
-      geopoint: [0, 0] as [number, number],
+      geopoint: null as GeoPoint | null,
       location: "",
       traffic_count: "",
       elevation: "",
@@ -272,14 +272,18 @@ export default function BusinessProductCreatePage() {
 
   const handleGeopointChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const value = Number.parseFloat(e.target.value) || 0
-    const newGeopoint = [...formData.specs_rental.geopoint]
-    newGeopoint[index] = value
+    const currentGeopoint = formData.specs_rental.geopoint
+    if (!currentGeopoint) return
+
+    const lat = index === 0 ? value : currentGeopoint.latitude
+    const lng = index === 1 ? value : currentGeopoint.longitude
+    const newGeopoint = new GeoPoint(lat, lng)
 
     setFormData((prev) => ({
       ...prev,
       specs_rental: {
         ...prev.specs_rental,
-        geopoint: newGeopoint as [number, number],
+        geopoint: newGeopoint,
       },
     }))
   }
@@ -1010,7 +1014,7 @@ export default function BusinessProductCreatePage() {
                   <Input
                     id="latitude"
                     type="number"
-                    value={formData.specs_rental.geopoint[0]}
+                    value={formData.specs_rental.geopoint?.latitude || ""}
                     onChange={(e) => handleGeopointChange(e, 0)}
                     placeholder="Enter latitude"
                     step="0.000001"
@@ -1023,7 +1027,7 @@ export default function BusinessProductCreatePage() {
                   <Input
                     id="longitude"
                     type="number"
-                    value={formData.specs_rental.geopoint[1]}
+                    value={formData.specs_rental.geopoint?.longitude || ""}
                     onChange={(e) => handleGeopointChange(e, 1)}
                     placeholder="Enter longitude"
                     step="0.000001"
@@ -1177,7 +1181,7 @@ export default function BusinessProductCreatePage() {
                 <Input
                   id="latitude"
                   type="number"
-                  value={formData.specs_rental.geopoint[0]}
+                  value={formData.specs_rental.geopoint?.latitude || ""}
                   onChange={(e) => handleGeopointChange(e, 0)}
                   placeholder="Enter latitude"
                   step="0.000001"
@@ -1190,7 +1194,7 @@ export default function BusinessProductCreatePage() {
                 <Input
                   id="longitude"
                   type="number"
-                  value={formData.specs_rental.geopoint[1]}
+                  value={formData.specs_rental.geopoint?.longitude || ""}
                   onChange={(e) => handleGeopointChange(e, 1)}
                   placeholder="Enter longitude"
                   step="0.000001"

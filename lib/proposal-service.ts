@@ -160,7 +160,7 @@ export async function createProposal(
             orientation: product.specs_rental.orientation || "",
             partner: product.specs_rental.partner || "",
             land_owner: product.specs_rental.land_owner || "",
-            geopoint: product.specs_rental.geopoint || [],
+            geopoint: product.specs_rental.geopoint || null,
             illumination: product.specs_rental.illumination || {},
             structure: product.specs_rental.structure || {},
           }

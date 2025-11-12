@@ -16,7 +16,7 @@ import { ArrowLeft, Upload, Trash2, AlertCircle, ImageIcon, Film, X, Check, Load
 import { getProductById, updateProduct } from "@/lib/firebase-service"
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete"
-import { collection, query, where, getDocs } from "firebase/firestore"
+import { collection, query, where, getDocs, GeoPoint } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -79,7 +79,7 @@ export default function AdminEditProductPage() {
     specs_rental: {
       audience_type: "",
       audience_types: [] as string[],
-      geopoint: [0, 0] as [number, number],
+      geopoint: new GeoPoint(0, 0),
       location: "",
       traffic_count: "",
       elevation: "",
@@ -121,7 +121,7 @@ export default function AdminEditProductPage() {
           specs_rental: {
             audience_type: productData.specs_rental?.audience_type || "",
             audience_types: productData.specs_rental?.audience_types || [],
-            geopoint: productData.specs_rental?.geopoint || [0, 0],
+            geopoint: productData.specs_rental?.geopoint || new GeoPoint(0, 0),
             location: productData.specs_rental?.location || "",
             traffic_count: productData.specs_rental?.traffic_count
               ? String(productData.specs_rental.traffic_count)
@@ -887,7 +887,7 @@ export default function AdminEditProductPage() {
                       <Input
                         id="latitude"
                         type="number"
-                        value={formData.specs_rental.geopoint[0]}
+                        value={formData.specs_rental.geopoint.latitude}
                         onChange={(e) => handleGeopointChange(e, 0)}
                         placeholder="Enter latitude"
                         step="0.000001"
@@ -899,7 +899,7 @@ export default function AdminEditProductPage() {
                       <Input
                         id="longitude"
                         type="number"
-                        value={formData.specs_rental.geopoint[1]}
+                        value={formData.specs_rental.geopoint.longitude}
                         onChange={(e) => handleGeopointChange(e, 1)}
                         placeholder="Enter longitude"
                         step="0.000001"
