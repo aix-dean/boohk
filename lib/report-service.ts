@@ -597,6 +597,10 @@ export async function postReport(reportData: ReportData): Promise<string> {
     throw error
   }
 }
+export async function getReportsPerBooking(bookingIds: string[]): Promise<{ [bookingId: string]: ReportData | null }> {
+  return getLatestReportsByBookingIds(bookingIds)
+}
+
 export async function getLatestReportsByBookingIds(bookingIds: string[]): Promise<{ [bookingId: string]: ReportData | null }> {
   try {
     const reportsMap: { [bookingId: string]: ReportData | null } = {}
