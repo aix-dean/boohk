@@ -1113,8 +1113,8 @@ export function SideNavigation() {
                 <div className="p-1">
                   {[
                     { title: "Enrolled Sites", href: "/sales/dashboard", icon: LayoutDashboard },
-                    { title: "Reservations", href: "/sales/reservation", icon: CalendarCheck },
                     { title: "Price Listing", href: "/sales/price-listing", icon: DollarSign },
+                    { title: "Transactions", href: "/sales/reservation", icon: CalendarCheck },
                   ].map((item) => {
                     const Icon = item.icon
                     const active = isActive(pathname, item.href)
