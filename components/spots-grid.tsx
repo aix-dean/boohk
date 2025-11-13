@@ -12,6 +12,7 @@ import type { Booking } from "@/lib/booking-service"
 import { formatBookingDates } from "@/lib/booking-service"
 import { createCMSContentDeployment } from "@/lib/cms-api"
 import { useToast } from "@/hooks/use-toast"
+import { BookingCongratulationsDialog } from "@/components/BookingCongratulationsDialog"
 
 interface Spot {
   id: string
@@ -297,6 +298,16 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [isAccepting, setIsAccepting] = useState(false)
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
+  const [isConfirming, setIsConfirming] = useState(false)
+  const [isBookingCongratulationsOpen, setIsBookingCongratulationsOpen] = useState(false)
+  const [congratulationsBooking, setCongratulationsBooking] = useState<Booking | null>(null)
+  console.log('bookingRequests:', bookingRequests)
+  bookingRequests.forEach(booking => console.log(`Booking ${booking.id} for_screening:`, booking.for_screening))
+  const filteredBookings = bookingRequests
+  console.log('filteredBookings:', filteredBookings)
+  const topRow = filteredBookings.filter((_, index) => index % 2 === 0)
+  const bottomRow = filteredBookings.filter((_, index) => index % 2 === 1)
 
 
   const handleSpotClick = (spotNumber: number) => {
@@ -310,16 +321,27 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
 
     setIsAccepting(true)
     try {
-      // Update booking to set for_screening = 1
+      // Generate airing_code
+      const airing_code = "BH" + Date.now()
+
+      // Update booking to set for_screening = 1 and airing_code
       await updateDoc(doc(db, "booking", selectedBooking.id), {
         for_screening: 1,
+        airing_code,
         updated: new Date()
       })
+
+      // Update selectedBooking with airing_code for the dialog
+      selectedBooking.airing_code = airing_code
 
       toast({
         title: "Booking accepted",
         description: "The booking has been accepted and is now for screening."
       })
+
+      // Open congratulations dialog
+      setCongratulationsBooking(selectedBooking)
+      setIsBookingCongratulationsOpen(true)
 
       // Fetch product data for CMS API
       const productRef = doc(db, "products", productId!)
@@ -522,37 +544,73 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
           <>
             <div style={{ color: '#333', fontFamily: 'Inter', fontSize: '12px', fontWeight: '700', lineHeight: '100%' }}>Booking Requests</div>
             {/* Booking Requests Cards */}
-            <div className="mb-4 flex space-x-4 overflow-x-scroll pb-2">
-              {bookingRequests.filter(booking => booking.for_screening === 0).map((booking) => {
-                return (
-                  <div
-                    key={booking.id}
-                    className="relative w-[245px] h-[76px] flex-shrink-0 rounded-[7.911px] border-[2.373px] border-[#B8D9FF] bg-[#F6F9FF] flex items-center cursor-pointer"
-                    onClick={() => {
-                      setSelectedBooking(booking)
-                      setIsDialogOpen(true)
-                    }}
-                  >
-                    <div className="flex items-center gap-3 p-3">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M9 7V15L16 11L9 7ZM21 3H3C1.9 3 1 3.9 1 5V17C1 18.1 1.9 19 3 19H8V21H16V19H21C22.1 19 23 18.1 23 17V5C23 3.9 22.1 3 21 3ZM21 17H3V5H21V17Z" fill="#333333" />
-                      </svg>
-                      <div className="flex flex-col">
-                        <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>BK#{booking.reservation_id || booking.id.slice(-8)}</div>
-                        <div style={{ fontSize: '12px', fontWeight: 400, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{formatBookingDates(booking.start_date, booking.end_date)}</div>
-                        <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>P{booking.total_cost?.toLocaleString() || booking.cost?.toLocaleString() || "0"}</div>
+            <div className="mb-4 max-h-[170px] overflow-y-auto">
+              <div className="">
+                <div className="flex space-x-4 overflow-x-auto pb-2">
+                  {topRow.map((booking) => {
+                    return (
+                      <div
+                        key={booking.id}
+                        className="relative w-[245px] h-[76px] flex-shrink-0 rounded-[7.911px] border-[2.373px] border-[#B8D9FF] bg-[#F6F9FF] flex items-center cursor-pointer"
+                        onClick={() => {
+                          setSelectedBooking(booking)
+                          setIsDialogOpen(true)
+                        }}
+                      >
+                        <div className="flex items-center gap-3 p-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 7V15L16 11L9 7ZM21 3H3C1.9 3 1 3.9 1 5V17C1 18.1 1.9 19 3 19H8V21H16V19H21C22.1 19 23 18.1 23 17V5C23 3.9 22.1 3 21 3ZM21 17H3V5H21V17Z" fill="#333333" />
+                          </svg>
+                          <div className="flex flex-col">
+                            <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>BK#{booking.reservation_id || booking.id.slice(-8)}</div>
+                            <div style={{ fontSize: '12px', fontWeight: 400, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{formatBookingDates(booking.start_date, booking.end_date)}</div>
+                            <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>P{booking.total_cost?.toLocaleString() || booking.cost?.toLocaleString() || "0"}</div>
+                          </div>
+                        </div>
+                        <div className="absolute top-2 right-2">
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="8" cy="2" r="1.5" fill="#333333" />
+                            <circle cx="8" cy="8" r="1.5" fill="#333333" />
+                            <circle cx="8" cy="14" r="1.5" fill="#333333" />
+                          </svg>
+                        </div>
                       </div>
-                    </div>
-                    <div className="absolute top-2 right-2">
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="8" cy="2" r="1.5" fill="#333333" />
-                        <circle cx="8" cy="8" r="1.5" fill="#333333" />
-                        <circle cx="8" cy="14" r="1.5" fill="#333333" />
-                      </svg>
-                    </div>
-                  </div>
-                )
-              })}
+                    )
+                  })}
+                </div>
+                <div className="flex space-x-4 overflow-x-auto pb-2">
+                  {bottomRow.map((booking) => {
+                    return (
+                      <div
+                        key={booking.id}
+                        className="relative w-[245px] h-[76px] flex-shrink-0 rounded-[7.911px] border-[2.373px] border-[#B8D9FF] bg-[#F6F9FF] flex items-center cursor-pointer"
+                        onClick={() => {
+                          setSelectedBooking(booking)
+                          setIsDialogOpen(true)
+                        }}
+                      >
+                        <div className="flex items-center gap-3 p-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 7V15L16 11L9 7ZM21 3H3C1.9 3 1 3.9 1 5V17C1 18.1 1.9 19 3 19H8V21H16V19H21C22.1 19 23 18.1 23 17V5C23 3.9 22.1 3 21 3ZM21 17H3V5H21V17Z" fill="#333333" />
+                          </svg>
+                          <div className="flex flex-col">
+                            <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>BK#{booking.reservation_id || booking.id.slice(-8)}</div>
+                            <div style={{ fontSize: '12px', fontWeight: 400, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{formatBookingDates(booking.start_date, booking.end_date)}</div>
+                            <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>P{booking.total_cost?.toLocaleString() || booking.cost?.toLocaleString() || "0"}</div>
+                          </div>
+                        </div>
+                        <div className="absolute top-2 right-2">
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="8" cy="2" r="1.5" fill="#333333" />
+                            <circle cx="8" cy="8" r="1.5" fill="#333333" />
+                            <circle cx="8" cy="14" r="1.5" fill="#333333" />
+                          </svg>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
           </>
         )}
@@ -602,7 +660,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
                   </div>
                   <div>
                     <label className="text-sm font-medium">Display Name</label>
-                    <p className="text-sm">BK#{selectedBooking.reservation_id || selectedBooking.id.slice(-8)}</p>
+                    <p className="text-sm">{selectedBooking.product_name || selectedBooking.project_name || "N/A"}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium">Total Payout</label>
@@ -627,12 +685,43 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
             )}
             <DialogFooter>
               <Button variant="outline" className="w-[90px] h-[24px] px-[29px] rounded-[6px] border-[1.5px] border-[#C4C4C4] bg-white">Decline</Button>
-              <Button onClick={handleAcceptBooking} disabled={isAccepting} className="w-[120px] h-[24px] rounded-[6.024px] bg-[#30C71D]">
+              <Button onClick={() => { setIsDialogOpen(false); setIsConfirmDialogOpen(true); }} disabled={isAccepting} className="w-[120px] h-[24px] rounded-[6.024px] bg-[#30C71D]">
                 {isAccepting ? <><Loader2 className="animate-spin mr-1 h-4 w-4" />Accepting...</> : "Accept"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+          <DialogContent className="w-[283px] h-[153px] p-1">
+            <DialogHeader className="relative p-0">
+              <DialogClose className="absolute top-2 right-2">
+                <X width="16" height="16" />
+              </DialogClose>
+            </DialogHeader>
+            <div className="flex flex-col items-center justify-center space-y-2 ">
+              <Image src="/check_outline.svg" alt="Check" width={32} height={32} />
+              <p className="text-sm text-center">Are you sure you want to accept?</p>
+            </div>
+            <div className="flex justify-center gap-2">
+              <Button variant="outline" onClick={() => setIsConfirmDialogOpen(false)} className="w-[129px] h-[28px] rounded-[5.992px] border-[1.198px] border-[#C4C4C4] bg-[#FFF]">Cancel</Button>
+              <Button onClick={async () => { setIsConfirming(true); try { await handleAcceptBooking(); } finally { setIsConfirming(false); setIsConfirmDialogOpen(false); } }} disabled={isConfirming} className="w-[115px] h-[28px] rounded-[5.992px] bg-[#1D0BEB]">
+                {isConfirming ? <><Loader2 className="animate-spin mr-1 h-4 w-4" />Confirming...</> : "Yes, proceed"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        {congratulationsBooking && (
+          <BookingCongratulationsDialog
+            open={isBookingCongratulationsOpen}
+            onOpenChange={(open) => {
+              setIsBookingCongratulationsOpen(open)
+              if (!open) {
+                setCongratulationsBooking(null)
+              }
+            }}
+            booking={congratulationsBooking}
+          />
+        )}
       </div>
     )
   } else {
