@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server"
 import { getAllBookings } from "@/lib/booking-service"
+import { algoliasearch } from 'algoliasearch'
 
-let algoliasearch: any = null
 let bookingsIndex: any = null
 
-// Initialize Algolia client 
+// Initialize Algolia client
 function initializeAlgolia() {
   try {
-    algoliasearch = require('algoliasearch')  
-  
     const client = algoliasearch(
-      process.env.NEXT_PUBLIC_ALGOLIA_COST_ESTIMATES_APP_ID,
-      process.env.ALGOLIA_COST_ESTIMATES_ADMIN_API_KEY
-    )
+      process.env.NEXT_PUBLIC_ALGOLIA_COST_ESTIMATES_APP_ID!,
+      process.env.ALGOLIA_COST_ESTIMATES_ADMIN_API_KEY!
+    ) as any
     bookingsIndex = client.initIndex('booking')
   } catch (error) {
     console.error('Failed to initialize Algolia client:', error)
