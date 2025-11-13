@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { collection, onSnapshot, orderBy, query, limit } from "firebase/firestore"
 import { db } from "@/lib/firebase"
+import { GeoPoint } from "firebase/firestore"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -13,7 +14,7 @@ interface AnalyticsDocument {
   id: string
   action: string
   created: any
-  geopoint: [number, number]
+  geopoint: GeoPoint
   ip_address: string
   isGuest: boolean
   page: string
@@ -68,9 +69,9 @@ export default function AnalyticsPage() {
     }
   }
 
-  const formatGeopoint = (geopoint: [number, number]) => {
-    if (!geopoint || !Array.isArray(geopoint)) return "N/A"
-    return `${geopoint[0]?.toFixed(6)}, ${geopoint[1]?.toFixed(6)}`
+  const formatGeopoint = (geopoint: GeoPoint) => {
+    if (!geopoint || !(geopoint instanceof GeoPoint)) return "N/A"
+    return `${geopoint.latitude?.toFixed(6)}, ${geopoint.longitude?.toFixed(6)}`
   }
 
   const totalViews = analytics.length

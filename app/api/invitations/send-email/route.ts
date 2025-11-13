@@ -1,8 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 export async function POST(request: NextRequest) {
   try {
     const {
@@ -126,12 +124,12 @@ export async function POST(request: NextRequest) {
             <h1>🎉 You're Invited!</h1>
             <p>Join ${companyName || "our organization"} and start collaborating</p>
           </div>
-          
+
           <div class="content">
             <p>Hello ${recipientName || "there"},</p>
-            
+
             <p>${message}</p>
-            
+
             <div class="code-box">
               <p style="margin: 0 0 10px 0; font-weight: 600;">Your invitation code:</p>
               <div class="code">${invitationCode}</div>
@@ -139,7 +137,7 @@ export async function POST(request: NextRequest) {
                 Copy this code and use it during registration
               </p>
             </div>
-            
+
             <div class="info-grid">
               <div class="info-item">
                 <span class="info-label">Assigned Role</span>
@@ -152,13 +150,13 @@ export async function POST(request: NextRequest) {
                 <span class="info-value">${expiresAt}</span>
               </div>
             </div>
-            
+
             <div style="text-align: center; margin: 30px 0;">
               <a href="${registrationUrl}" class="button">
                 Register Your Account
               </a>
             </div>
-            
+
             <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 6px; margin: 20px 0;">
               <p style="margin: 0; color: #856404; font-size: 14px;">
                 <strong>📋 Registration Instructions:</strong><br>
@@ -168,15 +166,15 @@ export async function POST(request: NextRequest) {
                 4. Complete your profile setup
               </p>
             </div>
-            
+
             <p>If you have any questions or need assistance, please don't hesitate to reach out.</p>
-            
+
             <p>
               Best regards,<br>
               <strong>${senderName}</strong>
             </p>
           </div>
-          
+
           <div class="footer">
             <p>This invitation was sent by ${senderName} from ${companyName || "Boohk"}.</p>
             <p>If you didn't expect this invitation, you can safely ignore this email.</p>
@@ -215,6 +213,15 @@ ${senderName}
 This invitation was sent by ${senderName} from ${companyName || "Boohk"}.
 If you didn't expect this invitation, you can safely ignore this email.
     `
+
+    // Initialize Resend only when needed and API key is available
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) {
+      console.error("RESEND_API_KEY environment variable is not set")
+      return NextResponse.json({ error: "Email service not configured" }, { status: 500 })
+    }
+
+    const resend = new Resend(apiKey)
 
     // Send email using Resend
     const { data, error } = await resend.emails.send({

@@ -31,6 +31,7 @@ import { toast } from "@/components/ui/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/contexts/auth-context"
 import type { Product } from "@/lib/firebase-service"
+import { GeoPoint } from "firebase/firestore"
 // import { SideNavigation } from "@/components/side-navigation"
 
 // Audience types for the dropdown
@@ -274,7 +275,7 @@ export default function BusinessEditProductPage() {
     specs_rental: {
       audience_type: "",
       audience_types: [] as string[],
-      geopoint: [0, 0] as [number, number],
+      geopoint: null as GeoPoint | null,
       location: "",
       traffic_count: "",
       elevation: "",
@@ -322,7 +323,7 @@ export default function BusinessEditProductPage() {
           specs_rental: {
             audience_type: productData.specs_rental?.audience_type || "",
             audience_types: productData.specs_rental?.audience_types || [],
-            geopoint: productData.specs_rental?.geopoint || [0, 0],
+            geopoint: productData.specs_rental?.geopoint || null,
             location: productData.specs_rental?.location || "",
             traffic_count: productData.specs_rental?.traffic_count
               ? String(productData.specs_rental.traffic_count)
@@ -504,14 +505,18 @@ export default function BusinessEditProductPage() {
 
   const handleGeopointChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const value = Number.parseFloat(e.target.value) || 0
-    const newGeopoint = [...formData.specs_rental.geopoint]
-    newGeopoint[index] = value
+    const currentGeopoint = formData.specs_rental.geopoint
+    if (!currentGeopoint) return
+
+    const lat = index === 0 ? value : currentGeopoint.latitude
+    const lng = index === 1 ? value : currentGeopoint.longitude
+    const newGeopoint = new GeoPoint(lat, lng)
 
     setFormData((prev) => ({
       ...prev,
       specs_rental: {
         ...prev.specs_rental,
-        geopoint: newGeopoint as [number, number],
+        geopoint: newGeopoint,
       },
     }))
   }
@@ -979,7 +984,7 @@ export default function BusinessEditProductPage() {
                     ...prev,
                     specs_rental: {
                       ...prev.specs_rental,
-                      geopoint: geopoint || [0, 0],
+                      geopoint: geopoint || null,
                     },
                   }))
                 }}
@@ -1119,7 +1124,7 @@ export default function BusinessEditProductPage() {
                 <Input
                   id="latitude"
                   type="number"
-                  value={formData.specs_rental.geopoint[0]}
+                  value={formData.specs_rental.geopoint?.latitude || ""}
                   onChange={(e) => handleGeopointChange(e, 0)}
                   placeholder="Enter latitude"
                   step="0.000001"
@@ -1132,7 +1137,7 @@ export default function BusinessEditProductPage() {
                 <Input
                   id="longitude"
                   type="number"
-                  value={formData.specs_rental.geopoint[1]}
+                  value={formData.specs_rental.geopoint?.longitude || ""}
                   onChange={(e) => handleGeopointChange(e, 1)}
                   placeholder="Enter longitude"
                   step="0.000001"

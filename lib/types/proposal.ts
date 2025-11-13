@@ -1,3 +1,5 @@
+import { GeoPoint } from "firebase/firestore"
+
 export type ProposalClient = {
   id: string // Added missing id field
   company: string
@@ -30,7 +32,7 @@ export type ProductSpecsRental = {
   orientation?: string
   partner?: string
   land_owner?: string
-  geopoint?: number[]
+  geopoint?: GeoPoint
   illumination?: {
     bottom_count?: number
     bottom_lighting_specs?: string

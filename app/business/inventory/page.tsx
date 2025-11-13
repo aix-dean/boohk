@@ -39,6 +39,7 @@ import { subscriptionService } from "@/lib/subscription-service"
 import { RouteProtection } from "@/components/route-protection"
 import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete"
 import InventoryContent from "@/components/InventoryContent"
+import { GeoPoint } from "firebase/firestore"
 
 // Number of items to display per page
 const ITEMS_PER_PAGE = 12
@@ -307,7 +308,7 @@ export default function BusinessInventoryPage() {
   const [siteName, setSiteName] = useState("")
   const [location, setLocation] = useState("")
   const [locationLabel, setLocationLabel] = useState("")
-  const [geopoint, setGeopoint] = useState<[number, number] | null>(null)
+  const [geopoint, setGeopoint] = useState<GeoPoint | null>(null)
   const [height, setHeight] = useState("")
   const [width, setWidth] = useState("")
   const [dimensionUnit, setDimensionUnit] = useState<"ft" | "m">("ft")

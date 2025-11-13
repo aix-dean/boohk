@@ -16,6 +16,7 @@ import {
   serverTimestamp,
   getDoc,
   onSnapshot,
+  GeoPoint,
 } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage"
@@ -144,7 +145,7 @@ export interface Product {
   } | null
   specs_rental?: {
     audience_types?: string[]
-    geopoint?: [number, number]
+    geopoint?: GeoPoint
     location?: string
     location_label?: string
     land_owner?: string
