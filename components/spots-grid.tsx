@@ -12,6 +12,7 @@ import type { Booking } from "@/lib/booking-service"
 import { formatBookingDates } from "@/lib/booking-service"
 import { createCMSContentDeployment } from "@/lib/cms-api"
 import { useToast } from "@/hooks/use-toast"
+import { BookingCongratulationsDialog } from "@/components/BookingCongratulationsDialog"
 
 interface Spot {
   id: string
@@ -297,6 +298,23 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [isAccepting, setIsAccepting] = useState(false)
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
+  const [isConfirming, setIsConfirming] = useState(false)
+  const [isDeclineConfirmDialogOpen, setIsDeclineConfirmDialogOpen] = useState(false)
+  const [isDeclining, setIsDeclining] = useState(false)
+  const [isBookingCongratulationsOpen, setIsBookingCongratulationsOpen] = useState(false)
+  const [congratulationsBooking, setCongratulationsBooking] = useState<Booking | null>(null)
+  const [isDeclineReasonDialogOpen, setIsDeclineReasonDialogOpen] = useState(false)
+  const [selectedReasons, setSelectedReasons] = useState<string[]>([])
+  const [otherReason, setOtherReason] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isThankYouDialogOpen, setIsThankYouDialogOpen] = useState(false)
+  console.log('bookingRequests:', bookingRequests)
+  bookingRequests.forEach(booking => console.log(`Booking ${booking.id} for_screening:`, booking.for_screening))
+  const filteredBookings = bookingRequests.filter(booking => booking.for_screening === 1)
+  console.log('filteredBookings:', filteredBookings)
+  const topRow = filteredBookings.filter((_, index) => index % 2 === 0)
+  const bottomRow = filteredBookings.filter((_, index) => index % 2 === 1)
 
 
   const handleSpotClick = (spotNumber: number) => {
@@ -310,16 +328,27 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
 
     setIsAccepting(true)
     try {
-      // Update booking to set for_screening = 1
+      // Generate airing_code
+      const airing_code = "BH" + Date.now()
+
+      // Update booking to set for_screening = 2 (accepted) and airing_code
       await updateDoc(doc(db, "booking", selectedBooking.id), {
-        for_screening: 1,
+        for_screening: 2,
+        airing_code,
         updated: new Date()
       })
+
+      // Update selectedBooking with airing_code for the dialog
+      selectedBooking.airing_code = airing_code
 
       toast({
         title: "Booking accepted",
         description: "The booking has been accepted and is now for screening."
       })
+
+      // Open congratulations dialog
+      setCongratulationsBooking(selectedBooking)
+      setIsBookingCongratulationsOpen(true)
 
       // Fetch product data for CMS API
       const productRef = doc(db, "products", productId!)
@@ -441,6 +470,69 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
     }
   }
 
+  const handleDeclineBooking = async () => {
+    if (!selectedBooking) return
+
+    setIsDeclining(true)
+    try {
+      await updateDoc(doc(db, "booking", selectedBooking.id), {
+        for_screening: 3,
+        updated: new Date()
+      })
+
+      toast({
+        title: "Booking rejected",
+        description: "The booking has been rejected."
+      })
+
+      setIsDialogOpen(false)
+      setSelectedBooking(null)
+      onBookingAccepted?.()
+    } catch (error) {
+      console.error("Error rejecting booking:", error)
+      toast({
+        title: "Error",
+        description: "Failed to reject the booking. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsDeclining(false)
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!selectedBooking) return;
+    setIsSubmitting(true);
+    try {
+      await addDoc(collection(db, "booking_declined"), {
+        bookingId: selectedBooking.id,
+        selectedReasons,
+        otherReason,
+        declinedAt: serverTimestamp(),
+        clientId: selectedBooking.client?.id,
+        clientName: selectedBooking.client?.name,
+        startDate: selectedBooking.start_date,
+        endDate: selectedBooking.end_date,
+        totalCost: selectedBooking.total_cost || selectedBooking.cost,
+        productName: selectedBooking.product_name || selectedBooking.project_name,
+      });
+      await handleDeclineBooking();
+      setIsDeclineReasonDialogOpen(false);
+      setIsThankYouDialogOpen(true);
+      setSelectedReasons([]);
+      setOtherReason("");
+    } catch (error) {
+      console.error("Error declining booking:", error);
+      toast({
+        title: "Error",
+        description: "Failed to decline booking.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const spotsContent = (
     <div className="flex gap-[13.758px] overflow-x-scroll pb-4 w-full pr-4">
       {spots.map((spot) => (
@@ -453,7 +545,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
             <div className="absolute top-1 left-1 z-10">
               <Checkbox
                 checked={selectedSpots?.includes(spot.number) || false}
-                onChange={() => onSpotToggle(spot.number)}
+                onCheckedChange={() => onSpotToggle(spot.number)}
                 className="bg-white border-2 border-gray-300"
               />
             </div>
@@ -518,41 +610,77 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
   if (bg) {
     return (
       <div className="space-y-4">
-        {bookingRequests.length > 0 && (
+        {filteredBookings.length > 0 && (
           <>
             <div style={{ color: '#333', fontFamily: 'Inter', fontSize: '12px', fontWeight: '700', lineHeight: '100%' }}>Booking Requests</div>
             {/* Booking Requests Cards */}
-            <div className="mb-4 flex space-x-4 overflow-x-scroll pb-2">
-              {bookingRequests.filter(booking => booking.for_screening === 0).map((booking) => {
-                return (
-                  <div
-                    key={booking.id}
-                    className="relative w-[245px] h-[76px] flex-shrink-0 rounded-[7.911px] border-[2.373px] border-[#B8D9FF] bg-[#F6F9FF] flex items-center cursor-pointer"
-                    onClick={() => {
-                      setSelectedBooking(booking)
-                      setIsDialogOpen(true)
-                    }}
-                  >
-                    <div className="flex items-center gap-3 p-3">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M9 7V15L16 11L9 7ZM21 3H3C1.9 3 1 3.9 1 5V17C1 18.1 1.9 19 3 19H8V21H16V19H21C22.1 19 23 18.1 23 17V5C23 3.9 22.1 3 21 3ZM21 17H3V5H21V17Z" fill="#333333" />
-                      </svg>
-                      <div className="flex flex-col">
-                        <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>BK#{booking.reservation_id || booking.id.slice(-8)}</div>
-                        <div style={{ fontSize: '12px', fontWeight: 400, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{formatBookingDates(booking.start_date, booking.end_date)}</div>
-                        <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>P{booking.total_cost?.toLocaleString() || booking.cost?.toLocaleString() || "0"}</div>
+            <div className="mb-4 max-h-[170px] overflow-y-auto">
+              <div className="">
+                <div className="flex space-x-4 overflow-x-auto pb-2">
+                  {topRow.map((booking) => {
+                    return (
+                      <div
+                        key={booking.id}
+                        className="relative w-[245px] h-[76px] flex-shrink-0 rounded-[7.911px] border-[2.373px] border-[#B8D9FF] bg-[#F6F9FF] flex items-center cursor-pointer"
+                        onClick={() => {
+                          setSelectedBooking(booking)
+                          setIsDialogOpen(true)
+                        }}
+                      >
+                        <div className="flex items-center gap-3 p-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 7V15L16 11L9 7ZM21 3H3C1.9 3 1 3.9 1 5V17C1 18.1 1.9 19 3 19H8V21H16V19H21C22.1 19 23 18.1 23 17V5C23 3.9 22.1 3 21 3ZM21 17H3V5H21V17Z" fill="#333333" />
+                          </svg>
+                          <div className="flex flex-col">
+                            <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>BK#{booking.reservation_id || booking.id.slice(-8)}</div>
+                            <div style={{ fontSize: '12px', fontWeight: 400, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{formatBookingDates(booking.start_date, booking.end_date)}</div>
+                            <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>P{booking.total_cost?.toLocaleString() || booking.cost?.toLocaleString() || "0"}</div>
+                          </div>
+                        </div>
+                        <div className="absolute top-2 right-2">
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="8" cy="2" r="1.5" fill="#333333" />
+                            <circle cx="8" cy="8" r="1.5" fill="#333333" />
+                            <circle cx="8" cy="14" r="1.5" fill="#333333" />
+                          </svg>
+                        </div>
                       </div>
-                    </div>
-                    <div className="absolute top-2 right-2">
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="8" cy="2" r="1.5" fill="#333333" />
-                        <circle cx="8" cy="8" r="1.5" fill="#333333" />
-                        <circle cx="8" cy="14" r="1.5" fill="#333333" />
-                      </svg>
-                    </div>
-                  </div>
-                )
-              })}
+                    )
+                  })}
+                </div>
+                <div className="flex space-x-4 overflow-x-auto pb-2">
+                  {bottomRow.map((booking) => {
+                    return (
+                      <div
+                        key={booking.id}
+                        className="relative w-[245px] h-[76px] flex-shrink-0 rounded-[7.911px] border-[2.373px] border-[#B8D9FF] bg-[#F6F9FF] flex items-center cursor-pointer"
+                        onClick={() => {
+                          setSelectedBooking(booking)
+                          setIsDialogOpen(true)
+                        }}
+                      >
+                        <div className="flex items-center gap-3 p-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 7V15L16 11L9 7ZM21 3H3C1.9 3 1 3.9 1 5V17C1 18.1 1.9 19 3 19H8V21H16V19H21C22.1 19 23 18.1 23 17V5C23 3.9 22.1 3 21 3ZM21 17H3V5H21V17Z" fill="#333333" />
+                          </svg>
+                          <div className="flex flex-col">
+                            <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>BK#{booking.reservation_id || booking.id.slice(-8)}</div>
+                            <div style={{ fontSize: '12px', fontWeight: 400, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{formatBookingDates(booking.start_date, booking.end_date)}</div>
+                            <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>P{booking.total_cost?.toLocaleString() || booking.cost?.toLocaleString() || "0"}</div>
+                          </div>
+                        </div>
+                        <div className="absolute top-2 right-2">
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="8" cy="2" r="1.5" fill="#333333" />
+                            <circle cx="8" cy="8" r="1.5" fill="#333333" />
+                            <circle cx="8" cy="14" r="1.5" fill="#333333" />
+                          </svg>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
           </>
         )}
@@ -602,7 +730,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
                   </div>
                   <div>
                     <label className="text-sm font-medium">Display Name</label>
-                    <p className="text-sm">BK#{selectedBooking.reservation_id || selectedBooking.id.slice(-8)}</p>
+                    <p className="text-sm">{selectedBooking.product_name || selectedBooking.project_name || "N/A"}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium">Total Payout</label>
@@ -626,13 +754,130 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
               </div>
             )}
             <DialogFooter>
-              <Button variant="outline" className="w-[90px] h-[24px] px-[29px] rounded-[6px] border-[1.5px] border-[#C4C4C4] bg-white">Decline</Button>
-              <Button onClick={handleAcceptBooking} disabled={isAccepting} className="w-[120px] h-[24px] rounded-[6.024px] bg-[#30C71D]">
+              <Button variant="outline" onClick={() => { setIsDialogOpen(false); setIsDeclineConfirmDialogOpen(true); }} className="w-[90px] h-[24px] px-[29px] rounded-[6px] border-[1.5px] border-[#C4C4C4] bg-white">Reject</Button>
+              <Button onClick={() => { setIsDialogOpen(false); setIsConfirmDialogOpen(true); }} disabled={isAccepting} className="w-[120px] h-[24px] rounded-[6.024px] bg-[#30C71D]">
                 {isAccepting ? <><Loader2 className="animate-spin mr-1 h-4 w-4" />Accepting...</> : "Accept"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+          <DialogContent className="w-[283px] h-[153px] p-1">
+            <DialogHeader className="relative p-0">
+              <DialogClose className="absolute top-2 right-2">
+                <X width="16" height="16" />
+              </DialogClose>
+            </DialogHeader>
+            <div className="flex flex-col items-center justify-center space-y-2 ">
+              <Image src="/check_outline.svg" alt="Check" width={32} height={32} />
+              <p className="text-sm text-center">Are you sure you want to accept?</p>
+            </div>
+            <div className="flex justify-center gap-2">
+              <Button variant="outline" onClick={() => { setIsConfirmDialogOpen(false); setIsDialogOpen(true); }} className="w-[129px] h-[28px] rounded-[5.992px] border-[1.198px] border-[#C4C4C4] bg-[#FFF]">Cancel</Button>
+              <Button onClick={async () => { setIsConfirming(true); try { await handleAcceptBooking(); } finally { setIsConfirming(false); setIsConfirmDialogOpen(false); } }} disabled={isConfirming} className="w-[115px] h-[28px] rounded-[5.992px] bg-[#1D0BEB]">
+                {isConfirming ? <><Loader2 className="animate-spin mr-1 h-4 w-4" />Confirming...</> : "Yes, proceed"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={isDeclineConfirmDialogOpen} onOpenChange={setIsDeclineConfirmDialogOpen}>
+          <DialogContent className="w-[283px] h-[153px] p-1">
+            <DialogHeader className="relative p-0">
+              <DialogClose className="absolute top-2 right-2">
+                <X width="16" height="16" />
+              </DialogClose>
+            </DialogHeader>
+            <div className="flex flex-col items-center justify-center space-y-2 ">
+              <Image src="/cancel_outline.svg" alt="Cancel" width={32} height={32} />
+              <p className="text-sm text-center">Are you sure you want to reject?</p>
+            </div>
+            <div className="flex justify-center gap-2">
+              <Button variant="outline" onClick={() => { setIsDeclineConfirmDialogOpen(false); setIsDialogOpen(true); }} className="w-[129px] h-[28px] rounded-[5.992px] border-[1.198px] border-[#C4C4C4] bg-[#FFF]">Cancel</Button>
+              <Button onClick={() => { setIsDeclineConfirmDialogOpen(false); setIsDeclineReasonDialogOpen(true); }} className="w-[115px] h-[28px] rounded-[5.992px] bg-[#1D0BEB]">
+                Yes, proceed
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={isDeclineReasonDialogOpen} onOpenChange={(open) => { setIsDeclineReasonDialogOpen(open); if (!open) { setSelectedReasons([]); setOtherReason(""); } }}>
+          <DialogContent style={{ width: '369px', height: '460px', flexShrink: 0 }} className="p-6">
+            <DialogHeader className="relative">
+              <DialogClose className="absolute top-2 right-2">
+                <X width="16" height="16" />
+              </DialogClose>
+            </DialogHeader>
+            <div className="flex flex-col items-center space-y-4">
+              <Image src="/boohk-logo.png" alt="boohk logo" width={40.984} height={51.228} />
+              <h1 className="text-lg font-semibold text-center">Booking declined.</h1>
+              <p style={{ color: '#333', textAlign: 'center', fontFamily: 'Inter', fontSize: '12px', fontWeight: 400, lineHeight: '114%' }}>To help us understand and improve future requests, would you mind selecting a reason?</p>
+              <div className="w-full space-y-2">
+                {["Timing doesn't work", "Creative not a good fit", "Screen unavailable or under maintenance", "Double booking or scheduling conflict", "Other"].map(reason => (
+                  <div key={reason} className="flex items-center space-x-2">
+                    <Checkbox
+                      className="border-[#333333]"
+                      checked={selectedReasons.includes(reason)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedReasons(prev => [...prev, reason]);
+                          setOtherReason(prev => {
+                            if (prev.includes(reason + '. ')) return prev;
+                            return prev + (prev && !prev.endsWith(' ') ? ' ' : '') + reason + '. ';
+                          });
+                        } else {
+                          setSelectedReasons(prev => prev.filter(r => r !== reason));
+                          setOtherReason(prev => prev.replace(new RegExp(reason + '\\. ', 'g'), ''));
+                        }
+                      }}
+                    />
+                    <label style={{ color: '#333', textAlign: 'center', fontFamily: 'Inter', fontSize: '12px', fontWeight: 400, lineHeight: '114%' }}>{reason}</label>
+                  </div>
+                ))}
+              </div>
+              <textarea
+                value={otherReason}
+                onChange={(e) => setOtherReason(e.target.value)}
+                maxLength={150}
+                placeholder="150 words"
+                className="w-full h-20 p-2 border rounded resize-none"
+                style={{ color: '#333', fontFamily: 'Inter', fontSize: '12px', fontWeight: 400, lineHeight: '114%' }}
+              />
+            </div>
+            <DialogFooter className="justify-end">
+              <Button onClick={handleSubmit} disabled={isSubmitting} className="w-[90px] h-[24px] rounded-[6.024px] bg-[#1D0BEB]" style={{ color: '#FFF', textAlign: 'center', fontFamily: 'Inter', fontSize: '12px', fontWeight: 700, lineHeight: '12px' }}>
+                {isSubmitting ? <><Loader2 className="animate-spin mr-1 h-4 w-4" />Sending...</> : "Send"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={isThankYouDialogOpen} onOpenChange={setIsThankYouDialogOpen}>
+          <DialogContent style={{ width: '382px', height: '259px' }} className="p-6">
+            <DialogHeader className="relative">
+              <DialogClose className="absolute top-2 right-2">
+                <X width="16" height="16" />
+              </DialogClose>
+            </DialogHeader>
+            <div className="flex flex-col items-center space-y-4">
+              <Image src="/boohk-logo.png" alt="boohk logo" width={40.984} height={51.228} style={{ imageRendering: 'pixelated', }} />
+              <h1 style={{ color: '#333', textAlign: 'center', fontFamily: 'Inter', fontSize: '22px', fontWeight: 700, lineHeight: '100%' }}>Thank you!</h1>
+              <p style={{ color: '#333', textAlign: 'center', fontFamily: 'Inter', fontSize: '12px', fontWeight: 400, lineHeight: '114%' }}>You’ve chosen not to accept this campaign at this time. No worries! Your screen remains available for future opportunities. We’ll keep you posted when new requests come in.</p>
+            </div>
+            <DialogFooter className="justify-end">
+              <Button onClick={() => setIsThankYouDialogOpen(false)} className="w-[90px] h-[24px] rounded-[6.024px] bg-[#1D0BEB]" style={{ color: '#FFF', textAlign: 'center', fontFamily: 'Inter', fontSize: '12px', fontWeight: 700, lineHeight: '12px' }}>OK</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        {congratulationsBooking && (
+          <BookingCongratulationsDialog
+            open={isBookingCongratulationsOpen}
+            onOpenChange={(open) => {
+              setIsBookingCongratulationsOpen(open)
+              if (!open) {
+                setCongratulationsBooking(null)
+              }
+            }}
+            booking={congratulationsBooking}
+          />
+        )}
       </div>
     )
   } else {

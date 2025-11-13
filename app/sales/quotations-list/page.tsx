@@ -55,6 +55,7 @@ import { SentHistoryDialog } from "@/components/sent-history-dialog"
 import { ComplianceDialog } from "@/components/compliance-dialog"
 import { SendQuotationOptionsDialog } from "@/components/send-quotation-options-dialog"
 import { ComplianceConfirmationDialog } from "@/components/compliance-confirmation-dialog"
+import { BookingCongratulationsDialog } from "@/components/BookingCongratulationsDialog"
 import { bookingService } from "@/lib/booking-service"
 import { searchQuotations } from "@/lib/algolia-service"
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
@@ -220,7 +221,9 @@ export default function QuotationsListPage() {
   const [companyData, setCompanyData] = useState<any>(null)
   const [unsubscribe, setUnsubscribe] = useState<(() => void) | null>(null)
    const [showReservationConfirmationDialog, setShowReservationConfirmationDialog] = useState(false)
-   const [selectedQuotationForReservation, setSelectedQuotationForReservation] = useState<any>(null)
+    const [selectedQuotationForReservation, setSelectedQuotationForReservation] = useState<any>(null)
+  const [showBookingCongratulationsDialog, setShowBookingCongratulationsDialog] = useState(false)
+  const [createdBooking, setCreatedBooking] = useState<any>(null)
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
@@ -1758,12 +1761,19 @@ export default function QuotationsListPage() {
 
       const bookingId = await bookingService.createBooking(bookingData, user.uid, userData.company_id, projectName.trim())
       console.log("[DEBUG] Booking created with ID:", bookingId)
-      toast({
-        title: "Reservation Created",
-        description: `A new reservation document has been created with ID: ${bookingId}.`,
-      })
 
-      // Close dialog and refresh
+      // Create booking object for congratulations dialog
+      const booking = {
+        id: bookingId,
+        reservation_id: bookingId, // Use bookingId as reservation_id
+        ...bookingData
+      }
+
+      // Show congratulations dialog
+      setCreatedBooking(booking)
+      setShowBookingCongratulationsDialog(true)
+
+      // Close project name dialog
       setProjectNameDialogOpen(false)
       setSelectedQuotationForProject(null)
       setProjectName("")
@@ -2278,6 +2288,12 @@ export default function QuotationsListPage() {
                 }))
             : []
         }
+      />
+
+      <BookingCongratulationsDialog
+        open={showBookingCongratulationsDialog}
+        onOpenChange={setShowBookingCongratulationsDialog}
+        booking={createdBooking}
       />
     </div>
   )

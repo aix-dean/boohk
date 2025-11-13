@@ -77,6 +77,8 @@ export interface Booking {
   isCollectibles?: boolean // Indicates if collectibles have been created for this booking
   items?: any // Added items field to store quotation items
   url?: string // Media URL for booking content
+  for_screening?: number // Status for screening (0 = pending, 1 = accepted)
+  airing_code?: string // Airing code generated when booking is accepted
 }
 
 export interface SalesRecord {

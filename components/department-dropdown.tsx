@@ -61,7 +61,7 @@ const departmentMapping: Partial<Record<RoleType, DepartmentOption>> = {
   },
   accounting: {
     name: "Accounting",
-    path: "/accounting",
+    path: "/accounting/transactions",
     role: "accounting",
     color: "bg-blue-500"
   },
