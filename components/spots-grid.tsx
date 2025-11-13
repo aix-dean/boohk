@@ -300,11 +300,18 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
   const [isAccepting, setIsAccepting] = useState(false)
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
   const [isConfirming, setIsConfirming] = useState(false)
+  const [isDeclineConfirmDialogOpen, setIsDeclineConfirmDialogOpen] = useState(false)
+  const [isDeclining, setIsDeclining] = useState(false)
   const [isBookingCongratulationsOpen, setIsBookingCongratulationsOpen] = useState(false)
   const [congratulationsBooking, setCongratulationsBooking] = useState<Booking | null>(null)
+  const [isDeclineReasonDialogOpen, setIsDeclineReasonDialogOpen] = useState(false)
+  const [selectedReasons, setSelectedReasons] = useState<string[]>([])
+  const [otherReason, setOtherReason] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isThankYouDialogOpen, setIsThankYouDialogOpen] = useState(false)
   console.log('bookingRequests:', bookingRequests)
   bookingRequests.forEach(booking => console.log(`Booking ${booking.id} for_screening:`, booking.for_screening))
-  const filteredBookings = bookingRequests
+  const filteredBookings = bookingRequests.filter(booking => booking.for_screening === 1)
   console.log('filteredBookings:', filteredBookings)
   const topRow = filteredBookings.filter((_, index) => index % 2 === 0)
   const bottomRow = filteredBookings.filter((_, index) => index % 2 === 1)
@@ -324,9 +331,9 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
       // Generate airing_code
       const airing_code = "BH" + Date.now()
 
-      // Update booking to set for_screening = 1 and airing_code
+      // Update booking to set for_screening = 2 (accepted) and airing_code
       await updateDoc(doc(db, "booking", selectedBooking.id), {
-        for_screening: 1,
+        for_screening: 2,
         airing_code,
         updated: new Date()
       })
@@ -463,6 +470,69 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
     }
   }
 
+  const handleDeclineBooking = async () => {
+    if (!selectedBooking) return
+
+    setIsDeclining(true)
+    try {
+      await updateDoc(doc(db, "booking", selectedBooking.id), {
+        for_screening: 3,
+        updated: new Date()
+      })
+
+      toast({
+        title: "Booking rejected",
+        description: "The booking has been rejected."
+      })
+
+      setIsDialogOpen(false)
+      setSelectedBooking(null)
+      onBookingAccepted?.()
+    } catch (error) {
+      console.error("Error rejecting booking:", error)
+      toast({
+        title: "Error",
+        description: "Failed to reject the booking. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsDeclining(false)
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!selectedBooking) return;
+    setIsSubmitting(true);
+    try {
+      await addDoc(collection(db, "booking_declined"), {
+        bookingId: selectedBooking.id,
+        selectedReasons,
+        otherReason,
+        declinedAt: serverTimestamp(),
+        clientId: selectedBooking.client?.id,
+        clientName: selectedBooking.client?.name,
+        startDate: selectedBooking.start_date,
+        endDate: selectedBooking.end_date,
+        totalCost: selectedBooking.total_cost || selectedBooking.cost,
+        productName: selectedBooking.product_name || selectedBooking.project_name,
+      });
+      await handleDeclineBooking();
+      setIsDeclineReasonDialogOpen(false);
+      setIsThankYouDialogOpen(true);
+      setSelectedReasons([]);
+      setOtherReason("");
+    } catch (error) {
+      console.error("Error declining booking:", error);
+      toast({
+        title: "Error",
+        description: "Failed to decline booking.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const spotsContent = (
     <div className="flex gap-[13.758px] overflow-x-scroll pb-4 w-full pr-4">
       {spots.map((spot) => (
@@ -475,7 +545,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
             <div className="absolute top-1 left-1 z-10">
               <Checkbox
                 checked={selectedSpots?.includes(spot.number) || false}
-                onChange={() => onSpotToggle(spot.number)}
+                onCheckedChange={() => onSpotToggle(spot.number)}
                 className="bg-white border-2 border-gray-300"
               />
             </div>
@@ -540,7 +610,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
   if (bg) {
     return (
       <div className="space-y-4">
-        {bookingRequests.length > 0 && (
+        {filteredBookings.length > 0 && (
           <>
             <div style={{ color: '#333', fontFamily: 'Inter', fontSize: '12px', fontWeight: '700', lineHeight: '100%' }}>Booking Requests</div>
             {/* Booking Requests Cards */}
@@ -684,7 +754,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
               </div>
             )}
             <DialogFooter>
-              <Button variant="outline" className="w-[90px] h-[24px] px-[29px] rounded-[6px] border-[1.5px] border-[#C4C4C4] bg-white">Decline</Button>
+              <Button variant="outline" onClick={() => { setIsDialogOpen(false); setIsDeclineConfirmDialogOpen(true); }} className="w-[90px] h-[24px] px-[29px] rounded-[6px] border-[1.5px] border-[#C4C4C4] bg-white">Reject</Button>
               <Button onClick={() => { setIsDialogOpen(false); setIsConfirmDialogOpen(true); }} disabled={isAccepting} className="w-[120px] h-[24px] rounded-[6.024px] bg-[#30C71D]">
                 {isAccepting ? <><Loader2 className="animate-spin mr-1 h-4 w-4" />Accepting...</> : "Accept"}
               </Button>
@@ -703,11 +773,97 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
               <p className="text-sm text-center">Are you sure you want to accept?</p>
             </div>
             <div className="flex justify-center gap-2">
-              <Button variant="outline" onClick={() => setIsConfirmDialogOpen(false)} className="w-[129px] h-[28px] rounded-[5.992px] border-[1.198px] border-[#C4C4C4] bg-[#FFF]">Cancel</Button>
+              <Button variant="outline" onClick={() => { setIsConfirmDialogOpen(false); setIsDialogOpen(true); }} className="w-[129px] h-[28px] rounded-[5.992px] border-[1.198px] border-[#C4C4C4] bg-[#FFF]">Cancel</Button>
               <Button onClick={async () => { setIsConfirming(true); try { await handleAcceptBooking(); } finally { setIsConfirming(false); setIsConfirmDialogOpen(false); } }} disabled={isConfirming} className="w-[115px] h-[28px] rounded-[5.992px] bg-[#1D0BEB]">
                 {isConfirming ? <><Loader2 className="animate-spin mr-1 h-4 w-4" />Confirming...</> : "Yes, proceed"}
               </Button>
             </div>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={isDeclineConfirmDialogOpen} onOpenChange={setIsDeclineConfirmDialogOpen}>
+          <DialogContent className="w-[283px] h-[153px] p-1">
+            <DialogHeader className="relative p-0">
+              <DialogClose className="absolute top-2 right-2">
+                <X width="16" height="16" />
+              </DialogClose>
+            </DialogHeader>
+            <div className="flex flex-col items-center justify-center space-y-2 ">
+              <Image src="/cancel_outline.svg" alt="Cancel" width={32} height={32} />
+              <p className="text-sm text-center">Are you sure you want to reject?</p>
+            </div>
+            <div className="flex justify-center gap-2">
+              <Button variant="outline" onClick={() => { setIsDeclineConfirmDialogOpen(false); setIsDialogOpen(true); }} className="w-[129px] h-[28px] rounded-[5.992px] border-[1.198px] border-[#C4C4C4] bg-[#FFF]">Cancel</Button>
+              <Button onClick={() => { setIsDeclineConfirmDialogOpen(false); setIsDeclineReasonDialogOpen(true); }} className="w-[115px] h-[28px] rounded-[5.992px] bg-[#1D0BEB]">
+                Yes, proceed
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={isDeclineReasonDialogOpen} onOpenChange={(open) => { setIsDeclineReasonDialogOpen(open); if (!open) { setSelectedReasons([]); setOtherReason(""); } }}>
+          <DialogContent style={{ width: '369px', height: '460px', flexShrink: 0 }} className="p-6">
+            <DialogHeader className="relative">
+              <DialogClose className="absolute top-2 right-2">
+                <X width="16" height="16" />
+              </DialogClose>
+            </DialogHeader>
+            <div className="flex flex-col items-center space-y-4">
+              <Image src="/boohk-logo.png" alt="boohk logo" width={40.984} height={51.228} />
+              <h1 className="text-lg font-semibold text-center">Booking declined.</h1>
+              <p style={{ color: '#333', textAlign: 'center', fontFamily: 'Inter', fontSize: '12px', fontWeight: 400, lineHeight: '114%' }}>To help us understand and improve future requests, would you mind selecting a reason?</p>
+              <div className="w-full space-y-2">
+                {["Timing doesn't work", "Creative not a good fit", "Screen unavailable or under maintenance", "Double booking or scheduling conflict", "Other"].map(reason => (
+                  <div key={reason} className="flex items-center space-x-2">
+                    <Checkbox
+                      className="border-[#333333]"
+                      checked={selectedReasons.includes(reason)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedReasons(prev => [...prev, reason]);
+                          setOtherReason(prev => {
+                            if (prev.includes(reason + '. ')) return prev;
+                            return prev + (prev && !prev.endsWith(' ') ? ' ' : '') + reason + '. ';
+                          });
+                        } else {
+                          setSelectedReasons(prev => prev.filter(r => r !== reason));
+                          setOtherReason(prev => prev.replace(new RegExp(reason + '\\. ', 'g'), ''));
+                        }
+                      }}
+                    />
+                    <label style={{ color: '#333', textAlign: 'center', fontFamily: 'Inter', fontSize: '12px', fontWeight: 400, lineHeight: '114%' }}>{reason}</label>
+                  </div>
+                ))}
+              </div>
+              <textarea
+                value={otherReason}
+                onChange={(e) => setOtherReason(e.target.value)}
+                maxLength={150}
+                placeholder="150 words"
+                className="w-full h-20 p-2 border rounded resize-none"
+                style={{ color: '#333', fontFamily: 'Inter', fontSize: '12px', fontWeight: 400, lineHeight: '114%' }}
+              />
+            </div>
+            <DialogFooter className="justify-end">
+              <Button onClick={handleSubmit} disabled={isSubmitting} className="w-[90px] h-[24px] rounded-[6.024px] bg-[#1D0BEB]" style={{ color: '#FFF', textAlign: 'center', fontFamily: 'Inter', fontSize: '12px', fontWeight: 700, lineHeight: '12px' }}>
+                {isSubmitting ? <><Loader2 className="animate-spin mr-1 h-4 w-4" />Sending...</> : "Send"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={isThankYouDialogOpen} onOpenChange={setIsThankYouDialogOpen}>
+          <DialogContent style={{ width: '382px', height: '259px' }} className="p-6">
+            <DialogHeader className="relative">
+              <DialogClose className="absolute top-2 right-2">
+                <X width="16" height="16" />
+              </DialogClose>
+            </DialogHeader>
+            <div className="flex flex-col items-center space-y-4">
+              <Image src="/boohk-logo.png" alt="boohk logo" width={40.984} height={51.228} style={{ imageRendering: 'pixelated', }} />
+              <h1 style={{ color: '#333', textAlign: 'center', fontFamily: 'Inter', fontSize: '22px', fontWeight: 700, lineHeight: '100%' }}>Thank you!</h1>
+              <p style={{ color: '#333', textAlign: 'center', fontFamily: 'Inter', fontSize: '12px', fontWeight: 400, lineHeight: '114%' }}>You’ve chosen not to accept this campaign at this time. No worries! Your screen remains available for future opportunities. We’ll keep you posted when new requests come in.</p>
+            </div>
+            <DialogFooter className="justify-end">
+              <Button onClick={() => setIsThankYouDialogOpen(false)} className="w-[90px] h-[24px] rounded-[6.024px] bg-[#1D0BEB]" style={{ color: '#FFF', textAlign: 'center', fontFamily: 'Inter', fontSize: '12px', fontWeight: 700, lineHeight: '12px' }}>OK</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
         {congratulationsBooking && (
