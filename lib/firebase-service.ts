@@ -130,6 +130,8 @@ export interface Product {
     isVideo: boolean
   }>
   playerIds?: string[]
+  spotUrls?: string[]
+  retailSpot?: Array<{ spotNumber: number }>
   categories?: string[]
   category_names?: string[]
   content_type?: string

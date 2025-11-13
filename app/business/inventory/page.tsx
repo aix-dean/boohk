@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { gsap } from "gsap"
 import { motion, useInView } from "framer-motion"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -16,6 +17,7 @@ import { Loader2, Plus, MapPin, ChevronLeft, ChevronRight, Search, List, Grid3X3
 import { getPaginatedUserProducts, getUserProductsCount, softDeleteProduct, createProduct, updateProduct, uploadFileToFirebaseStorage, getUserProductsRealtime, type Product } from "@/lib/firebase-service"
 import { searchProducts, type SearchResult } from "@/lib/algolia-service"
 import type { DocumentData, QueryDocumentSnapshot } from "firebase/firestore"
+import { serverTimestamp } from "firebase/firestore"
 import { toast } from "@/components/ui/use-toast"
 import { useResponsive } from "@/hooks/use-responsive"
 import { ResponsiveCardGrid } from "@/components/responsive-card-grid"
@@ -90,10 +92,10 @@ const handleFormattedNumberInput = (e: React.ChangeEvent<HTMLInputElement>, setV
 };
 
 const handlePriceBlur = (e: React.FocusEvent<HTMLInputElement>, setPrice: (value: string) => void) => {
-   const value = e.target.value;
-   const formatted = formatPriceOnBlur(value);
-   setPrice(formatted);
- };
+  const value = e.target.value;
+  const formatted = formatPriceOnBlur(value);
+  setPrice(formatted);
+};
 
 // Type for CMS data
 type CmsData = {
@@ -246,38 +248,38 @@ const validateDynamicContent = (cms: CmsData, siteType: string, setValidationErr
 }
 
 export default function BusinessInventoryPage() {
-   const router = useRouter()
-   const { user, userData, subscriptionData, refreshUserData } = useAuth()
-   const [allProducts, setAllProducts] = useState<Product[]>([])
-   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
-   const [displayedProducts, setDisplayedProducts] = useState<Product[]>([])
-   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
-   const [isSearching, setIsSearching] = useState(false)
-   const [loading, setLoading] = useState(true)
-   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
-   const { isMobile, isTablet } = useResponsive()
+  const router = useRouter()
+  const { user, userData, subscriptionData, refreshUserData } = useAuth()
+  const [allProducts, setAllProducts] = useState<Product[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+  const [displayedProducts, setDisplayedProducts] = useState<Product[]>([])
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null)
+  const { isMobile, isTablet } = useResponsive()
 
-   // Company registration dialog state
-   const [showCompanyDialog, setShowCompanyDialog] = useState(false)
+  // Company registration dialog state
+  const [showCompanyDialog, setShowCompanyDialog] = useState(false)
 
-   // Company update dialog state
-   const [showCompanyUpdateDialog, setShowCompanyUpdateDialog] = useState(false)
+  // Company update dialog state
+  const [showCompanyUpdateDialog, setShowCompanyUpdateDialog] = useState(false)
 
-   // Pagination state
-   const [currentPage, setCurrentPage] = useState(1)
-   const [totalItems, setTotalItems] = useState(0)
-   const [totalPages, setTotalPages] = useState(1)
-   const [loadingCount, setLoadingCount] = useState(false)
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const [loadingCount, setLoadingCount] = useState(false)
 
-   // Search and view mode state
-   const [searchQuery, setSearchQuery] = useState("")
-   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  // Search and view mode state
+  const [searchQuery, setSearchQuery] = useState("")
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
 
-   // Animation refs
-   const cardsRef = useRef<HTMLDivElement>(null)
-   const cardElementsRef = useRef<(HTMLDivElement | null)[]>([])
-   const tlRef = useRef<gsap.core.Timeline | null>(null)
+  // Animation refs
+  const cardsRef = useRef<HTMLDivElement>(null)
+  const cardElementsRef = useRef<(HTMLDivElement | null)[]>([])
+  const tlRef = useRef<gsap.core.Timeline | null>(null)
 
   // Subscription limit dialog state
   const [showSubscriptionLimitDialog, setShowSubscriptionLimitDialog] = useState(false)
@@ -293,15 +295,15 @@ export default function BusinessInventoryPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
   // Form state
-  const [siteType, setSiteType] = useState<"static" | "digital">("static")
+  const [siteType, setSiteType] = useState<"static" | "digital">("digital")
   const [cms, setCms] = useState<CmsData>({
     start_time: "06:00",
     end_time: "22:00",
-    spot_duration: "10",
-    loops_per_day: "18"
+    spot_duration: "",
+    loops_per_day: ""
   })
   const [validationError, setValidationError] = useState<string | null>(null)
-  const [category, setCategory] = useState(STATIC_CATEGORIES[0])
+  const [category, setCategory] = useState(DIGITAL_CATEGORIES[0])
   const [siteName, setSiteName] = useState("")
   const [location, setLocation] = useState("")
   const [locationLabel, setLocationLabel] = useState("")
@@ -318,11 +320,15 @@ export default function BusinessInventoryPage() {
   const [priceUnit, setPriceUnit] = useState<"per spot" | "per day" | "per month">("per month")
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-   const [landOwner, setLandOwner] = useState("")
-   const [partner, setPartner] = useState("")
-   const [orientation, setOrientation] = useState("")
-   const [locationVisibility, setLocationVisibility] = useState("")
-   const [locationVisibilityUnit, setLocationVisibilityUnit] = useState<string>("ft")
+  const [landOwner, setLandOwner] = useState("")
+  const [partner, setPartner] = useState("")
+  const [orientation, setOrientation] = useState("")
+  const [locationVisibility, setLocationVisibility] = useState("")
+  const [locationVisibilityUnit, setLocationVisibilityUnit] = useState<string>("ft")
+
+  const [playerId, setPlayerId] = useState("")
+  const [spotInputs, setSpotInputs] = useState<string[]>([])
+  const [selectedRetailSpots, setSelectedRetailSpots] = useState<number[]>([])
 
   // Fetch total count of products
   const fetchTotalCount = useCallback(async () => {
@@ -496,65 +502,65 @@ export default function BusinessInventoryPage() {
   }, [displayedProducts.length])
 
   // Animation logic for grid view only
-   const createAnimation = () => {
-     const validElements = cardElementsRef.current.filter(el => el !== null)
-     if (!validElements.length) return null
+  const createAnimation = () => {
+    const validElements = cardElementsRef.current.filter(el => el !== null)
+    if (!validElements.length) return null
 
-     // Set initial state
-     gsap.set(validElements, { y: 20, opacity: 0 })
+    // Set initial state
+    gsap.set(validElements, { y: 20, opacity: 0 })
 
-     const tl = gsap.timeline({ paused: true })
+    const tl = gsap.timeline({ paused: true })
 
-     // Animate items in with stagger
-     tl.to(validElements, {
-       y: 0,
-       opacity: 1,
-       duration: 0.3,
-       ease: "power3.out",
-       stagger: 0.05
-     })
+    // Animate items in with stagger
+    tl.to(validElements, {
+      y: 0,
+      opacity: 1,
+      duration: 0.3,
+      ease: "power3.out",
+      stagger: 0.05
+    })
 
-     return tl
-   }
+    return tl
+  }
 
-   useLayoutEffect(() => {
-     // Only run animation for grid view
-     if (viewMode !== "grid") {
-       tlRef.current?.kill()
-       tlRef.current = null
-       return
-     }
+  useLayoutEffect(() => {
+    // Only run animation for grid view
+    if (viewMode !== "grid") {
+      tlRef.current?.kill()
+      tlRef.current = null
+      return
+    }
 
-     // Kill existing animation
-     tlRef.current?.kill()
+    // Kill existing animation
+    tlRef.current?.kill()
 
-     const tl = createAnimation()
-     tlRef.current = tl
+    const tl = createAnimation()
+    tlRef.current = tl
 
-     // Play animation if we have items and it's not the initial load
-     if (tl && displayedProducts.length > 0 && !loading) {
-       // Small delay for smoother experience
-       setTimeout(() => {
-         tl.play()
-       }, 50)
-     }
+    // Play animation if we have items and it's not the initial load
+    if (tl && displayedProducts.length > 0 && !loading) {
+      // Small delay for smoother experience
+      setTimeout(() => {
+        tl.play()
+      }, 50)
+    }
 
-     return () => {
-       tl?.kill()
-       tlRef.current = null
-     }
-   }, [displayedProducts, loading, viewMode])
+    return () => {
+      tl?.kill()
+      tlRef.current = null
+    }
+  }, [displayedProducts, loading, viewMode])
 
   // Function to set card refs
   const setCardRef = (index: number) => (el: HTMLDivElement | null) => {
     cardElementsRef.current[index] = el
   }
-  
+
   // Animated list item component using Framer Motion
   const AnimatedListItem = ({ children, delay = 0, index }: { children: React.ReactNode, delay?: number, index: number }) => {
     const ref = useRef(null)
     const inView = useInView(ref, { amount: 0.5, once: false })
-  
+
     return (
       <motion.div
         ref={ref}
@@ -579,13 +585,13 @@ export default function BusinessInventoryPage() {
   }, [siteType])
 
   // Update category based on site type
-   useEffect(() => {
-     if (siteType === "static") {
-       setCategory(STATIC_CATEGORIES[0])
-     } else if (siteType === "digital") {
-       setCategory(DIGITAL_CATEGORIES[0])
-     }
-   }, [siteType])
+  useEffect(() => {
+    if (siteType === "static") {
+      setCategory(STATIC_CATEGORIES[0])
+    } else if (siteType === "digital") {
+      setCategory(DIGITAL_CATEGORIES[0])
+    }
+  }, [siteType])
 
   // Set default values when site type changes to digital
   useEffect(() => {
@@ -607,6 +613,21 @@ export default function BusinessInventoryPage() {
       setValidationError(null)
     }
   }, [cms.start_time, cms.end_time, cms.spot_duration, cms.loops_per_day, siteType])
+
+  // Update spot inputs when loops_per_day changes for digital sites
+  useEffect(() => {
+    if (siteType === "digital") {
+      const spots = parseInt(cms.loops_per_day) || 0
+      setSpotInputs(prev => {
+        if (prev.length !== spots) {
+          return new Array(spots).fill("")
+        }
+        return prev
+      })
+    } else {
+      setSpotInputs([])
+    }
+  }, [siteType, cms.loops_per_day])
 
   // Pagination handlers
   const goToPage = (page: number) => {
@@ -705,8 +726,8 @@ export default function BusinessInventoryPage() {
 
     // Initialize form with product data
     setEditingProduct(product)
-    setSiteType(product.content_type === "Dynamic" ? "digital" : "static")
-    setCategory(product.categories?.[0] || (product.content_type === "Dynamic" ? DIGITAL_CATEGORIES[0] : STATIC_CATEGORIES[0]))
+    setSiteType("digital")
+    setCategory(product.categories?.[0] || DIGITAL_CATEGORIES[0])
     setSiteName(product.name || "")
     setLocation(product.specs_rental?.location || "")
     setLocationLabel(product.specs_rental?.location_label || "")
@@ -720,7 +741,7 @@ export default function BusinessInventoryPage() {
     setSelectedAudience(product.specs_rental?.audience_types || [])
     setDailyTraffic(product.specs_rental?.traffic_count ? String(product.specs_rental.traffic_count) : "")
     setPrice(product.price ? formatPriceOnBlur(String(product.price)) : "0")
-    setPriceUnit(product.content_type === "Dynamic" ? "per spot" : "per month")
+    setPriceUnit("per spot")
     setUploadedFiles([])
     setCurrentImageIndex(0)
 
@@ -729,19 +750,21 @@ export default function BusinessInventoryPage() {
       setCms({
         start_time: product.cms.start_time || "06:00",
         end_time: product.cms.end_time || "22:00",
-        spot_duration: product.cms.spot_duration ? String(product.cms.spot_duration) : "10",
-        loops_per_day: product.cms.loops_per_day ? String(product.cms.loops_per_day) : "18",
+        spot_duration: product.cms.spot_duration ? String(product.cms.spot_duration) : "",
+        loops_per_day: product.cms.loops_per_day ? String(product.cms.loops_per_day) : "",
       })
     } else {
       // Set defaults for new digital sites
       setCms({
         start_time: "06:00",
         end_time: "22:00",
-        spot_duration: "10",
-        loops_per_day: "18",
+        spot_duration: "",
+        loops_per_day: "",
       })
     }
 
+    setPlayerId(product.playerIds?.[0] || "")
+    setSpotInputs(product.spotUrls || [])
     setValidationError(null)
     setShowEditSiteDialog(true)
   }
@@ -821,8 +844,8 @@ export default function BusinessInventoryPage() {
     console.log("All checks passed, opening add site dialog")
 
     // Reset form to defaults
-    setSiteType("static")
-    setCategory(STATIC_CATEGORIES[0])
+    setSiteType("digital")
+    setCategory(DIGITAL_CATEGORIES[0])
     setSiteName("")
     setLocation("")
     setLocationLabel("")
@@ -846,6 +869,8 @@ export default function BusinessInventoryPage() {
     setLocationVisibilityUnit("ft")
     setLocationVisibilityUnit("ft")
     setLocationVisibility("")
+    setPlayerId("")
+    setSpotInputs([])
 
     setShowAddSiteDialog(true)
   }
@@ -957,7 +982,7 @@ export default function BusinessInventoryPage() {
       console.log("All checks passed after company update, opening add site dialog")
       setShowAddSiteDialog(true)
       setValidationErrors([])
- 
+
       // Show info about required fields
       setTimeout(() => {
         toast({
@@ -1136,7 +1161,8 @@ export default function BusinessInventoryPage() {
             ]
           }
         ] : null,
-        playerIds: siteType === "digital" ? ["141a16d405254b8fb5c5173ef3a58cc5"] : null,
+        playerIds: siteType === "digital" ? [playerId || "default"] : undefined,
+        spotUrls: siteType === "digital" ? spotInputs : undefined,
         specs_rental: {
           audience_types: selectedAudience,
           location,
@@ -1179,8 +1205,8 @@ export default function BusinessInventoryPage() {
       await createProduct(productData)
 
       // Reset form
-      setSiteType("static")
-      setCategory(STATIC_CATEGORIES[0])
+      setSiteType("digital")
+      setCategory(DIGITAL_CATEGORIES[0])
       setSiteName("")
       setLocation("")
       setLocationLabel("")
@@ -1202,6 +1228,8 @@ export default function BusinessInventoryPage() {
       setOrientation("")
       setLocationVisibility("")
       setLocationVisibilityUnit("ft")
+      setPlayerId("")
+      setSpotInputs([])
 
       setShowAddSiteDialog(false)
 
@@ -1226,7 +1254,7 @@ export default function BusinessInventoryPage() {
   }
 
   const handleEditSubmit = async () => {
-    if (!editingProduct || !userData?.company_id || !user?.uid) return
+    if (!editingProduct || !editingProduct.id || !userData?.company_id || !user?.uid) return
 
     setIsSubmitting(true)
 
@@ -1315,9 +1343,8 @@ export default function BusinessInventoryPage() {
         })
       }
 
-      // Filter out removed images and combine with new media
-      const existingMedia = (editingProduct.media || []).filter(mediaItem => !imagesToRemove.includes(mediaItem.url))
-      const allMedia = [...existingMedia, ...mediaUrls]
+      // Combine with existing media
+      const allMedia = [...(editingProduct.media || []), ...mediaUrls]
 
       // Create update data
       const updateData = {
@@ -1352,7 +1379,8 @@ export default function BusinessInventoryPage() {
             ]
           }
         ] : null,
-        playerIds: siteType === "digital" ? ["141a16d405254b8fb5c5173ef3a58cc5"] : null,
+        playerIds: siteType === "digital" ? [playerId || "default"] : undefined,
+        spotUrls: siteType === "digital" ? spotInputs : undefined,
         specs_rental: {
           audience_types: selectedAudience,
           location,
@@ -1393,13 +1421,7 @@ export default function BusinessInventoryPage() {
       }
 
       // Update in Firestore
-      await updateDoc(doc(db, "products", editingProduct.id), updateData)
-
-      // Update local state
-      setProduct({
-        ...editingProduct,
-        ...updateData,
-      })
+      await updateProduct(editingProduct.id, updateData)
 
       setShowEditSiteDialog(false)
 
@@ -1533,35 +1555,6 @@ export default function BusinessInventoryPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
             {/* Left Column */}
             <div className="space-y-6">
-              {/* Site Type */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Site Type:</Label>
-                <div className="flex gap-2">
-                  <Button
-                    variant={siteType === "static" ? "default" : "outline"}
-                    onClick={() => setSiteType("static")}
-                    className={`flex-1 ${
-                      siteType === "static"
-                        ? "bg-[#30c71d] hover:bg-[#28a819] text-white border-[#30c71d]"
-                        : "bg-white border-[#c4c4c4] text-[#4e4e4e] hover:bg-gray-50"
-                    }`}
-                  >
-                    Static
-                  </Button>
-                  <Button
-                    variant={siteType === "digital" ? "default" : "outline"}
-                    onClick={() => setSiteType("digital")}
-                    className={`flex-1 ${
-                      siteType === "digital"
-                        ? "bg-[#30c71d] hover:bg-[#28a819] text-white border-[#30c71d]"
-                        : "bg-white border-[#c4c4c4] text-[#4e4e4e] hover:bg-gray-50"
-                    }`}
-                  >
-                    Digital
-                  </Button>
-                </div>
-              </div>
-
               {/* Category */}
               <div>
                 <Label className="text-[#4e4e4e] font-medium mb-3 block">Category:</Label>
@@ -1570,7 +1563,7 @@ export default function BusinessInventoryPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {(siteType === "static" ? STATIC_CATEGORIES : DIGITAL_CATEGORIES).map((cat) => (
+                    {DIGITAL_CATEGORIES.map((cat) => (
                       <SelectItem key={cat} value={cat}>
                         {cat}
                       </SelectItem>
@@ -1591,6 +1584,7 @@ export default function BusinessInventoryPage() {
                   onChange={(e) => setSiteName(e.target.value)}
                 />
               </div>
+
 
               {/* Location */}
               <div>
@@ -1761,11 +1755,10 @@ export default function BusinessInventoryPage() {
                       key={type}
                       variant="outline"
                       onClick={() => toggleAudience(type)}
-                      className={`w-12 h-10 ${
-                        selectedAudience.includes(type)
+                      className={`w-12 h-10 ${selectedAudience.includes(type)
                           ? "bg-[#30c71d] hover:bg-[#28a819] text-white border-[#30c71d]"
                           : "bg-white border-[#c4c4c4] text-[#4e4e4e] hover:bg-gray-50"
-                      }`}
+                        }`}
                     >
                       {type}
                     </Button>
@@ -1848,9 +1841,8 @@ export default function BusinessInventoryPage() {
                         {uploadedFiles.map((file, index) => (
                           <button
                             key={index}
-                            className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden ${
-                              index === currentImageIndex ? 'border-blue-500' : 'border-gray-300'
-                            }`}
+                            className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden ${index === currentImageIndex ? 'border-blue-500' : 'border-gray-300'
+                              }`}
                             onClick={() => setCurrentImageIndex(index)}
                           >
                             <img
@@ -1887,6 +1879,8 @@ export default function BusinessInventoryPage() {
                 </div>
               </div>
 
+
+
               {/* Price */}
               <div>
                 <Label className="text-[#4e4e4e] font-medium mb-3 block">
@@ -1899,7 +1893,7 @@ export default function BusinessInventoryPage() {
                     className="flex-1 border-[#c4c4c4]"
                     value={price}
                     onChange={(e) => handlePriceChange(e, setPrice)}
-                     onBlur={(e) => handlePriceBlur(e, setPrice)}
+                    onBlur={(e) => handlePriceBlur(e, setPrice)}
                   />
                   <Select value={priceUnit} disabled>
                     <SelectTrigger className="w-28 border-[#c4c4c4] bg-gray-50">
@@ -1918,7 +1912,18 @@ export default function BusinessInventoryPage() {
               {siteType === "digital" && (
                 <div>
                   <Label className="text-[#4e4e4e] font-medium mb-3 block">Digital Content Settings:</Label>
+                    <div className="space-y-2 mb-2">
+                      <Label className="text-[#4e4e4e] font-medium mb-3 block">Player ID:</Label>
+                      <Input
+                        placeholder="Enter player ID"
+                        className="border-[#c4c4c4]"
+                        value={playerId}
+                        onChange={(e) => setPlayerId(e.target.value)}
+                      />
+                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Player ID */}
+             
                     <div className="space-y-2">
                       <Label htmlFor="add-start_time" className="text-[#4e4e4e] font-medium mb-3 block">Start Time</Label>
                       <Input
@@ -1973,11 +1978,10 @@ export default function BusinessInventoryPage() {
                   {/* Validation feedback display */}
                   {validationError && (
                     <div
-                      className={`mt-4 p-4 rounded-lg border ${
-                        validationError.startsWith("✓")
+                      className={`mt-4 p-4 rounded-lg border ${validationError.startsWith("✓")
                           ? "bg-green-50 border-green-200 text-green-800"
                           : "bg-red-50 border-red-200 text-red-800"
-                      }`}
+                        }`}
                     >
                       <div className="text-sm font-medium mb-2">
                         {validationError.startsWith("✓") ? "Configuration Valid" : "Configuration Error"}
@@ -1987,6 +1991,33 @@ export default function BusinessInventoryPage() {
                   )}
                 </div>
               )}
+
+              {/* Spot Inputs for Digital Sites */}
+              {siteType === "digital" && spotInputs.length > 0 && (
+                <div>
+                  <Label className="text-[#4e4e4e] font-medium mb-3 block">Spot Configuration:</Label>
+                  <div className="grid grid-cols-5 gap-4">
+                    {spotInputs.map((input, index) => (
+                      <div
+                        key={index}
+                        className={`flex flex-col h-[70px] w-[70px] items-center justify-center shadow-md rounded-[10px] px-3 py-2 cursor-pointer ${selectedRetailSpots.includes(index + 1) ? 'bg-indigo-100' : 'bg-white'}`}
+                        onClick={() => {
+                          if (selectedRetailSpots.includes(index + 1)) {
+                            setSelectedRetailSpots(prev => prev.filter(id => id !== index + 1))
+                          } else {
+                            setSelectedRetailSpots(prev => [...prev, index + 1])
+                          }
+                        }}
+                      >
+                        <span className="text-xs text-center font-semibold">
+                          {index + 1} / {spotInputs.length}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
 
@@ -2055,35 +2086,6 @@ export default function BusinessInventoryPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
             {/* Left Column */}
             <div className="space-y-6">
-              {/* Site Type */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Site Type:</Label>
-                <div className="flex gap-2">
-                  <Button
-                    variant={siteType === "static" ? "default" : "outline"}
-                    onClick={() => setSiteType("static")}
-                    className={`flex-1 ${
-                      siteType === "static"
-                        ? "bg-[#30c71d] hover:bg-[#28a819] text-white border-[#30c71d]"
-                        : "bg-white border-[#c4c4c4] text-[#4e4e4e] hover:bg-gray-50"
-                    }`}
-                  >
-                    Static
-                  </Button>
-                  <Button
-                    variant={siteType === "digital" ? "default" : "outline"}
-                    onClick={() => setSiteType("digital")}
-                    className={`flex-1 ${
-                      siteType === "digital"
-                        ? "bg-[#30c71d] hover:bg-[#28a819] text-white border-[#30c71d]"
-                        : "bg-white border-[#c4c4c4] text-[#4e4e4e] hover:bg-gray-50"
-                    }`}
-                  >
-                    Digital
-                  </Button>
-                </div>
-              </div>
-
               {/* Category */}
               <div>
                 <Label className="text-[#4e4e4e] font-medium mb-3 block">Category:</Label>
@@ -2092,7 +2094,7 @@ export default function BusinessInventoryPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {(siteType === "static" ? STATIC_CATEGORIES : DIGITAL_CATEGORIES).map((cat) => (
+                    {DIGITAL_CATEGORIES.map((cat) => (
                       <SelectItem key={cat} value={cat}>
                         {cat}
                       </SelectItem>
@@ -2283,11 +2285,10 @@ export default function BusinessInventoryPage() {
                       key={type}
                       variant="outline"
                       onClick={() => toggleAudience(type)}
-                      className={`w-12 h-10 ${
-                        selectedAudience.includes(type)
+                      className={`w-12 h-10 ${selectedAudience.includes(type)
                           ? "bg-[#30c71d] hover:bg-[#28a819] text-white border-[#30c71d]"
                           : "bg-white border-[#c4c4c4] text-[#4e4e4e] hover:bg-gray-50"
-                      }`}
+                        }`}
                     >
                       {type}
                     </Button>
@@ -2370,9 +2371,8 @@ export default function BusinessInventoryPage() {
                         {uploadedFiles.map((file, index) => (
                           <button
                             key={index}
-                            className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden ${
-                              index === currentImageIndex ? 'border-blue-500' : 'border-gray-300'
-                            }`}
+                            className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden ${index === currentImageIndex ? 'border-blue-500' : 'border-gray-300'
+                              }`}
                             onClick={() => setCurrentImageIndex(index)}
                           >
                             <img
@@ -2421,7 +2421,7 @@ export default function BusinessInventoryPage() {
                     className="flex-1 border-[#c4c4c4]"
                     value={price}
                     onChange={(e) => handlePriceChange(e, setPrice)}
-                     onBlur={(e) => handlePriceBlur(e, setPrice)}
+                    onBlur={(e) => handlePriceBlur(e, setPrice)}
                   />
                   <Select value={priceUnit} disabled>
                     <SelectTrigger className="w-28 border-[#c4c4c4] bg-gray-50">
