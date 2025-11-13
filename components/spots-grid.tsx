@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { X, Loader2 } from "lucide-react"
@@ -41,11 +41,26 @@ interface SpotsGridProps {
 interface MediaPlayerProps {
   url?: string
   className?: string
+  controls?: boolean
+  playing?: boolean
 }
 
-const MediaPlayer: React.FC<MediaPlayerProps> = ({ url, className = "w-full h-full object-contain rounded-[10px]" }) => {
+const MediaPlayer: React.FC<MediaPlayerProps> = ({ url, className = "w-full h-full object-contain rounded-[10px]", controls = true, playing = false }) => {
   const [mediaError, setMediaError] = useState<string | null>(null)
   const [fallbackContent, setFallbackContent] = useState<React.JSX.Element | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    if (videoRef.current) {
+      if (playing) {
+        videoRef.current.play().catch(() => {
+          // Ignore play errors (e.g., user interaction required)
+        })
+      } else {
+        videoRef.current.pause()
+      }
+    }
+  }, [playing])
 
   // URL validation function
   const isValidUrl = (url: string): boolean => {
@@ -219,10 +234,11 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ url, className = "w-full h-fu
   } else if (mimeType?.startsWith('video/')) {
     return (
       <video
-        controls
-        autoPlay
+        ref={videoRef}
+        controls={controls}
         preload="metadata"
         className={className}
+        muted // Add muted to allow autoplay on hover
         onError={(e) => {
           const target = e.target as HTMLVideoElement
           let errorMessage = 'Video failed to load'
@@ -309,12 +325,73 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
   const [otherReason, setOtherReason] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isThankYouDialogOpen, setIsThankYouDialogOpen] = useState(false)
+  const [spotImageUrls, setSpotImageUrls] = useState<Record<number, string>>({})
+  const [hoveredSpots, setHoveredSpots] = useState<Record<number, boolean>>({})
   console.log('bookingRequests:', bookingRequests)
   bookingRequests.forEach(booking => console.log(`Booking ${booking.id} for_screening:`, booking.for_screening))
   const filteredBookings = bookingRequests.filter(booking => booking.for_screening === 1)
   console.log('filteredBookings:', filteredBookings)
   const topRow = filteredBookings.filter((_, index) => index % 2 === 0)
   const bottomRow = filteredBookings.filter((_, index) => index % 2 === 1)
+
+  useEffect(() => {
+    if (!productId) return
+
+    const fetchSpotImages = async () => {
+      try {
+        // Fetch product
+        const productRef = doc(db, "products", productId)
+        const productSnap = await getDoc(productRef)
+        if (!productSnap.exists()) return
+        const product = productSnap.data()
+
+        // Query playlists
+        const playlistQuery = query(
+          collection(db, "playlist"),
+          where("product_id", "==", productId),
+          where("playerIds", "==", product.playerIds)
+        )
+        const playlistSnap = await getDocs(playlistQuery)
+        const playlists = playlistSnap.docs.map(doc => doc.data())
+
+        // Filter active pages
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const activePages = []
+        playlists.forEach(playlist => {
+          if (playlist.pages) {
+            playlist.pages.forEach((page: any) => {
+              if (page.schedules?.every((schedule: any) => {
+                let endDate = schedule.endDate?.toDate ? schedule.endDate.toDate() : new Date(schedule.endDate)
+                endDate.setHours(0, 0, 0, 0)
+                return endDate >= today
+              })) {
+                activePages.push(page)
+              }
+            })
+          }
+        })
+
+        // Map spot numbers to image URLs
+        const urls: Record<number, string> = {}
+        activePages.forEach((page: any) => {
+          if (page.spot_number && page.widgets && page.widgets.length > 0) {
+            // Assume first widget has the url
+            const widget = page.widgets[0]
+            if (widget.url) {
+              urls[page.spot_number] = widget.url
+            }
+          }
+        })
+
+        setSpotImageUrls(urls)
+      } catch (error) {
+        console.error("Error fetching spot images:", error)
+      }
+    }
+
+    fetchSpotImages()
+  }, [productId])
 
 
   const handleSpotClick = (spotNumber: number) => {
@@ -540,47 +617,23 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
           key={spot.id}
           className="relative flex-shrink-0 w-[110px] h-[197px] bg-white p-1.5 rounded-[14px] shadow-[-1px_3px_7px_-1px_rgba(0,0,0,0.25)] border border-gray-200 overflow-hidden cursor-pointer hover:shadow-lg transition-shadow flex flex-col"
           onClick={() => onSpotToggle ? onSpotToggle(spot.number) : handleSpotClick(spot.number)}
+          onMouseEnter={() => setHoveredSpots(prev => ({ ...prev, [spot.number]: true }))}
+          onMouseLeave={() => setHoveredSpots(prev => ({ ...prev, [spot.number]: false }))}
         >
-          {onSpotToggle && (
-            <div className="absolute top-1 left-1 z-10">
-              <Checkbox
-                checked={selectedSpots?.includes(spot.number) || false}
-                onCheckedChange={() => onSpotToggle(spot.number)}
-                className="bg-white border-2 border-gray-300"
-              />
-            </div>
-          )}
-
           {/* Image Section */}
           <div className="flex-1 p-1 rounded-[10px] bg-white flex justify-center relative overflow-hidden">
-            {spot.imageUrl ? (
-              <>
-                {console.log(`Rendering image for spot ${spot.number}:`, spot.imageUrl)}
-                <Image
-                  src={spot.imageUrl}
-                  alt={`Spot ${spot.number} report image`}
-                  fill
-                  className="object-cover"
-                  onError={(e) => {
-                    console.log(`Image failed to load for spot ${spot.number}:`, spot.imageUrl)
-                    const target = e.target as HTMLImageElement
-                    target.style.display = 'none'
-                    const parent = target.parentElement
-                    if (parent) {
-                      const fallback = document.createElement('span')
-                      fallback.className = 'text-gray-400 text-xs'
-                      fallback.textContent = `Spot ${spot.number}`
-                      parent.appendChild(fallback)
-                    }
-                  }}
-                />
-              </>
-            ) : (
-              <>
-                {console.log(`No imageUrl for spot ${spot.number}`)}
-                <span className="text-gray-400 text-xs">Spot {spot.number}</span>
-              </>
-            )}
+            {(() => {
+              const imageUrl = spotImageUrls[spot.number] || spot.imageUrl
+              return imageUrl ? (
+                <>
+                  <MediaPlayer url={imageUrl} className="w-full h-full object-cover rounded-[10px]" controls={false} playing={hoveredSpots[spot.number] || false} />
+                </>
+              ) : (
+                <>
+
+                </>
+              )
+            })()}
           </div>
 
           {/* Content Section */}
@@ -597,9 +650,13 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
             </div>
 
             {/* Client Name */}
-            <div className={`text-[11px] font-semibold truncate ${spot.status === "occupied" ? "text-black" : "text-[#a1a1a1]"
+            <div className={`text-[11px] truncate ${spot.status === "occupied" ? "text-black" : "text-[#a1a1a1]"
               }`}>
-              {spot.clientName || "Filler Content 1"}
+              {`${spot.endDate ? `Till ${new Date(spot.endDate).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}` : "-"}` || "-"}
             </div>
           </div>
         </div>
