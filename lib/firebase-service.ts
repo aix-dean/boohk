@@ -133,6 +133,9 @@ export interface Product {
   playerIds?: string[]
   spotUrls?: string[]
   retailSpot?: Array<{ spotNumber: number }>
+  retail_spot?: {
+    spot_number?: number[]
+  }
   categories?: string[]
   category_names?: string[]
   content_type?: string
@@ -143,6 +146,7 @@ export interface Product {
     loops_per_day?: number
     spots_per_loop?: number
   } | null
+  pages?: any[] | null
   specs_rental?: {
     audience_types?: string[]
     geopoint?: GeoPoint

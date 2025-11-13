@@ -329,7 +329,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
   const [hoveredSpots, setHoveredSpots] = useState<Record<number, boolean>>({})
   console.log('bookingRequests:', bookingRequests)
   bookingRequests.forEach(booking => console.log(`Booking ${booking.id} for_screening:`, booking.for_screening))
-  const filteredBookings = bookingRequests.filter(booking => booking.for_screening === 1)
+  const filteredBookings = bookingRequests.filter(booking => booking.for_screening === 0)
   console.log('filteredBookings:', filteredBookings)
   const topRow = filteredBookings.filter((_, index) => index % 2 === 0)
   const bottomRow = filteredBookings.filter((_, index) => index % 2 === 1)

@@ -45,18 +45,19 @@ interface Booking {
  }
 
 interface Product {
-  id?: string
-  site_code?: string
-  specs_rental?: {
-    site_code?: string
-    location?: string
-  }
-  light?: {
-    site_code?: string
-    location?: string
-  }
-  siteCode?: string
-  [key: string]: any
+   id?: string
+   name?: string
+   site_code?: string
+   specs_rental?: {
+     site_code?: string
+     location?: string
+   }
+   light?: {
+     site_code?: string
+     location?: string
+   }
+   siteCode?: string
+   [key: string]: any
 }
 
 // Function to get site code from product - following the pattern from sales dashboard
@@ -296,10 +297,9 @@ export default function ReservationsPage() {
     console.log("Using client-side filtering")
     const filtered = bookings.filter((booking) => {
       const product = booking.product_id ? products[booking.product_id] : null
-      const siteCode = getSiteCode(product)
 
       const matches = (
-        siteCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         booking.client_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         booking.client_company_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         booking.client?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -511,7 +511,7 @@ export default function ReservationsPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900 mb-1">Reservations</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 mb-1">Transactions</h1>
           <p className="text-sm text-gray-600">See the status of the quotations you've generated</p>
         </div>
 
@@ -537,18 +537,16 @@ export default function ReservationsPage() {
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead className="font-semibold text-gray-900">Reservation ID</TableHead>
-                <TableHead className="font-semibold text-gray-900">Site</TableHead>
-                <TableHead className="font-semibold text-gray-900">Client</TableHead>
-                <TableHead className="font-semibold text-gray-900">From</TableHead>
-                <TableHead className="font-semibold text-gray-900">To</TableHead>
-                <TableHead className="font-semibold text-gray-900">Total</TableHead>
-                <TableHead className="font-semibold text-gray-900">Status</TableHead>
-                <TableHead className="font-semibold text-gray-900">Project Compliance</TableHead>
-                <TableHead className="font-semibold text-gray-900">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
+               <TableRow className="bg-gray-50">
+                 <TableHead className="font-semibold text-gray-900">Airing ID</TableHead>
+                 <TableHead className="font-semibold text-gray-900">Product</TableHead>
+                 <TableHead className="font-semibold text-gray-900">Client</TableHead>
+                 <TableHead className="font-semibold text-gray-900">From</TableHead>
+                 <TableHead className="font-semibold text-gray-900">To</TableHead>
+                 <TableHead className="font-semibold text-gray-900">Status</TableHead>
+                 <TableHead className="font-semibold text-gray-900">Actions</TableHead>
+               </TableRow>
+             </TableHeader>
             <TableBody>
               {(loading || isSearchingAlgolia) ? (
                 Array(5)
@@ -571,12 +569,6 @@ export default function ReservationsPage() {
                         <Skeleton className="h-4 w-24" />
                       </TableCell>
                       <TableCell>
-                        <Skeleton className="h-4 w-20" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-4 w-16" />
-                      </TableCell>
-                      <TableCell>
                         <Skeleton className="h-4 w-16" />
                       </TableCell>
                       <TableCell>
@@ -586,7 +578,7 @@ export default function ReservationsPage() {
                   ))
               ) : displayedReservations.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                     No reservations found
                   </TableCell>
                 </TableRow>
@@ -606,7 +598,6 @@ export default function ReservationsPage() {
                   const projectCompliance = isSearchResult ? null : (item as Booking).projectCompliance
 
                   const product = !isSearchResult && (item as Booking).product_id ? products[(item as Booking).product_id!] : null
-                  const siteCode = getSiteCode(product)
                   const compliance = projectCompliance ? getProjectCompliance(item as Booking) : null
                   const isExpanded = expandedCompliance.has(bookingId)
 
@@ -617,7 +608,7 @@ export default function ReservationsPage() {
                       onClick={() => router.push(`/sales/reservation/${bookingId}`)}
                     >
                       <TableCell className="font-medium text-sm font-mono">{reservationId || "N/A"}</TableCell>
-                      <TableCell className="font-medium">{productName || siteCode || "-"}</TableCell>
+                      <TableCell className="font-medium">{product?.name || productName || "-"}</TableCell>
                       <TableCell>
                         {(() => {
                           const companyName = clientCompanyName || client?.company_name || "";
@@ -635,7 +626,6 @@ export default function ReservationsPage() {
                       </TableCell>
                       <TableCell>{formatDate(startDate)}</TableCell>
                       <TableCell>{formatDate(endDate)}</TableCell>
-                      <TableCell>{calculateDuration(startDate, endDate)}</TableCell>
                       <TableCell>
                         <Badge
                           variant={status?.toLowerCase() === "confirmed" ? "default" : "secondary"}
@@ -647,183 +637,6 @@ export default function ReservationsPage() {
                         >
                           {status?.toUpperCase() || "PENDING"}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="py-3 text-sm text-gray-700">
-                        {compliance ? (
-                          <div className="space-y-2">
-                            <div
-                              className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleComplianceExpansion(bookingId);
-                              }}
-                            >
-                              <span className="font-medium">
-                                {compliance.completed}/{compliance.total}
-                              </span>
-                              <div className="w-2 h-2 rounded-full bg-gray-300"></div>
-                              <div className="transition-transform duration-200 ease-in-out">
-                                {isExpanded ? (
-                                  <ChevronDown className="w-3 h-3 text-gray-400" />
-                                ) : (
-                                  <ChevronRight className="w-3 h-3 text-gray-400" />
-                                )}
-                              </div>
-                            </div>
-
-                            <div
-                              className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                                isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-                              }`}
-                            >
-                              <div className="space-y-1 pt-1">
-                                  <p className="text-xs font-semibold text-gray-800 mt-2 mb-1">To Reserve</p>
-                                  {compliance.toReserve.map((complianceItem: any, index: number) => {
-                                    const uploadKey = `${bookingId}-${complianceItem.key}`
-                                    const isUploading = uploadingFiles.has(uploadKey)
-
-                                    return (
-                                      <div
-                                        key={index}
-                                        className="flex items-center justify-between text-xs animate-in fade-in-0 slide-in-from-top-1"
-                                        style={{
-                                          animationDelay: isExpanded ? `${index * 50}ms` : "0ms",
-                                          animationDuration: "200ms",
-                                        }}
-                                      >
-                                        <div className="flex items-center gap-2">
-                                          {complianceItem.status === "completed" ? (
-                                            <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                                              <CheckCircle className="w-3 h-3 text-white" />
-                                            </div>
-                                          ) : (
-                                            <div className="w-4 h-4 rounded-full border border-gray-300 flex-shrink-0"></div>
-                                          )}
-                                          <div className="flex flex-col">
-                                            <span className="text-gray-700">{complianceItem.name}</span>
-                                            {complianceItem.note && <span className="text-xs text-gray-500 italic">{complianceItem.note}</span>}
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                          {complianceItem.file && complianceItem.fileUrl ? (
-                                            <a
-                                              href={complianceItem.fileUrl}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="text-blue-600 hover:underline cursor-pointer flex items-center gap-1"
-                                              onClick={(e) => e.stopPropagation()}
-                                            >
-                                              <FileText className="w-3 h-3" />
-                                              {complianceItem.file}
-                                            </a>
-                                          ) : complianceItem.status === "upload" ? (
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              className="h-6 px-2 text-xs bg-transparent"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                triggerFileUpload(bookingId, complianceItem.key);
-                                              }}
-                                              disabled={isUploading}
-                                            >
-                                              {isUploading ? (
-                                                <>
-                                                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                                  Uploading...
-                                                </>
-                                              ) : (
-                                                <>
-                                                  <Upload className="w-3 h-3 mr-1" />
-                                                  Upload
-                                                </>
-                                              )}
-                                            </Button>
-                                          ) : complianceItem.status === "confirmation" ? (
-                                            <span className="text-gray-500 bg-gray-100 px-1 py-0.5 rounded text-xs">
-                                              Pending
-                                            </span>
-                                          ) : null}
-                                        </div>
-                                      </div>
-                                    )
-                                  })}
-
-                                  <p className="text-xs font-semibold text-gray-800 mt-4 mb-1">Other Requirements</p>
-                                  {compliance.otherRequirements.map((complianceItem: any, index: number) => {
-                                    const uploadKey = `${bookingId}-${complianceItem.key}`
-                                    const isUploading = uploadingFiles.has(uploadKey)
-
-                                    return (
-                                      <div
-                                        key={index}
-                                        className="flex items-center justify-between text-xs animate-in fade-in-0 slide-in-from-top-1"
-                                        style={{
-                                          animationDelay: isExpanded ? `${index * 50}ms` : "0ms",
-                                          animationDuration: "200ms",
-                                        }}
-                                      >
-                                        <div className="flex items-center gap-2">
-                                          {complianceItem.status === "completed" ? (
-                                            <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                                              <CheckCircle className="w-3 h-3 text-white" />
-                                            </div>
-                                          ) : (
-                                            <div className="w-4 h-4 rounded-full border border-gray-300 flex-shrink-0"></div>
-                                          )}
-                                          <span className="text-gray-700">{complianceItem.name}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                          {complianceItem.file && complianceItem.fileUrl ? (
-                                            <a
-                                              href={complianceItem.fileUrl}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="text-blue-600 hover:underline cursor-pointer flex items-center gap-1"
-                                              onClick={(e) => e.stopPropagation()}
-                                            >
-                                              <FileText className="w-3 h-3" />
-                                              {complianceItem.file}
-                                            </a>
-                                          ) : complianceItem.status === "upload" ? (
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              className="h-6 px-2 text-xs bg-transparent"
-                                              onClick={(e) => {
-                                                e.stopPropagation()
-                                                triggerFileUpload(bookingId, complianceItem.key)
-                                              }}
-                                              disabled={isUploading}
-                                            >
-                                              {isUploading ? (
-                                                <>
-                                                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                                  Uploading...
-                                                </>
-                                              ) : (
-                                                <>
-                                                  <Upload className="w-3 h-3 mr-1" />
-                                                  Upload
-                                                </>
-                                              )}
-                                            </Button>
-                                          ) : complianceItem.status === "confirmation" ? (
-                                            <span className="text-gray-500 bg-gray-100 px-1 py-0.5 rounded text-xs">
-                                              Pending
-                                            </span>
-                                          ) : null}
-                                        </div>
-                                      </div>
-                                    )
-                                  })}
-
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">N/A</span>
-                        )}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>

@@ -601,7 +601,7 @@ export default function BusinessInventoryPage() {
         start_time: "06:00",
         end_time: "22:00",
         spot_duration: "10",
-        loops_per_day: "18",
+        loops_per_day: "",
       })
     }
   }, [siteType])
@@ -752,7 +752,7 @@ export default function BusinessInventoryPage() {
         start_time: product.cms.start_time || "06:00",
         end_time: product.cms.end_time || "22:00",
         spot_duration: product.cms.spot_duration ? String(product.cms.spot_duration) : "",
-        loops_per_day: product.cms.loops_per_day ? String(product.cms.loops_per_day) : "",
+        loops_per_day: "", // Always empty when opening
       })
     } else {
       // Set defaults for new digital sites
@@ -766,6 +766,7 @@ export default function BusinessInventoryPage() {
 
     setPlayerId(product.playerIds?.[0] || "")
     setSpotInputs(product.spotUrls || [])
+    setSelectedRetailSpots(product.retail_spot?.spot_number || [])
     setValidationError(null)
     setShowEditSiteDialog(true)
   }
@@ -872,6 +873,7 @@ export default function BusinessInventoryPage() {
     setLocationVisibility("")
     setPlayerId("")
     setSpotInputs([])
+    setSelectedRetailSpots([])
 
     setShowAddSiteDialog(true)
   }
@@ -1162,7 +1164,7 @@ export default function BusinessInventoryPage() {
             ]
           }
         ] : null,
-        playerIds: siteType === "digital" ? [playerId || "default"] : undefined,
+        playerIds: siteType === "digital" ? [playerId || ""] : undefined,
         spotUrls: siteType === "digital" ? spotInputs : undefined,
         specs_rental: {
           audience_types: selectedAudience,
@@ -1198,6 +1200,7 @@ export default function BusinessInventoryPage() {
             power_consumption_monthly: null,
           },
         },
+        ...(siteType === "digital" && { retail_spot: { spot_number: selectedRetailSpots } }),
         media: mediaUrls,
         type: "RENTAL",
         active: true,
@@ -1231,6 +1234,7 @@ export default function BusinessInventoryPage() {
       setLocationVisibilityUnit("ft")
       setPlayerId("")
       setSpotInputs([])
+      setSelectedRetailSpots([])
 
       setShowAddSiteDialog(false)
 
@@ -1380,7 +1384,7 @@ export default function BusinessInventoryPage() {
             ]
           }
         ] : null,
-        playerIds: siteType === "digital" ? [playerId || "default"] : undefined,
+        playerIds: siteType === "digital" ? [playerId || ""] : undefined,
         spotUrls: siteType === "digital" ? spotInputs : undefined,
         specs_rental: {
           audience_types: selectedAudience,
@@ -1416,6 +1420,7 @@ export default function BusinessInventoryPage() {
             power_consumption_monthly: null,
           },
         },
+        ...(siteType === "digital" && { retail_spot: { spot_number: selectedRetailSpots } }),
         media: allMedia,
         type: "RENTAL",
         updated: serverTimestamp(),
@@ -2436,6 +2441,117 @@ export default function BusinessInventoryPage() {
                   </Select>
                 </div>
               </div>
+
+              {/* Dynamic Settings - Only show for digital site type */}
+              {siteType === "digital" && (
+                <div>
+                  <Label className="text-[#4e4e4e] font-medium mb-3 block">Digital Content Settings:</Label>
+                    <div className="space-y-2 mb-2">
+                      <Label className="text-[#4e4e4e] font-medium mb-3 block">Player ID:</Label>
+                      <Input
+                        placeholder="Enter player ID"
+                        className="border-[#c4c4c4]"
+                        value={playerId}
+                        onChange={(e) => setPlayerId(e.target.value)}
+                      />
+                   </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Player ID */}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-start_time" className="text-[#4e4e4e] font-medium mb-3 block">Start Time</Label>
+                      <Input
+                        id="edit-start_time"
+                        type="time"
+                        className="border-[#c4c4c4]"
+                        value={cms.start_time}
+                        onChange={(e) => setCms(prev => ({ ...prev, start_time: e.target.value }))}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-end_time" className="text-[#4e4e4e] font-medium mb-3 block">End Time</Label>
+                      <Input
+                        id="edit-end_time"
+                        type="time"
+                        className="border-[#c4c4c4]"
+                        value={cms.end_time}
+                        onChange={(e) => setCms(prev => ({ ...prev, end_time: e.target.value }))}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-spot_duration" className="text-[#4e4e4e] font-medium mb-3 block">Spot Duration (seconds)</Label>
+                      <Input
+                        id="edit-spot_duration"
+                        type="number"
+                        className="border-[#c4c4c4]"
+                        value={cms.spot_duration}
+                        onChange={(e) => setCms(prev => ({ ...prev, spot_duration: e.target.value }))}
+                        placeholder="Enter duration in seconds"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-loops_per_day" className="text-[#4e4e4e] font-medium mb-3 block">Spots Per Loop</Label>
+                      <Input
+                        id="edit-loops_per_day"
+                        type="number"
+                        className="border-[#c4c4c4]"
+                        value={cms.loops_per_day}
+                        onChange={(e) => setCms(prev => ({ ...prev, loops_per_day: e.target.value }))}
+                        placeholder="Enter spots per loop"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Validation feedback display */}
+                  {validationError && (
+                    <div
+                      className={`mt-4 p-4 rounded-lg border ${validationError.startsWith("✓")
+                          ? "bg-green-50 border-green-200 text-green-800"
+                          : "bg-red-50 border-red-200 text-red-800"
+                        }`}
+                    >
+                      <div className="text-sm font-medium mb-2">
+                        {validationError.startsWith("✓") ? "Configuration Valid" : "Configuration Error"}
+                      </div>
+                      <pre className="text-xs whitespace-pre-wrap font-mono">{validationError}</pre>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Spot Inputs for Digital Sites */}
+              {siteType === "digital" && spotInputs.length > 0 && (
+                <div>
+                  <Label className="text-[#4e4e4e] font-medium mb-3 block">Spot Configuration:</Label>
+                  <div className="grid grid-cols-5 gap-4">
+                    {spotInputs.map((input, index) => (
+                      <div
+                        key={index}
+                        className={`flex flex-col h-[70px] w-[70px] items-center justify-center shadow-md rounded-[10px] px-3 py-2 cursor-pointer ${selectedRetailSpots.includes(index + 1) ? 'bg-indigo-100' : 'bg-white'}`}
+                        onClick={() => {
+                          if (selectedRetailSpots.includes(index + 1)) {
+                            setSelectedRetailSpots(prev => prev.filter(id => id !== index + 1))
+                          } else {
+                            setSelectedRetailSpots(prev => [...prev, index + 1])
+                          }
+                        }}
+                      >
+                        <span className="text-xs text-center font-semibold">
+                          {index + 1} / {spotInputs.length}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
 
