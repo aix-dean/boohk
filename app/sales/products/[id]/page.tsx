@@ -26,21 +26,18 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { doc, getDoc } from "firebase/firestore"
+import { doc, getDoc, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { getQuotationRequestsByProductId, type QuotationRequest } from "@/lib/firebase-service"
-import { getAllCostEstimates, type CostEstimate } from "@/lib/cost-estimate-service"
-import { getAllQuotations, type Quotation } from "@/lib/quotation-service"
-import { getAllJobOrders, type JobOrder } from "@/lib/job-order-service"
 import { getReportsByProductId, getLatestReportsByBookingIds, type ReportData } from "@/lib/report-service"
 import type { Booking } from "@/lib/booking-service"
 import { formatBookingDates } from "@/lib/booking-service"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
 import { loadGoogleMaps } from "@/lib/google-maps-loader"
-import { collection, query, where, orderBy, getDocs } from "firebase/firestore"
+import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore"
 import { SpotsGrid } from "@/components/spots-grid"
 import { GoogleMap } from "@/components/GoogleMap"
 import SiteInformation from "@/components/SiteInformation"
@@ -511,28 +508,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [imageViewerOpen, setImageViewerOpen] = useState(false)
-  const [quotationRequests, setQuotationRequests] = useState<QuotationRequest[]>([])
-  const [quotationRequestsLoading, setQuotationRequestsLoading] = useState(true)
   const [bookings, setBookings] = useState<Booking[]>([])
   const [bookingsLoading, setBookingsLoading] = useState(true)
-  const [costEstimates, setCostEstimates] = useState<CostEstimate[]>([])
-  const [costEstimatesLoading, setCostEstimatesLoading] = useState(true)
-  const [quotations, setQuotations] = useState<Quotation[]>([])
-  const [quotationsLoading, setQuotationsLoading] = useState(true)
-  const [jobOrders, setJobOrders] = useState<JobOrder[]>([])
-  const [jobOrdersLoading, setJobOrdersLoading] = useState(true)
   const [reports, setReports] = useState<ReportData[]>([])
   const [reportsLoading, setReportsLoading] = useState(true)
   const [reportsTotal, setReportsTotal] = useState(0)
   const [reportsPage, setReportsPage] = useState(1)
   const [bookingsTotal, setBookingsTotal] = useState(0)
   const [bookingsPage, setBookingsPage] = useState(1)
-  const [costEstimatesTotal, setCostEstimatesTotal] = useState(0)
-  const [costEstimatesPage, setCostEstimatesPage] = useState(1)
-  const [quotationsTotal, setQuotationsTotal] = useState(0)
-  const [quotationsPage, setQuotationsPage] = useState(1)
-  const [jobOrdersTotal, setJobOrdersTotal] = useState(0)
-  const [jobOrdersPage, setJobOrdersPage] = useState(1)
   const itemsPerPage = 10
   const [marketplaceDialogOpen, setMarketplaceDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("booking-summary")
@@ -613,28 +596,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     fetchProduct()
   }, [paramsData.id, router])
 
-  // Fetch quotation requests for this product
-  useEffect(() => {
-    const fetchQuotationRequests = async () => {
-      if (!paramsData.id || paramsData.id === "new") {
-        setQuotationRequestsLoading(false)
-        return
-      }
-
-      setQuotationRequestsLoading(true)
-      try {
-        const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
-        const requests = await getQuotationRequestsByProductId(productId)
-        setQuotationRequests(requests)
-      } catch (error) {
-        console.error("Error fetching quotation requests:", error)
-      } finally {
-        setQuotationRequestsLoading(false)
-      }
-    }
-
-    fetchQuotationRequests()
-  }, [paramsData.id])
 
   // Fetch bookings for this product
   useEffect(() => {
@@ -683,140 +644,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     fetchBookings()
   }, [paramsData.id, bookingsPage, activeTab])
 
-  useEffect(() => {
-    const fetchCostEstimates = async () => {
-      if (!paramsData.id || paramsData.id === "new" || !product || activeTab !== "ce") {
-        setCostEstimatesLoading(false)
-        return
-      }
 
-      setCostEstimatesLoading(true)
-      try {
-        const allCostEstimates = await getAllCostEstimates()
-        const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
-        const productName = product?.name || ""
-        const productLocation =
-          product?.type?.toLowerCase() === "rental"
-            ? product.specs_rental?.location || ""
-            : product.light?.location || ""
 
-        const relatedEstimates = allCostEstimates.filter((estimate) =>
-          estimate.lineItems?.some(
-            (item) =>
-              item.id === productId ||
-              item.description?.toLowerCase().includes(productName.toLowerCase()) ||
-              (productLocation && item.notes?.toLowerCase().includes(productLocation.toLowerCase())),
-          ),
-        )
-
-        setCostEstimatesTotal(relatedEstimates.length)
-        const offset = (costEstimatesPage - 1) * itemsPerPage
-        const paginatedEstimates = relatedEstimates.slice(offset, offset + itemsPerPage)
-        setCostEstimates(paginatedEstimates)
-      } catch (error) {
-        console.error("Error fetching cost estimates:", error)
-        showNotification("error", "Failed to load cost estimates")
-      } finally {
-        setCostEstimatesLoading(false)
-      }
-    }
-
-    fetchCostEstimates()
-  }, [paramsData.id, product, costEstimatesPage, activeTab])
-
-  useEffect(() => {
-    const fetchQuotations = async () => {
-      if (!paramsData.id || paramsData.id === "new" || !product || activeTab !== "quote") {
-        setQuotationsLoading(false)
-        return
-      }
-
-      setQuotationsLoading(true)
-      try {
-        const allQuotations = await getAllQuotations()
-
-        // Filter quotations that have products referencing this product
-        const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
-        const productName = product?.name || ""
-        const productLocation =
-          product?.type?.toLowerCase() === "rental"
-            ? product.specs_rental?.location || ""
-            : product.light?.location || ""
-
-        const relatedQuotations = allQuotations.filter((quotation) =>
-          quotation.items && typeof quotation.items === 'object' &&
-          (quotation.items.product_id === productId ||
-           (quotation.items.name && quotation.items.name.toLowerCase().includes(productName.toLowerCase())) ||
-           (productLocation && quotation.items.location && quotation.items.location.toLowerCase().includes(productLocation.toLowerCase())))
-        )
-
-        setQuotationsTotal(relatedQuotations.length)
-        const offset = (quotationsPage - 1) * itemsPerPage
-        const paginatedQuotations = relatedQuotations.slice(offset, offset + itemsPerPage)
-        setQuotations(paginatedQuotations)
-      } catch (error) {
-        console.error("Error fetching quotations:", error)
-      } finally {
-        setQuotationsLoading(false)
-      }
-    }
-
-    fetchQuotations()
-  }, [paramsData.id, product, quotationsPage, activeTab])
-
-  useEffect(() => {
-    const fetchJobOrders = async () => {
-      if (!paramsData.id || paramsData.id === "new" || !product || activeTab !== "job-order") {
-        setJobOrdersLoading(false)
-        return
-      }
-
-      setJobOrdersLoading(true)
-      try {
-        const allJobOrders = await getAllJobOrders()
-
-        // Filter job orders that reference this product by site info
-        const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
-        const productName = product?.name || ""
-        const productLocation =
-          product?.type?.toLowerCase() === "rental"
-            ? product.specs_rental?.location || ""
-            : product.light?.location || ""
-
-        const relatedJobOrders = allJobOrders.filter(
-          (jobOrder) =>
-            jobOrder.product_id === productId ||
-            jobOrder.siteName?.toLowerCase().includes(productName.toLowerCase()) ||
-            (productLocation && jobOrder.siteLocation?.toLowerCase().includes(productLocation.toLowerCase())),
-        )
-
-        setJobOrdersTotal(relatedJobOrders.length)
-        const offset = (jobOrdersPage - 1) * itemsPerPage
-        const paginatedJobOrders = relatedJobOrders.slice(offset, offset + itemsPerPage)
-        setJobOrders(paginatedJobOrders)
-      } catch (error) {
-        console.error("Error fetching job orders:", error)
-      } finally {
-        setJobOrdersLoading(false)
-      }
-    }
-
-    fetchJobOrders()
-  }, [paramsData.id, product, jobOrdersPage, activeTab])
 
   // Reset pages when switching tabs
   useEffect(() => {
     if (activeTab !== "booking-summary") {
       setBookingsPage(1)
-    }
-    if (activeTab !== "ce") {
-      setCostEstimatesPage(1)
-    }
-    if (activeTab !== "quote") {
-      setQuotationsPage(1)
-    }
-    if (activeTab !== "job-order") {
-      setJobOrdersPage(1)
     }
     if (activeTab !== "reports") {
       setReportsPage(1)
@@ -924,45 +758,41 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   // Fetch booking requests (pending bookings) for this product
   useEffect(() => {
-    const fetchBookingRequests = async () => {
-      if (!paramsData.id || paramsData.id === "new") return
-
-      setBookingRequestsLoading(true)
-      try {
-        const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
-        console.log('🔍 DEBUG fetchBookingRequests: userData?.uid:', userData?.uid, 'productId:', productId)
-        const bookingRequestsQuery = query(
-          collection(db, "booking"),
-          where("seller_id", "==", userData?.uid),
-          where("for_censorship", "==", 1), // Pending requests
-          where("product_id", "==", productId),
-          orderBy("created", "desc")
-        )
-        console.log('🔍 DEBUG fetchBookingRequests: Executing query with filters - seller_id:', userData?.uid, 'for_censorship: 1, product_id:', productId)
-        const bookingRequestsSnapshot = await getDocs(bookingRequestsQuery)
-        console.log('🔍 DEBUG fetchBookingRequests: Query returned', bookingRequestsSnapshot.size, 'documents')
-        const allBookingRequests: Booking[] = []
-
-        bookingRequestsSnapshot.forEach((doc) => {
-          const bookingData = doc.data() as any
-          console.log('🔍 DEBUG fetchBookingRequests: Booking id:', doc.id, 'reservation_id:', bookingData.reservation_id, 'seller_id:', bookingData.seller_id, 'for_censorship:', bookingData.for_censorship, 'product_id:', bookingData.product_id)
-          allBookingRequests.push({
-            id: doc.id,
-            ...bookingData,
-          } as Booking)
-        })
-
-        console.log('🔍 DEBUG fetchBookingRequests: Total allBookingRequests after processing:', allBookingRequests.length)
-        setBookingRequests(allBookingRequests)
-      } catch (error) {
-        console.error("Error fetching booking requests:", error)
-      } finally {
-        setBookingRequestsLoading(false)
-      }
+    if (!paramsData.id || paramsData.id === "new") {
+      setBookingRequestsLoading(false)
+      return
     }
 
-    fetchBookingRequests()
-  }, [paramsData.id])
+    setBookingRequestsLoading(true)
+    const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
+    const bookingRequestsQuery = query(
+      collection(db, "booking"),
+      where("seller_id", "==", userData?.uid),
+      where("for_censorship", "==", 1),
+      where("product_id", "==", productId),
+      orderBy("created", "desc")
+    )
+
+    const unsubscribe = onSnapshot(bookingRequestsQuery, (snapshot) => {
+      const allBookingRequests: Booking[] = []
+
+      snapshot.forEach((doc) => {
+        const bookingData = doc.data() as any
+        allBookingRequests.push({
+          id: doc.id,
+          ...bookingData,
+        } as Booking)
+      })
+
+      setBookingRequests(allBookingRequests)
+      setBookingRequestsLoading(false)
+    }, (error) => {
+      console.error("Error fetching booking requests:", error)
+      setBookingRequestsLoading(false)
+    })
+
+    return unsubscribe
+  }, [paramsData.id, userData?.uid])
 
   // Fetch latest reports for current day bookings
   useEffect(() => {
@@ -1497,40 +1327,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 currentDate={currentDate}
                 router={router}
                 bookingRequests={bookingRequests}
-                onBookingAccepted={() => {
-                  // Refresh booking requests
-                  const fetchBookingRequests = async () => {
-                    setBookingRequestsLoading(true)
-                    try {
-                      const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
-                      const bookingRequestsQuery = query(
-                        collection(db, "booking"),
-                        where("seller_id", "==", userData?.uid),
-                        where("for_censorship", "==", 1),
-                        where("product_id", "==", productId),
-                        orderBy("created", "desc")
-                      )
-                      const bookingRequestsSnapshot = await getDocs(bookingRequestsQuery)
-                      const allBookingRequests: Booking[] = []
-
-                      bookingRequestsSnapshot.forEach((doc) => {
-                        const bookingData = doc.data() as any
-                        allBookingRequests.push({
-                          id: doc.id,
-                          ...bookingData,
-                        } as Booking)
-                      })
-
-                      setBookingRequests(allBookingRequests)
-                    } catch (error) {
-                      console.error("Error fetching booking requests:", error)
-                    } finally {
-                      setBookingRequestsLoading(false)
-                    }
-                  }
-
-                  fetchBookingRequests()
-                }}
               />
             </div>
           )}
@@ -1608,272 +1404,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                
                 </CardContent>
                 </Card>
-            </TabsContent>
-            {/* CE Tab */}
-            <TabsContent value="ce" className="mt-0">
-              <Card className="rounded-xl shadow-sm border-none px-4">
-                <CardContent className="pb-4 overflow-x-auto">
-                  {costEstimatesLoading ? (
-                    <div className="p-8">
-                      <div className="space-y-4">
-                        {Array(3)
-                          .fill(0)
-                          .map((_, i) => (
-                            <div key={i} className="grid grid-cols-6 gap-4">
-                              <Skeleton className="h-4 w-24" />
-                              <Skeleton className="h-4 w-32" />
-                              <Skeleton className="h-4 w-28" />
-                              <Skeleton className="h-4 w-20" />
-                              <Skeleton className="h-4 w-24" />
-                              <Skeleton className="h-4 w-16" />
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  ) : costEstimates.length === 0 ? (
-                    <div className="p-8 text-center">
-                      <FileText className="h-10 w-10 text-gray-400 mx-auto mb-3" />
-                      <h3 className="text-xs sm:text-sm font-medium text-gray-900 mb-1">No CE records</h3>
-                      <p className="text-sm text-gray-500">No cost estimates have been created for this site yet.</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="grid grid-cols-5 gap-4 p-4 bg-white border-b border-gray-200 text-xs sm:text-sm font-medium text-gray-700">
-                        <div className="flex items-center text-center break-all min-w-0">Date</div>
-                        <div className="flex items-center text-center break-all min-w-0">Cost Estimate ID</div>
-                        <div className="flex items-center text-center break-all min-w-0">Client</div>
-                        <div className="flex items-center text-center break-all min-w-0">Status</div>
-                        <div className="flex items-center text-center break-all min-w-0">Price</div>
-                      </div>
-                      <div className="space-y-2 pb-4 overflow-x-auto">
-                        {costEstimates.map((estimate, index) => (
-                          <div
-                            key={estimate.id}
-                            className={`grid grid-cols-5 gap-4 p-4 text-xs sm:text-sm bg-[#F6F9FF] border-2 border-[#B8D9FF] rounded-[10px] hover:bg-gray-50 cursor-pointer transition-colors ${index === 0 ? 'mt-4' : ''}`}
-                            onClick={() => router.push(`/sales/cost-estimates/${estimate.id}`)}
-                          >
-                            <div className="flex items-center text-center break-all min-w-0 text-gray-600">{formatDate(estimate.createdAt)}</div>
-                            <div className="flex items-center text-center break-all min-w-0 text-gray-900 font-medium break-all">
-                              {estimate.costEstimateNumber || estimate.id.slice(-8)}
-                            </div>
-                            <div className="flex items-center text-center break-all min-w-0 text-gray-900">
-                              {estimate.client?.company || estimate.client?.name || "Not Set Client"}
-                            </div>
-                            <div className="flex items-center text-center break-all min-w-0">
-                              <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
-                                {estimate.status || "Draft"}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center text-center break-all min-w-0 text-gray-900">
-                              ₱{estimate.totalAmount?.toLocaleString() || "0"}/month
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Pagination */}
-                      {costEstimatesTotal > itemsPerPage && (
-                        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-                          <div className="text-sm text-gray-700">
-                            Showing {((costEstimatesPage - 1) * itemsPerPage) + 1} to {Math.min(costEstimatesPage * itemsPerPage, costEstimatesTotal)} of {costEstimatesTotal} cost estimates
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setCostEstimatesPage(prev => Math.max(1, prev - 1))}
-                              disabled={costEstimatesPage === 1}
-                            >
-                              Previous
-                            </Button>
-                            <span className="text-sm text-gray-600">
-                              Page {costEstimatesPage} of {Math.ceil(costEstimatesTotal / itemsPerPage)}
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setCostEstimatesPage(prev => Math.min(Math.ceil(costEstimatesTotal / itemsPerPage), prev + 1))}
-                              disabled={costEstimatesPage === Math.ceil(costEstimatesTotal / itemsPerPage)}
-                            >
-                              Next
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                
-              
-              </CardContent>
-              </Card>
-            </TabsContent>
-            {/* Quote Tab */}
-            <TabsContent value="quote" className="space-y-4">
-              <div className="bg-white rounded-lg pb-4 px-4 overflow-x-auto">
-                {quotationsLoading ? (
-                  <div className="p-8 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-2 text-gray-500">Loading quotations...</p>
-                  </div>
-                ) : quotations.length === 0 ? (
-                  <div className="p-8 text-center text-gray-500">
-                    <p>No quotations found for this product.</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-5 gap-4 p-4 bg-white border-b border-gray-200 text-xs sm:text-sm font-medium text-gray-700">
-                      <div className="flex items-center text-center break-all min-w-0">Date</div>
-                      <div className="flex items-center text-center break-all min-w-0">Quotation ID</div>
-                      <div className="flex items-center text-center break-all min-w-0">Client</div>
-                      <div className="flex items-center text-center break-all min-w-0">Status</div>
-                      <div className="flex items-center text-center break-all min-w-0">Price</div>
-                    </div>
-                    <div className="space-y-2 pb-4 overflow-x-auto">
-                      {quotations.map((quotation, index) => {
-                        const statusConfig = getQuotationStatusConfig(quotation.status)
-                        return (
-                          <div
-                            key={quotation.id}
-                            className={`grid grid-cols-5 gap-4 p-4  text-xs sm:text-sm bg-[#F6F9FF] border-2 border-[#B8D9FF] rounded-[10px] hover:bg-gray-50 cursor-pointer transition-colors ${index === 0 ? 'mt-4' : ''}`}
-                            onClick={() => router.push(`/sales/quotations/${quotation.id}`)}
-                          >
-                            <div className="flex items-center text-center break-all min-w-0 text-gray-600">{quotation.created ? formatFirebaseDate(quotation.created) : "N/A"}</div>
-                            <div className="flex items-center text-center break-all min-w-0 text-gray-900">
-                              {quotation.quotation_number || quotation.id?.slice(-8) || "N/A"}
-                            </div>
-                            <div className="flex items-center text-center break-all min-w-0 text-gray-900">
-                              {quotation.client_name || "Not Set Client"}
-                            </div>
-                            <div className="flex items-center text-center break-all min-w-0">
-                              <span
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusConfig.color}`}
-                              >
-                                {statusConfig.icon}
-                                {statusConfig.label}
-                              </span>
-                            </div>
-                            <div className="flex items-center text-center break-all min-w-0 text-gray-900">₱{quotation.total_amount?.toLocaleString() || "0"}/month</div>
-                          </div>
-                        )
-                      })}
-                    </div>
-
-                    {/* Pagination */}
-                    {quotationsTotal > itemsPerPage && (
-                      <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-                        <div className="text-sm text-gray-700">
-                          Showing {((quotationsPage - 1) * itemsPerPage) + 1} to {Math.min(quotationsPage * itemsPerPage, quotationsTotal)} of {quotationsTotal} quotations
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setQuotationsPage(prev => Math.max(1, prev - 1))}
-                            disabled={quotationsPage === 1}
-                          >
-                            Previous
-                          </Button>
-                          <span className="text-sm text-gray-600">
-                            Page {quotationsPage} of {Math.ceil(quotationsTotal / itemsPerPage)}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setQuotationsPage(prev => Math.min(Math.ceil(quotationsTotal / itemsPerPage), prev + 1))}
-                            disabled={quotationsPage === Math.ceil(quotationsTotal / itemsPerPage)}
-                          >
-                            Next
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </TabsContent>
-
-            {/* Job Order Tab */}
-            <TabsContent value="job-order" className="space-y-4">
-              <div className="bg-white rounded-lg pb-4 px-4 overflow-x-auto">
-                {jobOrdersLoading ? (
-                  <div className="p-8 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-2 text-gray-500">Loading job orders...</p>
-                  </div>
-                ) : jobOrders.length === 0 ? (
-                  <div className="p-8 text-center text-gray-500">
-                    <p>No job orders found for this product.</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-4 gap-4 p-4 bg-white border-b border-gray-200 text-xs sm:text-sm font-medium text-gray-700">
-                      <div className="flex items-center text-center break-all min-w-0">Date</div>
-                      <div className="flex items-center text-center break-all min-w-0">Job Order ID</div>
-                      <div className="flex items-center text-center break-all min-w-0">Client</div>
-                      <div className="flex items-center text-center break-all min-w-0">Status</div>
-                    </div>
-                    <div className="space-y-2 pb-4 overflow-x-auto">
-                      {jobOrders.map((jobOrder, index) => {
-                        const statusConfig = getJobOrderStatusConfig(jobOrder.status)
-
-                        return (
-                          <div
-                            key={jobOrder.id}
-                            className={`grid grid-cols-4 gap-4 p-4 text-xs sm:text-sm bg-[#F6F9FF] border-2 border-[#B8D9FF] rounded-[10px] hover:bg-gray-50 cursor-pointer transition-colors ${index === 0 ? 'mt-4' : ''}`}
-                            onClick={() => router.push(`/sales/job-orders/${jobOrder.id}`)}
-                          >
-                            <div className="flex items-center text-center break-all min-w-0 text-gray-600">{jobOrder.created ? formatFirebaseDate(jobOrder.created) : "N/A"}</div>
-                            <div className="flex items-center text-center break-all min-w-0 text-gray-900">
-                              {jobOrder.joNumber || jobOrder.id.slice(-8)}
-                            </div>
-                            <div className="flex items-center text-center break-all min-w-0 text-gray-900">
-                              {jobOrder.clientName || "Not Set Client"}
-                            </div>
-                            <div className="flex items-center text-center break-all min-w-0">
-                              <span
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusConfig.color}`}
-                              >
-                                {statusConfig.icon}
-                                {statusConfig.label}
-                              </span>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-
-                    {/* Pagination */}
-                    {jobOrdersTotal > itemsPerPage && (
-                      <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-                        <div className="text-sm text-gray-700">
-                          Showing {((jobOrdersPage - 1) * itemsPerPage) + 1} to {Math.min(jobOrdersPage * itemsPerPage, jobOrdersTotal)} of {jobOrdersTotal} job orders
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setJobOrdersPage(prev => Math.max(1, prev - 1))}
-                            disabled={jobOrdersPage === 1}
-                          >
-                            Previous
-                          </Button>
-                          <span className="text-sm text-gray-600">
-                            Page {jobOrdersPage} of {Math.ceil(jobOrdersTotal / itemsPerPage)}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setJobOrdersPage(prev => Math.min(Math.ceil(jobOrdersTotal / itemsPerPage), prev + 1))}
-                            disabled={jobOrdersPage === Math.ceil(jobOrdersTotal / itemsPerPage)}
-                          >
-                            Next
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
             </TabsContent>
 
             {/* Reports Tab */}
