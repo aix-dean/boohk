@@ -37,7 +37,7 @@ import { formatBookingDates } from "@/lib/booking-service"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
 import { loadGoogleMaps } from "@/lib/google-maps-loader"
-import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore"
+import { collection, query, where, orderBy, onSnapshot, limit } from "firebase/firestore"
 import { SpotsGrid } from "@/components/spots-grid"
 import { GoogleMap } from "@/components/GoogleMap"
 import SiteInformation from "@/components/SiteInformation"
@@ -409,59 +409,32 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
    const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
 
   // Helper functions for spots data
-  const generateSpotsData = (cms: any, currentDayBookings: Booking[], reportsData: { [bookingId: string]: ReportData | null }) => {
+  const generateSpotsData = (cms: any, activePlaylistPages: any[]) => {
+    console.log(`activePlaylistPages for spots data:`, activePlaylistPages)
     const totalSpots = cms.loops_per_day || 18
     const spots = []
-
-    // Get occupied spot numbers from current day bookings
-    const occupiedSpots = new Set<number>()
-    currentDayBookings.forEach(booking => {
-      if (booking.spot_numbers && Array.isArray(booking.spot_numbers)) {
-        booking.spot_numbers.forEach(spotNumber => {
-          occupiedSpots.add(spotNumber)
-        })
-      }
-    })
-
-    // Sample client names for demonstration
-    const clientNames = ["Coca-Cola", "Bear-Brand", "Toyota", "Lucky Me", "Bench", "Maggi", "Oishi"]
-
     for (let i = 1; i <= totalSpots; i++) {
-      const isOccupied = occupiedSpots.has(i)
+      // Find the active playlist page for this spot
+      const page = activePlaylistPages.find(p => p.spot_number === i)
+      const isOccupied = !!page
 
-      // Find booking for this spot to get client info
-      const booking = currentDayBookings.find(b => b.spot_numbers?.includes(i))
-      const schedule = screenSchedules.find(s => s.spot_number === i && s.active)
-
-      // Get image URL from report attachments
+      // Get image URL from playlist page widget with matching spot_number
       let imageUrl: string | undefined
-      if (booking && reportsData[booking.id]) {
-        const report = reportsData[booking.id]
-        console.log(`Spot ${i}: Found report for booking ${booking.id}:`, report)
-        if (report && report.attachments && report.attachments.length > 0) {
-          // Find attachment with label "After" (case insensitive)
-          const afterAttachment = report.attachments.find(att => att.label?.toLowerCase() === "after")
-          console.log(`Spot ${i}: After attachment:`, afterAttachment)
-          if (afterAttachment) {
-            imageUrl = afterAttachment.fileUrl
-          } else {
-            // Use first attachment if no "After" label
-            imageUrl = report.attachments[0].fileUrl
-            console.log(`Spot ${i}: Using first attachment:`, imageUrl)
-          }
-        } else {
-          console.log(`Spot ${i}: No attachments in report`)
+      let endDate: string | undefined
+      if(page && page.widgets) {
+      const widget = activePlaylistPages.find((w: any) => w.spot_number === i)
+      console.log(`Widget for spot ${i}:`, widget)
+        if (widget) {
+          imageUrl = widget.widgets[0].url
+          endDate = widget.schedules[0]?.endDate
         }
-      } else {
-        console.log(`Spot ${i}: No booking or report found for booking ${booking?.id}`)
       }
-      console.log(`Spot ${i}: Final imageUrl:`, imageUrl)
 
       spots.push({
         id: `spot-${i}`,
         number: i,
         status: (isOccupied ? "occupied" : "vacant") as "occupied" | "vacant",
-        clientName: isOccupied ? (booking?.client?.name || schedule?.title || clientNames[(i - 1) % clientNames.length]) : undefined,
+        endDate,
         imageUrl,
       })
     }
@@ -537,6 +510,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [bookingRequests, setBookingRequests] = useState<Booking[]>([])
   const [bookingRequestsLoading, setBookingRequestsLoading] = useState(false)
+  const [activePlaylistPages, setActivePlaylistPages] = useState<any[]>([])
 
   const currentDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
@@ -793,6 +767,50 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
     return unsubscribe
   }, [paramsData.id, userData?.uid])
+
+  // Fetch latest playlist and filter active pages
+  useEffect(() => {
+    const fetchPlaylist = async () => {
+      if (!paramsData.id || paramsData.id === "new") return
+
+      try {
+        const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
+        const playlistQuery = query(
+          collection(db, "playlist"),
+          where("product_id", "==", productId),
+          orderBy("created", "desc"),
+          limit(1)
+        )
+        const playlistSnap = await getDocs(playlistQuery)
+        if (!playlistSnap.empty) {
+          const latestPlaylist = playlistSnap.docs[0].data()
+          const existingPages = latestPlaylist.pages || []
+
+          // Filter out expired pages (where any schedule has endDate in the past)
+          const today = new Date()
+          today.setHours(0, 0, 0, 0) // Set to start of today
+          const activePages = existingPages.filter((page: any) =>
+            page.schedules?.every((schedule: any) => {
+              let scheduleEndDate = schedule.endDate?.toDate
+                ? schedule.endDate.toDate()
+                : new Date(schedule.endDate)
+              scheduleEndDate.setHours(0, 0, 0, 0) // Set to start of that day
+              return scheduleEndDate >= today
+            })
+          )
+          setActivePlaylistPages(activePages)
+        } else {
+          setActivePlaylistPages([])
+        }
+      } catch (error) {
+        console.error("Error fetching playlist:", error)
+        setActivePlaylistPages([])
+      }
+    }
+
+    fetchPlaylist()
+   
+  }, [paramsData.id])
 
   // Fetch latest reports for current day bookings
   useEffect(() => {
@@ -1319,10 +1337,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           {product && product.content_type?.toLowerCase() === "digital" && product.cms && (
             <div className="mb-6">
               <SpotsGrid
-                spots={generateSpotsData(product.cms, currentDayBookings, reportsData)}
+                spots={generateSpotsData(product.cms, activePlaylistPages)}
                 totalSpots={product.cms.loops_per_day || 18}
-                occupiedCount={calculateOccupiedSpots(product.cms)}
-                vacantCount={calculateVacantSpots(product.cms)}
+                occupiedCount={activePlaylistPages.length}
+                vacantCount={(product.cms.loops_per_day || 18) - activePlaylistPages.length}
                 productId={paramsData.id}
                 currentDate={currentDate}
                 router={router}
