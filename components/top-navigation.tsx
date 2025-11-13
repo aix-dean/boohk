@@ -3,10 +3,17 @@
 import { usePathname, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { format } from "date-fns"
+import { db } from "@/lib/firebase"
+import { collection, query, where, onSnapshot, doc, getDoc } from "firebase/firestore"
+import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/hooks/use-toast"
+import { ToastAction } from "@/components/ui/toast"
 
 export function TopNavigation() {
   const pathname = usePathname()
   const router = useRouter()
+  const { userData } = useAuth()
+  const { toast } = useToast()
   const [currentTime, setCurrentTime] = useState(new Date())
 
   useEffect(() => {
@@ -16,6 +23,48 @@ export function TopNavigation() {
 
     return () => clearInterval(interval)
   }, [])
+
+  useEffect(() => {
+    if (!userData?.uid) return
+
+    let isInitialLoad = true
+
+    const q = query(
+      collection(db, "booking"),
+      where("seller_id", "==", userData.uid),
+      where("for_censorship", "==", 1),
+      where("for_screening", "==", 0)
+    )
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      snapshot.docChanges().forEach(async (change) => {
+        if (change.type === 'added' && !isInitialLoad) {
+          const booking = change.doc.data()
+          const productDoc = await getDoc(doc(db, "products", booking.product_id))
+          const productName = productDoc.exists() ? productDoc.data().name : "Unknown Product"
+          toast({
+            title: "New Booking Request",
+            description: `New request for ${productName}`,
+            onClick: () => router.push(`/sales/products/${booking.product_id}`),
+            className: "bg-[#009eff] text-white border-[#009eff]",
+            action: (
+              <ToastAction
+                altText="View Product"
+                onClick={() => router.push(`/sales/products/${booking.product_id}`)}
+              >
+                View
+              </ToastAction>
+            ),
+          })
+          const audio = new Audio('/notif/boohk-notif.m4a')
+          audio.play()
+        }
+      })
+      isInitialLoad = false
+    })
+
+    return () => unsubscribe()
+  }, [userData?.uid, toast, router])
 
   const isSalesSection = pathname.startsWith("/sales")
   const isLogisticsSection = pathname.startsWith("/logistics")

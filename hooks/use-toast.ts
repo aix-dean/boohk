@@ -9,6 +9,8 @@ type ToastProps = {
   action?: React.ReactNode
   variant?: "default" | "destructive"
   onOpenChange?: (open: boolean) => void
+  onClick?: () => void
+  className?: string
 }
 
 type ToasterToast = ToastProps & {
