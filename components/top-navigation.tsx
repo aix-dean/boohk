@@ -32,7 +32,8 @@ export function TopNavigation() {
     const q = query(
       collection(db, "booking"),
       where("for_censorship", "==", 1),
-      where("for_screening", "==", 0)
+      where("for_screening", "==", 0),
+      ...(userData.company_id ? [where("company_id", "==", userData.company_id)] : [])
     )
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
