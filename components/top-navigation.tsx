@@ -31,7 +31,6 @@ export function TopNavigation() {
 
     const q = query(
       collection(db, "booking"),
-      where("seller_id", "==", userData.uid),
       where("for_censorship", "==", 1),
       where("for_screening", "==", 0)
     )
