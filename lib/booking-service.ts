@@ -233,6 +233,8 @@ export class BookingService {
         quotation_id: quotation.id,
         quotation_number: quotation.quotation_number,
         items: quotation.items,
+        for_censorship: 1, // Set to approved for censorship
+        for_screening: 0, // Set to pending screening
       }
 
       // Only add product_name if it exists
