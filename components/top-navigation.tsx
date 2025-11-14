@@ -41,11 +41,16 @@ export function TopNavigation() {
           const booking = change.doc.data()
           const productDoc = await getDoc(doc(db, "products", booking.product_id))
           const productName = productDoc.exists() ? productDoc.data().name : "Unknown Product"
+          const audio = new Audio('/notif/boohk-notif.m4a')
+          await audio.play().catch(() => {
+            // Ignore autoplay policy errors
+          })
           toast({
             title: "New Booking Request",
             description: `New request for ${productName}`,
             onClick: () => router.push(`/sales/products/${booking.product_id}`),
             className: "bg-[#009eff] text-white border-[#009eff]",
+            duration: 10000,
             action: (
               <ToastAction
                 altText="View Product"
@@ -55,8 +60,6 @@ export function TopNavigation() {
               </ToastAction>
             ),
           })
-          const audio = new Audio('/notif/boohk-notif.m4a')
-          audio.play()
         }
       })
       isInitialLoad = false

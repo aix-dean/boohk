@@ -11,6 +11,7 @@ type ToastProps = {
   onOpenChange?: (open: boolean) => void
   onClick?: () => void
   className?: string
+  duration?: number
 }
 
 type ToasterToast = ToastProps & {
@@ -129,6 +130,10 @@ function toast({ ...props }: Toast) {
       },
     },
   })
+
+  if (props.duration) {
+    setTimeout(dismiss, props.duration)
+  }
 
   return {
     id: id,
