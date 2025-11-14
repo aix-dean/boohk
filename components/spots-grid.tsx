@@ -13,6 +13,7 @@ import { formatBookingDates } from "@/lib/booking-service"
 import { createCMSContentDeployment } from "@/lib/cms-api"
 import { useToast } from "@/hooks/use-toast"
 import { BookingCongratulationsDialog } from "@/components/BookingCongratulationsDialog"
+import { convertSegmentPathToStaticExportFilename } from "next/dist/shared/lib/segment-cache/segment-value-encoding"
 
 interface Spot {
   id: string
@@ -325,8 +326,8 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
   const [otherReason, setOtherReason] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isThankYouDialogOpen, setIsThankYouDialogOpen] = useState(false)
-  const [spotImageUrls, setSpotImageUrls] = useState<Record<number, string>>({})
   const [hoveredSpots, setHoveredSpots] = useState<Record<number, boolean>>({})
+  const [retailSpotNumbers, setRetailSpotNumbers] = useState<number[]>([])
   console.log('bookingRequests:', bookingRequests)
   bookingRequests.forEach(booking => console.log(`Booking ${booking.id} for_screening:`, booking.for_screening))
   const filteredBookings = bookingRequests.filter(booking => booking.for_screening === 0)
@@ -344,6 +345,8 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
         const productSnap = await getDoc(productRef)
         if (!productSnap.exists()) return
         const product = productSnap.data()
+
+        setRetailSpotNumbers(product.retail_spot?.spot_number || [])
 
         // Query playlists
         const playlistQuery = query(
@@ -384,7 +387,6 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
           }
         })
 
-        setSpotImageUrls(urls)
       } catch (error) {
         console.error("Error fetching spot images:", error)
       }
@@ -461,12 +463,27 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
           })
         )
 
+        // Calculate the maximum spot_number from active pages
+        let maxSpotNumber = 0
+        activePages.forEach(page => {
+          if (page.spot_number && page.spot_number > maxSpotNumber) maxSpotNumber = page.spot_number
+        })
+
         // Call CMS API with booking and product data
         // Construct basic parameters - this may need adjustment based on actual CMS requirements
         const duration = product.cms.spot_duration * 1000 || 9000 // in milliseconds
-        const schedule = {
+        const schedules = {
           startDate: selectedBooking.start_date?.toDate?.()?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
           endDate: selectedBooking.end_date?.toDate?.()?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+          plans: [{
+            weekDays: [0, 1, 2, 3, 4, 5, 6], // All days
+            startTime: product.cms.start_time || "00:00",
+            endTime: product.cms.end_time || "23:59"
+          }]
+        }
+         const schedule = {
+          startDate: "2020-04-11",
+          endDate: "2060-05-12",
           plans: [{
             weekDays: [0, 1, 2, 3, 4, 5, 6], // All days
             startTime: product.cms.start_time || "00:00",
@@ -507,14 +524,15 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
             created: serverTimestamp(),
             pages: [
               ...activePages,
-              ...pages.map(page => ({
+              ...pages.map((page, index) => ({
                 ...page,
-                schedules: [schedule],
+                schedules: [schedules],
                 client_id: selectedBooking.client.id,
                 client_name: selectedBooking.client.name || selectedBooking.client?.name,
                 acceptByUid: userData?.uid,
                 acceptBy: `${userData?.first_name || ""} ${userData?.last_name || ""}`,
-                booking_id: selectedBooking.id
+                booking_id: selectedBooking.id,
+                spot_number: maxSpotNumber + index + 1
               }))
             ]
           }
@@ -613,9 +631,10 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
   const spotsContent = (
     <div className="flex gap-[13.758px] overflow-x-scroll pb-4 w-full pr-4">
       {spots.map((spot) => (
+        console.log('Rendering spot:', retailSpotNumbers),
         <div
           key={spot.id}
-          className="relative flex-shrink-0 w-[110px] h-[197px] bg-white p-1.5 rounded-[14px] shadow-[-1px_3px_7px_-1px_rgba(0,0,0,0.25)] border border-gray-200 overflow-hidden cursor-pointer hover:shadow-lg transition-shadow flex flex-col"
+          className={`relative flex-shrink-0 w-[110px] h-[197px] bg-white p-1.5 rounded-[14px]  shadow-[-1px_3px_7px_-1px_rgba(0,0,0,0.25)] ${retailSpotNumbers.includes(spot.number) ? 'border-4 border-[#737fff]' : 'border border-gray-200'} overflow-hidden cursor-pointer hover:shadow-lg transition-shadow flex flex-col`}
           onClick={() => onSpotToggle ? onSpotToggle(spot.number) : handleSpotClick(spot.number)}
           onMouseEnter={() => setHoveredSpots(prev => ({ ...prev, [spot.number]: true }))}
           onMouseLeave={() => setHoveredSpots(prev => ({ ...prev, [spot.number]: false }))}
@@ -623,7 +642,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
           {/* Image Section */}
           <div className="flex-1 p-1 rounded-[10px] bg-white flex justify-center relative overflow-hidden">
             {(() => {
-              const imageUrl = spotImageUrls[spot.number] || spot.imageUrl
+              const imageUrl = spot.imageUrl
               return imageUrl ? (
                 <>
                   <MediaPlayer url={imageUrl} className="w-full h-full object-cover rounded-[10px]" controls={false} playing={hoveredSpots[spot.number] || false} />

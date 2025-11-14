@@ -1355,10 +1355,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <div>
                 <TabsList className="flex flex-wrap justify-start bg-transparent border-none p-0 gap-0">
                 <TabsTrigger value="booking-summary" className="bg-white border-2 border-[#DFDFDF] text-[#DFDFDF] rounded-none h-auto min-h-9 px-2 py-2 whitespace-normal text-center data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:border-[#C4C4C4]">Booking Summary</TabsTrigger>
-                <TabsTrigger value="ce" className="bg-white border-2 border-[#DFDFDF] text-[#DFDFDF] rounded-none h-auto min-h-9 px-2 py-2 whitespace-normal text-center data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:border-[#C4C4C4]">Cost Estimates</TabsTrigger>
-                <TabsTrigger value="quote" className="bg-white border-2 border-[#DFDFDF] text-[#DFDFDF] rounded-none h-auto min-h-9 px-2 py-2 whitespace-normal text-center data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:border-[#C4C4C4]">Quotations</TabsTrigger>
-                <TabsTrigger value="job-order" className="bg-white border-2 border-[#DFDFDF] text-[#DFDFDF] rounded-none h-auto min-h-9 px-2 py-2 whitespace-normal text-center data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:border-[#C4C4C4]">Job Orders</TabsTrigger>
-                <TabsTrigger value="reports" className="bg-white border-2 border-[#DFDFDF] text-[#DFDFDF] rounded-none h-auto min-h-9 px-2 py-2 whitespace-normal text-center data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:border-[#C4C4C4]">Reports</TabsTrigger>
+                <TabsTrigger value="ce" className="bg-white border-2 border-[#DFDFDF] text-[#DFDFDF] rounded-none h-auto min-h-9 px-2 py-2 whitespace-normal text-center data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:border-[#C4C4C4]">Content History</TabsTrigger>
+                <TabsTrigger value="quote" className="bg-white border-2 border-[#DFDFDF] text-[#DFDFDF] rounded-none h-auto min-h-9 px-2 py-2 whitespace-normal text-center data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:border-[#C4C4C4]">Proof of Play</TabsTrigger>
               </TabsList>
             </div>
 
@@ -1417,9 +1415,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       )}
                     </>
                   ) : null}
-
-                
-               
                 </CardContent>
                 </Card>
             </TabsContent>
