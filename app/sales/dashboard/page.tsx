@@ -38,7 +38,7 @@ import {
   type Booking,
 } from "@/lib/firebase-service"
 import type { DocumentData, QueryDocumentSnapshot } from "firebase/firestore"
-import { collection, query, where, getDocs, getDoc, doc, Timestamp, orderBy, limit } from "firebase/firestore"
+import { collection, query, where, getDocs, getDoc, doc, Timestamp, orderBy, limit, onSnapshot } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { ProductSearchBox } from "@/components/product-search-box"
 import type { SearchResult } from "@/lib/algolia-service"
@@ -2482,6 +2482,36 @@ export function ProductCard({
   onSelect?: () => void
   selectionMode?: boolean
 }) {
+  const { userData } = useAuth()
+  const [bookingCount, setBookingCount] = useState<number>(0)
+  const [loadingCount, setLoadingCount] = useState<boolean>(true)
+
+  useEffect(() => {
+    if (!userData?.uid || !product.id) {
+      setLoadingCount(false)
+      return
+    }
+
+    const bookingRequestsQuery = query(
+      collection(db, "booking"),
+      where("for_censorship", "==", 1),
+      where("for_screening", "==", 0),
+      where("product_id", "==", product.id)
+    )
+
+    const unsubscribe = onSnapshot(bookingRequestsQuery, (snapshot) => {
+      const newCount = snapshot.docs.length
+      console.log(`Real-time booking count update for product ${product.id}: ${newCount}`)
+      setBookingCount(newCount)
+      setLoadingCount(false)
+    }, (error) => {
+      console.error("Error listening to booking requests:", error)
+      setLoadingCount(false)
+    })
+
+    return () => unsubscribe()
+  }, [product.id, userData?.uid])
+
   // Determine location based on product type
   const location = product.specs_rental?.location || product.light?.location || "Unknown location"
 
@@ -2534,6 +2564,15 @@ export function ProductCard({
             >
               {isSelected && <CheckCircle2 size={16} className="text-white" />}
             </div>
+          </div>
+        )}
+
+        {/* Booking Requests Count Badge */}
+        {!loadingCount && bookingCount > 0 && (
+          <div className="absolute top-1 right-1 z-10">
+            <Badge variant="secondary" className="bg-[#009eff] text-white text-xs w-6 h-6 flex-shrink-0 flex items-center justify-center">
+              {bookingCount}
+            </Badge>
           </div>
         )}
 
