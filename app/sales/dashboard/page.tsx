@@ -2497,12 +2497,13 @@ export function ProductCard({
       where("seller_id", "==", userData?.uid),
       where("for_censorship", "==", 1),
       where("for_screening", "==", 0),
-      where("product_id", "==", product.id),
-      orderBy("created", "desc")
+      where("product_id", "==", product.id)
     )
 
     const unsubscribe = onSnapshot(bookingRequestsQuery, (snapshot) => {
-      setBookingCount(snapshot.docs.length)
+      const newCount = snapshot.docs.length
+      console.log(`Real-time booking count update for product ${product.id}: ${newCount}`)
+      setBookingCount(newCount)
       setLoadingCount(false)
     }, (error) => {
       console.error("Error listening to booking requests:", error)
