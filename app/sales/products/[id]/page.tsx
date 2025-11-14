@@ -583,7 +583,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         console.log('🔍 DEBUG fetchBookings: userData?.uid:', userData?.uid, 'productId:', productId)
         const bookingsQuery = query(
           collection(db, "booking"),
-          where("seller_id", "==", userData?.uid),
           where("for_censorship", "==", 1),
           where("product_id", "==", productId),
           orderBy("created", "desc")
@@ -695,7 +694,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         // Query bookings where start_date <= today <= end_date and status is active
         const bookingsQuery = query(
           collection(db, "booking"),
-          where("seller_id", "==", userData?.uid),
           where("for_censorship", "==", 2),
           where("product_id", "==", productId),
           where("status", "in", ["RESERVED", "COMPLETED"])
@@ -741,7 +739,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
     const bookingRequestsQuery = query(
       collection(db, "booking"),
-      where("seller_id", "==", userData?.uid),
       where("for_censorship", "==", 1),
       where("product_id", "==", productId),
       orderBy("created", "desc")
