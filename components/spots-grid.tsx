@@ -13,6 +13,7 @@ import { formatBookingDates } from "@/lib/booking-service"
 import { createCMSContentDeployment } from "@/lib/cms-api"
 import { useToast } from "@/hooks/use-toast"
 import { BookingCongratulationsDialog } from "@/components/BookingCongratulationsDialog"
+import { SpotContentDialog } from "@/components/SpotContentDialog"
 import { convertSegmentPathToStaticExportFilename } from "next/dist/shared/lib/segment-cache/segment-value-encoding"
 
 interface Spot {
@@ -326,12 +327,11 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
   const [otherReason, setOtherReason] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isThankYouDialogOpen, setIsThankYouDialogOpen] = useState(false)
+  const [isSpotDialogOpen, setIsSpotDialogOpen] = useState(false)
+  const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null)
   const [hoveredSpots, setHoveredSpots] = useState<Record<number, boolean>>({})
   const [retailSpotNumbers, setRetailSpotNumbers] = useState<number[]>([])
-  console.log('bookingRequests:', bookingRequests)
-  bookingRequests.forEach(booking => console.log(`Booking ${booking.id} for_screening:`, booking.for_screening))
   const filteredBookings = bookingRequests.filter(booking => booking.for_screening === 0)
-  console.log('filteredBookings:', filteredBookings)
   const topRow = filteredBookings.filter((_, index) => index % 2 === 0)
   const bottomRow = filteredBookings.filter((_, index) => index % 2 === 1)
 
@@ -397,8 +397,10 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
 
 
   const handleSpotClick = (spotNumber: number) => {
-    if (productId) {
-      router?.push(`/sales/products/${productId}/spots/${spotNumber}`)
+    const spot = spots.find(s => s.number === spotNumber)
+    if (spot) {
+      setSelectedSpot(spot)
+      setIsSpotDialogOpen(true)
     }
   }
 
@@ -631,7 +633,6 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
   const spotsContent = (
     <div className="flex gap-[13.758px] overflow-x-scroll pb-4 w-full pr-4">
       {spots.map((spot) => (
-        console.log('Rendering spot:', retailSpotNumbers),
         <div
           key={spot.id}
           className={`relative flex-shrink-0 w-[110px] h-[197px] bg-white p-1.5 rounded-[14px]  shadow-[-1px_3px_7px_-1px_rgba(0,0,0,0.25)] ${retailSpotNumbers.includes(spot.number) ? 'border-4 border-[#737fff]' : 'border border-gray-200'} overflow-hidden cursor-pointer hover:shadow-lg transition-shadow flex flex-col`}
@@ -954,6 +955,11 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
             booking={congratulationsBooking}
           />
         )}
+        <SpotContentDialog
+          open={isSpotDialogOpen}
+          onOpenChange={setIsSpotDialogOpen}
+          spot={selectedSpot}
+        />
       </div>
     )
   } else {

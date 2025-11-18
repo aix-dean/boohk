@@ -41,6 +41,12 @@ export interface Booking {
     vatAmount: number
     vatRate: number
   }
+  amounts: {
+    totalAmount: number
+    netAmount: number
+    taxRate: number
+    taxAmount: number
+  }
   created: any // Firestore timestamp
   end_date: Timestamp | null
   media_order?: string[]
@@ -65,7 +71,7 @@ export interface Booking {
   }[]
   reservation_id: string // Generated reservation ID with format "RV-" + currentmillis
   seller_id: string
-  spot_numbers?: number[] // Added spot_numbers field for digital/dynamic bookings
+  spot_number?: number // Added spot_number field for digital/dynamic bookings
   start_date: Timestamp | null
   status: string
   total_cost: number
@@ -249,12 +255,11 @@ export class BookingService {
           bookingData.cms = quotation.items.cms
         }
 
-        // Add spot numbers if they exist (can be single number or array)
+        // Add spot number if it exists (single number)
         if (quotation.items?.spot_number) {
-          const spotNumber = quotation.items.spot_number
-          bookingData.spot_numbers = Array.isArray(spotNumber) ? spotNumber : [parseInt(String(spotNumber))]
+          bookingData.spot_number = parseInt(String(quotation.items.spot_number))
         } else if (quotation.spot_numbers && quotation.spot_numbers.length > 0) {
-          bookingData.spot_numbers = quotation.spot_numbers
+          bookingData.spot_number = quotation.spot_numbers[0] // Take first spot number
         }
       }
       console.log("[DEBUG] Booking data to be created:", bookingData)

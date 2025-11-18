@@ -7,8 +7,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Calendar, Maximize } from "lucide-react"
 import { GoogleMap } from "./GoogleMap"
 
-// Diagnostic log for GoogleMap import
-console.log('🔍 DEBUG: GoogleMap imported:', GoogleMap)
 
 interface SiteInformationProps {
   product: any
@@ -132,7 +130,7 @@ export default function SiteInformation({
               </div>
               <div>
                 <div className="text-sm text-gray-900">Orientation</div>
-                <div className="text-base font-bold text-gray-800">{product?.specs_rental?.land_owner || "Not specified"}</div>
+                <div className="text-base font-bold text-gray-800">{product?.specs_rental?.orientation || "Not specified"}</div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
