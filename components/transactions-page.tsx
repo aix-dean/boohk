@@ -173,7 +173,7 @@ export default function TransactionsPage({ title }: TransactionsPageProps) {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 -mt-2">
           <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
             <SelectTrigger className="w-[140px] bg-white h-6 text-xs">
