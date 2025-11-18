@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { X, Loader2 } from "lucide-react"
+import { X, Loader2, AlertTriangle } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { useAuth } from "@/contexts/auth-context"
 import { db } from "@/lib/firebase"
 import { collection, query, where, getDocs, getDoc, updateDoc, doc, addDoc, serverTimestamp, orderBy, limit } from "firebase/firestore"
 import type { Booking } from "@/lib/booking-service"
 import { formatBookingDates } from "@/lib/booking-service"
-import { createCMSContentDeployment } from "@/lib/cms-api"
+import { createCMSContentDeployment, checkPlayerOnlineStatus } from "@/lib/cms-api"
 import { useToast } from "@/hooks/use-toast"
 import { BookingCongratulationsDialog } from "@/components/BookingCongratulationsDialog"
 import { SpotContentDialog } from "@/components/SpotContentDialog"
@@ -331,9 +331,13 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null)
   const [hoveredSpots, setHoveredSpots] = useState<Record<number, boolean>>({})
   const [retailSpotNumbers, setRetailSpotNumbers] = useState<number[]>([])
+  const [isOfflineDialogOpen, setIsOfflineDialogOpen] = useState(false)
   const filteredBookings = bookingRequests.filter(booking => booking.for_screening === 0)
   const topRow = filteredBookings.filter((_, index) => index % 2 === 0)
   const bottomRow = filteredBookings.filter((_, index) => index % 2 === 1)
+  const [playerStatus, setPlayerStatus] = useState<boolean>() // playerId -> online status
+  const [playerIds, setPlayerIds] = useState<string[]>([])
+  const [playerOnline, setPlayerOnline] = useState<boolean | null>(null)
 
   useEffect(() => {
     if (!productId) return
@@ -344,8 +348,9 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
         const productRef = doc(db, "products", productId)
         const productSnap = await getDoc(productRef)
         if (!productSnap.exists()) return
-        const product = productSnap.data()
 
+        const product = productSnap.data()
+        setPlayerIds(product.playerIds || [])
         setRetailSpotNumbers(product.retail_spot?.spot_number || [])
 
         // Query playlists
@@ -356,7 +361,6 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
         )
         const playlistSnap = await getDocs(playlistQuery)
         const playlists = playlistSnap.docs.map(doc => doc.data())
-
         // Filter active pages
         const today = new Date()
         today.setHours(0, 0, 0, 0)
@@ -405,16 +409,17 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
   }
 
   const handleAcceptBooking = async () => {
+
     if (!selectedBooking) return
 
-    setIsAccepting(true)
+
     try {
       // Generate airing_code
       const airing_code = "BH" + Date.now()
 
       // Update booking to set for_screening = 2 (accepted) and airing_code
       await updateDoc(doc(db, "booking", selectedBooking.id), {
-        for_screening: 2,
+        for_screening: 0,
         airing_code,
         updated: new Date()
       })
@@ -483,7 +488,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
             endTime: product.cms.end_time || "23:59"
           }]
         }
-         const schedule = {
+        const schedule = {
           startDate: "2020-04-11",
           endDate: "2060-05-12",
           plans: [{
@@ -539,7 +544,12 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
             ]
           }
           await addDoc(collection(db, "playlist"), playlistDoc)
+
+          console.log("Player is online, proceeding with CMS deployment")
           const playerIds = product.playerIds || []
+          // Check if player is online before CMS deployment
+
+          console.log("Player is online, cannot deploy CMS content.")
           // Prepare pages for CMS (only name and widgets)
           const cmsPages = playlistDoc.pages.map(page => ({
             name: page.name,
@@ -548,6 +558,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
           }))
 
           await createCMSContentDeployment(playerIds, schedule, cmsPages)
+          
         }
       }
 
@@ -701,6 +712,19 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
                         className="relative w-[245px] h-[76px] flex-shrink-0 rounded-[7.911px] border-[2.373px] border-[#B8D9FF] bg-[#F6F9FF] flex items-center cursor-pointer"
                         onClick={() => {
                           setSelectedBooking(booking)
+                          setIsAccepting(true)
+                          checkPlayerOnlineStatus(playerIds).then(status => {
+                            setPlayerOnline(status)
+                            if (!playerOnline) {
+                              setIsOfflineDialogOpen(true)
+                              setIsAccepting(false)
+                            }
+                            setIsAccepting(false)
+                          }).catch(() => {
+                            setPlayerOnline(false)
+                          })
+
+                          // 4. Open the dialog
                           setIsDialogOpen(true)
                         }}
                       >
@@ -832,8 +856,8 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => { setIsDialogOpen(false); setIsDeclineConfirmDialogOpen(true); }} className="w-[90px] h-[24px] px-[29px] rounded-[6px] border-[1.5px] border-[#C4C4C4] bg-white">Reject</Button>
-              <Button onClick={() => { setIsDialogOpen(false); setIsConfirmDialogOpen(true); }} disabled={isAccepting} className="w-[120px] h-[24px] rounded-[6.024px] bg-[#30C71D]">
-                {isAccepting ? <><Loader2 className="animate-spin mr-1 h-4 w-4" />Accepting...</> : "Accept"}
+              <Button onClick={() => { setIsDialogOpen(false); setIsConfirmDialogOpen(true); }} disabled={!playerOnline} className="w-[120px] h-[24px] rounded-[6.024px] bg-[#30C71D]">
+                {playerOnline ? <><Loader2 className="animate-spin mr-1 h-4 w-4" />Accepting...</> : "Accept"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -841,6 +865,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
         <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
           <DialogContent className="w-[283px] h-[153px] p-1">
             <DialogHeader className="relative p-0">
+              <DialogTitle></DialogTitle>
               <DialogClose className="absolute top-2 right-2">
                 <X width="16" height="16" />
               </DialogClose>
@@ -860,6 +885,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
         <Dialog open={isDeclineConfirmDialogOpen} onOpenChange={setIsDeclineConfirmDialogOpen}>
           <DialogContent className="w-[283px] h-[153px] p-1">
             <DialogHeader className="relative p-0">
+              <DialogTitle></DialogTitle>
               <DialogClose className="absolute top-2 right-2">
                 <X width="16" height="16" />
               </DialogClose>
@@ -879,6 +905,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
         <Dialog open={isDeclineReasonDialogOpen} onOpenChange={(open) => { setIsDeclineReasonDialogOpen(open); if (!open) { setSelectedReasons([]); setOtherReason(""); } }}>
           <DialogContent style={{ width: '369px', height: '460px', flexShrink: 0 }} className="p-6">
             <DialogHeader className="relative">
+              <DialogTitle></DialogTitle>
               <DialogClose className="absolute top-2 right-2">
                 <X width="16" height="16" />
               </DialogClose>
@@ -929,6 +956,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
         <Dialog open={isThankYouDialogOpen} onOpenChange={setIsThankYouDialogOpen}>
           <DialogContent style={{ width: '382px', height: '259px' }} className="p-6">
             <DialogHeader className="relative">
+              <DialogTitle></DialogTitle>
               <DialogClose className="absolute top-2 right-2">
                 <X width="16" height="16" />
               </DialogClose>
@@ -960,6 +988,43 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
           onOpenChange={setIsSpotDialogOpen}
           spot={selectedSpot}
         />
+        <Dialog open={isOfflineDialogOpen} onOpenChange={setIsOfflineDialogOpen}>
+          <DialogContent className="sm:max-w-xs">
+            <DialogHeader className="flex flex-col items-center p-4 pb-2 text-center">
+              {/* ⚠️ Use a more modern/standard icon for the warning */}
+              <AlertTriangle className="h-8 w-8 text-red-500 mb-2" />
+
+              <DialogTitle className="text-lg font-semibold">
+                Device Offline
+              </DialogTitle>
+
+              <DialogDescription className="text-sm text-gray-500 mt-2 text-center">
+                The LED is not online. Please check the device connection.
+              </DialogDescription>
+
+              {/* You can remove the DialogClose here and rely on the escape key or the final button */}
+            </DialogHeader>
+
+            {/* Optional Footer for standard button placement */}
+            <DialogFooter className="flex justify-center item-center">
+              <button
+                onClick={() => setIsOfflineDialogOpen(false)}
+                // Use a variant that matches your theme primary color (e.g., 'default' or 'primary')
+                // Ensure the button is easily visible and clickable.
+                className="w-full max-w-[120px] items-center bg-blue-600 rounded-md px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none flex justify-center"
+              >
+                OK, Got It
+              </button>
+            </DialogFooter>
+
+            {/* Optional close button if needed, but often placed outside the footer/header for standard dialogs */}
+            <DialogClose className="absolute top-3 right-3 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </DialogClose>
+
+          </DialogContent>
+        </Dialog>
       </div>
     )
   } else {
