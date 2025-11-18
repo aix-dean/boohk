@@ -133,22 +133,22 @@ export function TransactionsTable({
 
                 {/* Fees */}
                 <div className="col-span-1 py-1 px-2 mt-1 text-gray-900">
-                  {formatCurrency(transaction.fees?.platformFee || 0, transaction.currency)}
+                  {formatCurrency(transaction.fees?.totalFee || 0, transaction.currency)}
                 </div>
 
                 {/* Tax (12%) */}
                 <div className="col-span-1 py-1 px-2 mt-1 text-gray-900">
-                  {formatCurrency((transaction.amount || 0) * 0.12, transaction.currency)}
+                  {formatCurrency((transaction.tax?.taxAmount || 0), transaction.currency)}
                 </div>
 
                 {/* Discount */}
                 <div className="col-span-1 py-1 px-2 mt-1 text-gray-900">
-                  ₱0
+                  {formatCurrency((transaction.discount?.discountTotal || 0), transaction.currency)}
                 </div>
 
                 {/* Payout Amount */}
                 <div className="col-span-1 py-1 px-2 mt-1 text-gray-900 font-medium">
-                  {formatCurrency(transaction.fees?.netAmount || (transaction.amount || 0), transaction.currency)}
+                  {formatCurrency(transaction.amount - (transaction.tax?.taxAmount || 0 + transaction.fees?.totalFee || 0 + transaction.discount?.discountTotal || 0), transaction.currency)}
                 </div>
 
                 {/* Status */}
