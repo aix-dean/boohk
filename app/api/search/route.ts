@@ -96,6 +96,10 @@ export async function POST(request: Request) {
       appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID
       apiKey = process.env.ALGOLIA_ADMIN_API_KEY
       finalIndexName = 'emails'
+    } else if (indexName === 'transactions') {
+      appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID
+      apiKey = process.env.ALGOLIA_ADMIN_API_KEY
+      finalIndexName = 'transactions'
     } else {
       appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID
       apiKey = process.env.ALGOLIA_ADMIN_API_KEY
@@ -157,8 +161,11 @@ export async function POST(request: Request) {
       attributesToRetrieve = "id,proposalNumber,title,client_company,client_contactPerson,client_name,client_email,status,createdAt,company_id,totalAmount,products"
       attributesToHighlight = "proposalNumber,title,client_company,client_contactPerson"
     } else if (indexName === 'emails') {
-      attributesToRetrieve = "id,sentAt,subject,to,cc,body,attachments"
-      attributesToHighlight = "subject,to,body"
+       attributesToRetrieve = "id,sentAt,subject,to,cc,body,attachments"
+       attributesToHighlight = "subject,to,body"
+    } else if (indexName === 'transactions') {
+      attributesToRetrieve = "id,client.name,merchantName,status,amount,date,description,companyId,createdAt"
+      attributesToHighlight = "id,client.name,merchantName,status,description"
     }
 
     const searchParams: any = {

@@ -375,7 +375,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -415,7 +415,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -654,7 +654,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -701,7 +701,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -722,7 +722,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -747,7 +747,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -945,7 +945,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -977,7 +977,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1054,7 +1054,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1095,7 +1095,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1114,7 +1114,7 @@ export function SideNavigation() {
                   {[
                     { title: "Enrolled Sites", href: "/sales/dashboard", icon: LayoutDashboard },
                     { title: "Price Listing", href: "/sales/price-listing", icon: DollarSign },
-                    { title: "Transactions", href: "/sales/reservation", icon: CalendarCheck },
+                    { title: "Transactions", href: "/sales/transactions", icon: CalendarCheck },
                   ].map((item) => {
                     const Icon = item.icon
                     const active = isActive(pathname, item.href)
@@ -1128,7 +1128,7 @@ export function SideNavigation() {
                           active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                         )}
                       >
-                        <Icon className="h-4 w-4" />
+                        <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                         <span className="flex-1">{item.title}</span>
                       </Link>
                     )
@@ -1165,7 +1165,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1195,7 +1195,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1226,7 +1226,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1253,7 +1253,7 @@ export function SideNavigation() {
                       active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                     )}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                     <span className="flex-1">{item.title}</span>
                   </Link>
                 )
