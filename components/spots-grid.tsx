@@ -419,7 +419,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
 
       // Update booking to set for_screening = 2 (accepted) and airing_code
       await updateDoc(doc(db, "booking", selectedBooking.id), {
-        for_screening: 0,
+        for_screening: 2,
         airing_code,
         updated: new Date()
       })
