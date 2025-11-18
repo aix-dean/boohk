@@ -95,6 +95,13 @@ function PriceListingContent() {
   const [priceHistories, setPriceHistories] = useState<Record<string, any[]>>({})
   const [loadingPriceHistories, setLoadingPriceHistories] = useState<Set<string>>(new Set())
   const [priceHistoryUnsubscribers, setPriceHistoryUnsubscribers] = useState<Record<string, () => void>>({})
+  const [rowDialogOpen, setRowDialogOpen] = useState(false)
+  const [selectedRowProduct, setSelectedRowProduct] = useState<Product | null>(null)
+  const [isEditingPrice, setIsEditingPrice] = useState(false)
+  const [newPriceInput, setNewPriceInput] = useState("")
+  const [showUpdateForm, setShowUpdateForm] = useState(false)
+  const [newPriceInDialog, setNewPriceInDialog] = useState("")
+  const [isUpdatingPriceInDialog, setIsUpdatingPriceInDialog] = useState(false)
 
   const { user, userData } = useAuth()
   const router = useRouter()
@@ -596,6 +603,99 @@ function PriceListingContent() {
       setIsUpdatingPrice(false)
     }
   }
+  // Handle price update in dialog
+  const handleUpdatePriceInDialog = async () => {
+    if (!selectedRowProduct || !newPriceInDialog.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid price.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const priceValue = parseFloat(newPriceInDialog)
+    if (isNaN(priceValue) || priceValue < 0) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid positive price.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsUpdatingPriceInDialog(true)
+
+    try {
+      const priceListRef = collection(db, "price_list")
+
+      // Check if this product has any existing price history
+      const existingHistoryQuery = query(priceListRef, where("product_id", "==", selectedRowProduct.id), where("company_id", "==", userData?.company_id))
+      const existingHistorySnapshot = await getDocs(existingHistoryQuery)
+
+      // If no existing history, create an initial entry with the current price
+      if (existingHistorySnapshot.empty && selectedRowProduct.price) {
+        await addDoc(priceListRef, {
+          product_id: selectedRowProduct.id,
+          company_id: userData?.company_id,
+          updated_by: user?.uid,
+          name: `${userData?.first_name} ${userData?.last_name}`,
+          created: selectedRowProduct.created instanceof Timestamp ? selectedRowProduct.created : Timestamp.fromDate(new Date(selectedRowProduct.created)),
+          price: selectedRowProduct.price,
+        })
+      }
+
+      // 1. Create document in price_list collection for the new price
+      await addDoc(priceListRef, {
+        product_id: selectedRowProduct.id,
+        company_id: userData?.company_id,
+        updated_by: user?.uid,
+        name: `${userData?.first_name} ${userData?.last_name}`,
+        created: Timestamp.now(),
+        price: priceValue,
+      })
+
+      // 2. Update the product document
+      const productRef = doc(db, "products", selectedRowProduct.id!)
+      await updateDoc(productRef, {
+        price: priceValue,
+        updated: Timestamp.now(),
+      })
+
+      toast({
+        title: "Price Updated",
+        description: `Price for ${selectedRowProduct.name} has been updated to ₱${priceValue.toLocaleString()}.`,
+      })
+
+      // Update search results in real-time if this was from search
+      if (isSearching) {
+        setSearchResults(prevResults =>
+          prevResults.map(result =>
+            ((result as any).id || (result as any).objectID) === selectedRowProduct.id
+              ? { ...result, price: priceValue, updated: Timestamp.now() }
+              : result
+          )
+        )
+      }
+
+      // Refresh price updaters
+      fetchPriceUpdaters()
+
+      // Close the dialog and reset form
+      setRowDialogOpen(false)
+      setShowUpdateForm(false)
+      setNewPriceInDialog("")
+    } catch (error) {
+      console.error("Error updating price:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update price. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdatingPriceInDialog(false)
+    }
+  }
 
   return (
     <div className="h-screen overflow-hidden flex flex-col">
@@ -716,7 +816,6 @@ function PriceListingContent() {
                             <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Price</th>
                             <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Date</th>
                             <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">By</th>
-                            <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -739,9 +838,6 @@ function PriceListingContent() {
                               </td>
                               <td className="px-6 py-4">
                                 <Skeleton className="h-4 w-16" />
-                              </td>
-                              <td className="px-6 py-4 text-right">
-                                <Skeleton className="h-8 w-16 ml-auto" />
                               </td>
                             </tr>
                           ))}
@@ -798,12 +894,11 @@ function PriceListingContent() {
                   <>
                     {/* Header */}
                     <div className="bg-[#fafafa] border border-[#e0e0e0] rounded-lg p-4">
-                      <div className="grid grid-cols-5 gap-4 text-sm font-medium text-[#000000]">
+                      <div className="grid grid-cols-4 gap-4 text-sm font-medium text-[#000000]">
                         <div>Site</div>
                         <div>Price</div>
                         <div>Date</div>
                         <div>By</div>
-                        <div>Actions</div>
                       </div>
                     </div>
                     <div className="flex flex-col gap-4">
@@ -813,7 +908,7 @@ function PriceListingContent() {
                       const isExpanded = expandedRows.has(productId)
                       return (
                         <React.Fragment key={productId}>
-                          <div className="border border-[#e0e0e0] rounded-lg overflow-hidden" style={{ backgroundColor: '#b8d9ff54' }}>
+                          <div className="border border-[#e0e0e0] rounded-lg overflow-hidden cursor-pointer" style={{ backgroundColor: '#b8d9ff54' }} onClick={() => { setSelectedRowProduct(product); setShowUpdateForm(false); setNewPriceInDialog(product.price ? product.price.toString() : ""); setRowDialogOpen(true); }}>
                             <table className="w-full table-fixed">
                               <tbody>
                                 <tr className="bg-transparent">
@@ -861,28 +956,6 @@ function PriceListingContent() {
                                   </td>
                                   <td className="px-6 py-4 text-sm text-[#000000]">
                                     {(productId && priceUpdaters[productId]) || "System"}
-                                  </td>
-                                  <td className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="text-[#000000] border-[#e0e0e0] hover:bg-[#f6f9ff] bg-white"
-                                        onClick={() => handleOpenUpdateDialog(product)}
-                                      >
-                                        Update
-                                      </Button>
-                                      <button
-                                        onClick={() => toggleRowExpansion(productId)}
-                                        className="p-1 hover:bg-[#f6f9ff] rounded transition-colors ml-auto"
-                                      >
-                                        {isExpanded ? (
-                                          <ChevronUp className="w-4 h-4 text-[#a1a1a1]" />
-                                        ) : (
-                                          <ChevronDown className="w-4 h-4 text-[#a1a1a1]" />
-                                        )}
-                                      </button>
-                                    </div>
                                   </td>
                                 </tr>
                               </tbody>
@@ -1115,6 +1188,136 @@ function PriceListingContent() {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Row Click Dialog */}
+      <Dialog open={rowDialogOpen} onOpenChange={(open) => { setRowDialogOpen(open); if (!open) setShowUpdateForm(false); }}>
+        <DialogContent className="sm:max-w-[550px] p-0">
+          <div className="relative">
+            {/* Header */}
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-lg font-semibold">Price History</h2>
+              <button
+                onClick={() => setRowDialogOpen(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+              >
+                +
+              </button>
+            </div>
+
+            {/* Product Info */}
+            <div className="p-4 space-y-2">
+              <div className="text-sm text-gray-600">{selectedRowProduct?.name || "N/A"}</div>
+              <div className="text-sm text-gray-500">{getSiteCode(selectedRowProduct) || "N/A"}</div>
+              <div className="text-sm text-gray-500">Current Price</div>
+              <div className="text-sm font-medium">
+                {selectedRowProduct?.price ? `₱${Number(selectedRowProduct.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/month` : "Not set"}
+              </div>
+            </div>
+
+            {/* Price History Table or Update Form */}
+            <div className="px-3 pb-4">
+              <div className="border rounded-lg overflow-hidden">
+                {/* Table Header */}
+                <div className="bg-gray-50 px-6 py-3 border-b">
+                  <div className="grid grid-cols-3 gap-4 text-sm font-medium text-gray-900">
+                    <div>Price</div>
+                    <div>Date</div>
+                    <div>By</div>
+                  </div>
+                </div>
+
+                {/* Table Body */}
+                <div className="max-h-48 overflow-y-auto">
+                  {loadingPriceHistories.has(selectedRowProduct?.id || "") ? (
+                    <div className="text-center py-4">
+                      <div className="flex items-center justify-center">
+                        <Loader2 size={14} className="animate-spin mr-2" />
+                        <span>Loading price history...</span>
+                      </div>
+                    </div>
+                  ) : priceHistories[selectedRowProduct?.id || ""] && priceHistories[selectedRowProduct?.id || ""].length > 0 ? (
+                    <div className="divide-y divide-gray-200">
+                      {priceHistories[selectedRowProduct?.id || ""].map((history, index) => (
+                        <div key={`history-${history.id || index}`} className="px-6 py-3">
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div className="font-medium">
+                              ₱{Number(history.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                            <div>
+                              {history.created instanceof Timestamp
+                                ? new Date(history.created.seconds * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                                : history.created
+                                  ? new Date(history.created).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                                  : "N/A"}
+                            </div>
+                            <div>{history.name || "System"}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      No price history available
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Update Price Form */}
+            <div className="p-4 border-t">
+              {showUpdateForm && (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="price-in-dialog" className="text-sm font-medium">
+                    New Price
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500">Php</span>
+                    <Input
+                      id="price-in-dialog"
+                      type="text"
+                      className="w-32"
+                      value={newPriceInDialog}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/,/g, '');
+                        setNewPriceInDialog(value);
+                      }}
+                    />
+                    <span className="text-gray-500">/spot/day</span>
+                    <Button
+                      onClick={handleUpdatePriceInDialog}
+                      disabled={isUpdatingPriceInDialog}
+                      className="bg-blue-500 hover:bg-blue-600 ml-auto"
+                    >
+                      {isUpdatingPriceInDialog ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        "Save"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {!showUpdateForm && (
+                <div className="flex justify-end">
+                  <Button
+                    onClick={() => {
+                      setShowUpdateForm(true)
+                      setNewPriceInDialog(selectedRowProduct?.price ? Number(selectedRowProduct.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "")
+                    }}
+                    className="bg-[#ff3131] hover:bg-[#e02828]"
+                  >
+                    Update Price
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
