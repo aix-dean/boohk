@@ -13,6 +13,7 @@ import { formatBookingDates } from "@/lib/booking-service"
 import { createCMSContentDeployment } from "@/lib/cms-api"
 import { useToast } from "@/hooks/use-toast"
 import { BookingCongratulationsDialog } from "@/components/BookingCongratulationsDialog"
+import { BookingDetailsDialog } from "@/components/BookingDetailsDialog"
 import { convertSegmentPathToStaticExportFilename } from "next/dist/shared/lib/segment-cache/segment-value-encoding"
 
 interface Spot {
@@ -789,54 +790,15 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
           )}
           {spotsContent}
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader className="relative">
-              <DialogTitle>Booking Request</DialogTitle>
-              <DialogClose className="absolute top-0 right-0">
-                <X width="24.007" height="31.209" />
-              </DialogClose>
-            </DialogHeader>
-            {selectedBooking && (
-              <div className="flex gap-4">
-                <div className="flex-1 space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">Dates</label>
-                    <p className="text-sm">{formatBookingDates(selectedBooking.start_date, selectedBooking.end_date)}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Display Name</label>
-                    <p className="text-sm">{selectedBooking.product_name || selectedBooking.project_name || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Total Payout</label>
-                    <p className="text-sm">P{selectedBooking.total_cost?.toLocaleString() || selectedBooking.cost?.toLocaleString() || "0"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Booking Code</label>
-                    <p className="text-sm">BK#{selectedBooking.reservation_id || selectedBooking.id.slice(-8)}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Client</label>
-                    <p className="text-sm">{selectedBooking.client?.name || 'N/A'}</p>
-                  </div>
-                </div>
-                <div className="w-[320px] space-y-2">
-                  <label className="text-sm font-medium">Content</label>
-                  <div className="h-[320px] flex-shrink-0 rounded-[10px] bg-gray-100 flex items-center justify-center">
-                    <MediaPlayer url={selectedBooking.url} />
-                  </div>
-                </div>
-              </div>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => { setIsDialogOpen(false); setIsDeclineConfirmDialogOpen(true); }} className="w-[90px] h-[24px] px-[29px] rounded-[6px] border-[1.5px] border-[#C4C4C4] bg-white">Reject</Button>
-              <Button onClick={() => { setIsDialogOpen(false); setIsConfirmDialogOpen(true); }} disabled={isAccepting} className="w-[120px] h-[24px] rounded-[6.024px] bg-[#30C71D]">
-                {isAccepting ? <><Loader2 className="animate-spin mr-1 h-4 w-4" />Accepting...</> : "Accept"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <BookingDetailsDialog
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          booking={selectedBooking}
+          mode="manage"
+          onAccept={() => { setIsDialogOpen(false); setIsConfirmDialogOpen(true); }}
+          onReject={() => { setIsDialogOpen(false); setIsDeclineConfirmDialogOpen(true); }}
+          isAccepting={isAccepting}
+        />
         <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
           <DialogContent className="w-[283px] h-[153px] p-1">
             <DialogHeader className="relative p-0">
