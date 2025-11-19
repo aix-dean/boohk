@@ -44,10 +44,10 @@ export function PriceHistoryDialog({
 }: PriceHistoryDialogProps) {
   return (
     <Dialog open={rowDialogOpen} onOpenChange={(open) => { setRowDialogOpen(open); if (!open) setShowUpdateForm(false); }}>
-      <DialogContent className="sm:max-w-[550px] p-0">
+      <DialogContent className="w-full max-w-[550px] p-0">
         <div className="relative">
           {/* Header */}
-          <div className="flex justify-between items-center p-4">
+          <div className="flex justify-between items-center p-3 sm:p-4">
             <h2 className="text-lg font-semibold">Price History</h2>
             <button
               onClick={() => setRowDialogOpen(false)}
@@ -67,10 +67,10 @@ export function PriceHistoryDialog({
           </div>
 
           {/* Price History Table or Update Form */}
-          <div className="px-3 pb-4 transform -translate-y-1">
+          <div className="px-2 sm:px-3 pb-4 transform -translate-y-1">
             <div className="overflow-hidden">
               {/* Table Header */}
-              <div className="bg-[#f9f9f9] px-6 py-3">
+              <div className="bg-[#f9f9f9] px-4 sm:px-6 py-3">
                 <div className="grid grid-cols-3 gap-4 text-xs font-bold text-gray-900">
                   <div>Price</div>
                   <div>Date</div>
@@ -90,7 +90,7 @@ export function PriceHistoryDialog({
                 ) : priceHistories[selectedRowProduct?.id || ""] && priceHistories[selectedRowProduct?.id || ""].length > 0 ? (
                   <div className="divide-y divide-gray-200">
                     {priceHistories[selectedRowProduct?.id || ""].map((history, index) => (
-                      <div key={`history-${history.id || index}`} className="px-6 py-3">
+                      <div key={`history-${history.id || index}`} className="px-4 sm:px-6 py-3">
                         <div className="grid grid-cols-3 gap-4 text-xs">
                           <div className="font-normal">
                             Php {Number(history.price).toLocaleString()} /spot /day
@@ -117,7 +117,7 @@ export function PriceHistoryDialog({
           </div>
 
           {/* Update Price Form */}
-          <div className="p-4">
+          <div className="p-3 sm:p-4">
             {showUpdateForm && (
               <div className="flex flex-col gap-2">
                 <Label htmlFor="price-in-dialog" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: '14px', lineHeight: '100%', letterSpacing: '0%' }}>
