@@ -42,6 +42,7 @@ import { useResponsive } from "@/hooks/use-responsive"
 import { ResponsiveCardGrid } from "@/components/responsive-card-grid"
 import { RouteProtection } from "@/components/route-protection"
 import { Input } from "@/components/ui/input"
+import { PriceHistoryDialog } from "@/components/price-history-dialog"
 import { searchPriceListingProducts, SearchResult } from "@/lib/algolia-service"
 import { useDebounce } from "@/hooks/use-debounce"
 
@@ -365,6 +366,13 @@ function PriceListingContent() {
     }
   }, [currentPage, fetchProducts, userData?.company_id])
 
+  // Setup price history listener when dialog opens
+  useEffect(() => {
+    if (rowDialogOpen && selectedRowProduct?.id && !priceHistoryUnsubscribers[selectedRowProduct.id]) {
+      setupPriceHistoryListener(selectedRowProduct.id)
+    }
+  }, [rowDialogOpen, selectedRowProduct?.id, setupPriceHistoryListener, priceHistoryUnsubscribers])
+
   // Real-time listener for product updates
   useEffect(() => {
     if (!userData?.company_id) return
@@ -501,7 +509,7 @@ function PriceListingContent() {
       id: product.id || (product as any).objectID
     }
     setSelectedProductForUpdate(normalizedProduct)
-    setNewPrice(product.price ? product.price.toString() : "")
+    setNewPrice(product.price ? Number(product.price).toLocaleString() : "")
     setUpdateDialogOpen(true)
   }
 
@@ -523,7 +531,7 @@ function PriceListingContent() {
       return
     }
 
-    const priceValue = parseFloat(newPrice)
+    const priceValue = parseInt(newPrice.replace(/,/g, ''))
     if (isNaN(priceValue) || priceValue < 0) {
       toast({
         title: "Error",
@@ -614,7 +622,7 @@ function PriceListingContent() {
       return
     }
 
-    const priceValue = parseFloat(newPriceInDialog)
+    const priceValue = parseInt(newPriceInDialog.replace(/,/g, ''))
     if (isNaN(priceValue) || priceValue < 0) {
       toast({
         title: "Error",
@@ -943,7 +951,7 @@ function PriceListingContent() {
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 text-sm font-medium text-[#000000]">
-                                    {product.price ? `₱${Number(product.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/month` : "Not set"}
+                                    {product.price ? `₱${Number(product.price).toLocaleString()}/month` : "Not set"}
                                   </td>
                                   <td className="px-6 py-4 text-sm text-[#000000]">
                                     As of {product.updated instanceof Timestamp
@@ -978,7 +986,7 @@ function PriceListingContent() {
                                         <tr key={`history-${history.id || index}`} className="border-b border-gray-200 last:border-0">
                                           <td className="px-6 py-2 w-[20%]"></td>
                                           <td className="px-6 py-2 text-sm font-medium text-[#000000] w-[20%]">
-                                            ₱{Number(history.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            ₱{Number(history.price).toLocaleString()}
                                           </td>
                                           <td className="px-6 py-2 text-sm text-[#000000] w-[20%]">
                                             {history.created instanceof Timestamp
@@ -1157,13 +1165,14 @@ function PriceListingContent() {
                 </Label>
                 <Input
                   id="price"
-                  type="number"
+                  type="text"
                   placeholder="Enter new price"
                   value={newPrice}
-                  onChange={(e) => setNewPrice(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/,/g, '').replace(/\D/g, '');
+                    setNewPrice(value ? Number(value).toLocaleString() : '');
+                  }}
                   className="w-full"
-                  min="0"
-                  step="0.01"
                 />
               </div>
             </div>
@@ -1191,135 +1200,20 @@ function PriceListingContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Row Click Dialog */}
-      <Dialog open={rowDialogOpen} onOpenChange={(open) => { setRowDialogOpen(open); if (!open) setShowUpdateForm(false); }}>
-        <DialogContent className="sm:max-w-[550px] p-0">
-          <div className="relative">
-            {/* Header */}
-            <div className="flex justify-between items-center p-4 border-b">
-              <h2 className="text-lg font-semibold">Price History</h2>
-              <button
-                onClick={() => setRowDialogOpen(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
-              >
-                +
-              </button>
-            </div>
-
-            {/* Product Info */}
-            <div className="p-4 space-y-2">
-              <div className="text-sm text-gray-600">{selectedRowProduct?.name || "N/A"}</div>
-              <div className="text-sm text-gray-500">{getSiteCode(selectedRowProduct) || "N/A"}</div>
-              <div className="text-sm text-gray-500">Current Price</div>
-              <div className="text-sm font-medium">
-                {selectedRowProduct?.price ? `₱${Number(selectedRowProduct.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/month` : "Not set"}
-              </div>
-            </div>
-
-            {/* Price History Table or Update Form */}
-            <div className="px-3 pb-4">
-              <div className="border rounded-lg overflow-hidden">
-                {/* Table Header */}
-                <div className="bg-gray-50 px-6 py-3 border-b">
-                  <div className="grid grid-cols-3 gap-4 text-sm font-medium text-gray-900">
-                    <div>Price</div>
-                    <div>Date</div>
-                    <div>By</div>
-                  </div>
-                </div>
-
-                {/* Table Body */}
-                <div className="max-h-48 overflow-y-auto">
-                  {loadingPriceHistories.has(selectedRowProduct?.id || "") ? (
-                    <div className="text-center py-4">
-                      <div className="flex items-center justify-center">
-                        <Loader2 size={14} className="animate-spin mr-2" />
-                        <span>Loading price history...</span>
-                      </div>
-                    </div>
-                  ) : priceHistories[selectedRowProduct?.id || ""] && priceHistories[selectedRowProduct?.id || ""].length > 0 ? (
-                    <div className="divide-y divide-gray-200">
-                      {priceHistories[selectedRowProduct?.id || ""].map((history, index) => (
-                        <div key={`history-${history.id || index}`} className="px-6 py-3">
-                          <div className="grid grid-cols-3 gap-4 text-sm">
-                            <div className="font-medium">
-                              ₱{Number(history.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </div>
-                            <div>
-                              {history.created instanceof Timestamp
-                                ? new Date(history.created.seconds * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-                                : history.created
-                                  ? new Date(history.created).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-                                  : "N/A"}
-                            </div>
-                            <div>{history.name || "System"}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      No price history available
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Update Price Form */}
-            <div className="p-4 border-t">
-              {showUpdateForm && (
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="price-in-dialog" className="text-sm font-medium">
-                    New Price
-                  </Label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-500">Php</span>
-                    <Input
-                      id="price-in-dialog"
-                      type="text"
-                      className="w-32"
-                      value={newPriceInDialog}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/,/g, '');
-                        setNewPriceInDialog(value);
-                      }}
-                    />
-                    <span className="text-gray-500">/spot/day</span>
-                    <Button
-                      onClick={handleUpdatePriceInDialog}
-                      disabled={isUpdatingPriceInDialog}
-                      className="bg-blue-500 hover:bg-blue-600 ml-auto"
-                    >
-                      {isUpdatingPriceInDialog ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Updating...
-                        </>
-                      ) : (
-                        "Save"
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )}
-              {!showUpdateForm && (
-                <div className="flex justify-end">
-                  <Button
-                    onClick={() => {
-                      setShowUpdateForm(true)
-                      setNewPriceInDialog(selectedRowProduct?.price ? Number(selectedRowProduct.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "")
-                    }}
-                    className="bg-[#ff3131] hover:bg-[#e02828]"
-                  >
-                    Update Price
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <PriceHistoryDialog
+        rowDialogOpen={rowDialogOpen}
+        setRowDialogOpen={setRowDialogOpen}
+        selectedRowProduct={selectedRowProduct}
+        priceHistories={priceHistories}
+        loadingPriceHistories={loadingPriceHistories}
+        newPriceInDialog={newPriceInDialog}
+        setNewPriceInDialog={setNewPriceInDialog}
+        showUpdateForm={showUpdateForm}
+        setShowUpdateForm={setShowUpdateForm}
+        isUpdatingPriceInDialog={isUpdatingPriceInDialog}
+        handleUpdatePriceInDialog={handleUpdatePriceInDialog}
+        getSiteCode={getSiteCode}
+      />
     </div>
   )
 }
@@ -1382,7 +1276,7 @@ console.log('Rendering ProductCard for:', product);
       ? `₱${Number((product as SearchResult).price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/month`
       : "Price not set"
     : (product as Product).price
-      ? `₱${Number((product as Product).price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/month`
+      ? `₱${Number((product as Product).price).toLocaleString()}/month`
       : "Price not set"
 
   // Get site code
@@ -1508,7 +1402,7 @@ console.log('Rendering ProductCard for:', product);
 
             {/* Price - More prominent */}
             <div className="text-sm font-semibold text-gray-900 mt-1">
-              {product.price ? `₱${Number(product.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/month` : "Price not set"}
+              {product.price ? `₱${Number(product.price).toLocaleString()}/month` : "Price not set"}
             </div>
           </div>
         </CardContent>
