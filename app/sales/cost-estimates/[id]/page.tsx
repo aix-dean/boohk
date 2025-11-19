@@ -240,7 +240,7 @@ export default function CostEstimatePage({ params }: { params: Promise<{ id: str
   const getCurrentUserSignatureDate = async (): Promise<Date | null> => {
     if (!costEstimate?.createdBy) return null
     try {
-      const userDocRef = doc(db, "iboard_users", costEstimate.createdBy)
+      const userDocRef = doc(db, "boohk_users", costEstimate.createdBy)
       const userDoc = await getDoc(userDocRef)
       if (userDoc.exists()) {
         const userData = userDoc.data()
@@ -623,7 +623,7 @@ export default function CostEstimatePage({ params }: { params: Promise<{ id: str
       let signatureDate: Date | null = null
       if (updatedCostEstimate.createdBy) {
         try {
-          const userDocRef = doc(db, "iboard_users", updatedCostEstimate.createdBy)
+          const userDocRef = doc(db, "boohk_users", updatedCostEstimate.createdBy)
           const userDoc = await getDoc(userDocRef)
 
           if (userDoc.exists()) {
@@ -1023,7 +1023,7 @@ export default function CostEstimatePage({ params }: { params: Promise<{ id: str
             let signatureDate: Date | null = null
             if (estimate.createdBy) {
               try {
-                const userDocRef = doc(db, "iboard_users", estimate.createdBy)
+                const userDocRef = doc(db, "boohk_users", estimate.createdBy)
                 const userDoc = await getDoc(userDocRef)
 
                 if (userDoc.exists()) {
@@ -1262,7 +1262,7 @@ export default function CostEstimatePage({ params }: { params: Promise<{ id: str
       let signatureDate: Date | null = null
       if (costEstimate.createdBy) {
         try {
-          const userDocRef = doc(db, "iboard_users", costEstimate.createdBy)
+          const userDocRef = doc(db, "boohk_users", costEstimate.createdBy)
           const userDoc = await getDoc(userDocRef)
 
           if (userDoc.exists()) {
@@ -1681,7 +1681,7 @@ export default function CostEstimatePage({ params }: { params: Promise<{ id: str
         if (historyItem.createdBy) {
           try {
             console.log('[HISTORY_PDF] Fetching user signature for createdBy:', historyItem.createdBy)
-            const userDocRef = doc(db, "iboard_users", historyItem.createdBy)
+            const userDocRef = doc(db, "boohk_users", historyItem.createdBy)
             const userDoc = await getDoc(userDocRef)
 
             if (userDoc.exists()) {

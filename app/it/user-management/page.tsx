@@ -106,7 +106,7 @@ export default function ITUserManagementPage() {
       return
     }
 
-    const q = query(collection(db, "iboard_users"), where("company_id", "==", userData.company_id))
+    const q = query(collection(db, "boohk_users"), where("company_id", "==", userData.company_id))
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const usersData = snapshot.docs.map((doc) => {
@@ -277,7 +277,7 @@ export default function ITUserManagementPage() {
     if (!userData?.uid) return
 
     try {
-      const userDocRef = doc(db, "iboard_users", userData.uid)
+      const userDocRef = doc(db, "boohk_users", userData.uid)
       await updateDoc(userDocRef, {
         onboarding: false,
         updated: new Date(),

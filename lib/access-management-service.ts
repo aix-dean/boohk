@@ -28,7 +28,7 @@ export type UserRole = {
   assignedAt?: number
 }
 
-// Update the User type to match iboard_users collection
+// Update the User type to match boohk_users collection
 export type User = {
   id: string
   email: string
@@ -220,7 +220,7 @@ export async function removePermissionFromRole(roleId: string, permissionId: str
 // User Management
 export async function getUsers(licenseKey?: string): Promise<User[]> {
   try {
-    const usersCollection = collection(db, "iboard_users")
+    const usersCollection = collection(db, "boohk_users")
     let usersQuery
 
     // If license key is provided, filter users by license key
@@ -249,7 +249,7 @@ export async function getUsers(licenseKey?: string): Promise<User[]> {
 }
 export async function getUserById(userId: string): Promise<User | null> {
   try {
-    const userDocRef = doc(db, "iboard_users", userId)
+    const userDocRef = doc(db, "boohk_users", userId)
     const userDoc = await getDoc(userDocRef)
 
     if (userDoc.exists()) {
@@ -304,18 +304,18 @@ export async function assignRoleToUser(userId: string, roleId: string): Promise<
         assignedAt: Date.now(),
       })
 
-      // Update the iboard_users document with the new roles array
+      // Update the boohk_users document with the new roles array
       try {
         const updatedRoles = await getUserRoles(userId)
-        const userDocRef = doc(db, "iboard_users", userId)
+        const userDocRef = doc(db, "boohk_users", userId)
         await updateDoc(userDocRef, {
           roles: updatedRoles,
           updated: new Date(),
         })
-        console.log(`Updated iboard_users document with roles:`, updatedRoles)
+        console.log(`Updated boohk_users document with roles:`, updatedRoles)
       } catch (updateError) {
-        console.error("Error updating iboard_users document:", updateError)
-        // Don't fail the role assignment if updating iboard_users fails
+        console.error("Error updating boohk_users document:", updateError)
+        // Don't fail the role assignment if updating boohk_users fails
       }
     }
   } catch (error) {
@@ -334,18 +334,18 @@ export async function removeRoleFromUser(userId: string, roleId: string): Promis
       await deleteDoc(doc(userRolesCollection, docSnapshot.id))
     })
 
-    // Update the iboard_users document with the updated roles array
+    // Update the boohk_users document with the updated roles array
     try {
       const updatedRoles = await getUserRoles(userId)
-      const userDocRef = doc(db, "iboard_users", userId)
+      const userDocRef = doc(db, "boohk_users", userId)
       await updateDoc(userDocRef, {
         roles: updatedRoles,
         updated: new Date(),
       })
-      console.log(`Updated iboard_users document with roles after removal:`, updatedRoles)
+      console.log(`Updated boohk_users document with roles after removal:`, updatedRoles)
     } catch (updateError) {
-      console.error("Error updating iboard_users document after role removal:", updateError)
-      // Don't fail the role removal if updating iboard_users fails
+      console.error("Error updating boohk_users document after role removal:", updateError)
+      // Don't fail the role removal if updating boohk_users fails
     }
   } catch (error) {
     console.error("Error removing role from user:", error)

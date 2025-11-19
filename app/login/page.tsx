@@ -341,12 +341,12 @@ export default function LoginPage() {
       console.log("User creation successful, proceeding to document creation")
 
       console.log("=== USER DOCUMENT CREATION DEBUG ===")
-      console.log("Creating user document in iboard_users...")
+      console.log("Creating user document in boohk_users...")
       console.log("Firebase user UID:", firebaseUser.uid)
       console.log("Firebase user email:", firebaseUser.email)
 
-      // Create user document in iboard_users collection with type="OHPLUS"
-      const userDocRef = doc(db, "iboard_users", firebaseUser.uid)
+      // Create user document in boohk_users collection with type="OHPLUS"
+      const userDocRef = doc(db, "boohk_users", firebaseUser.uid)
       console.log("User document reference:", userDocRef.path)
 
       // Get permissions and roles from pending registration or use defaults
@@ -385,12 +385,12 @@ export default function LoginPage() {
       }
 
       console.log("User data to be saved:", userData)
-      console.log("User data to be created in iboard_users:", userData)
-      console.log("About to call setDoc for iboard_users")
+      console.log("User data to be created in boohk_users:", userData)
+      console.log("About to call setDoc for boohk_users")
 
       try {
         await setDoc(userDocRef, userData)
-        console.log("✅ User document created in iboard_users collection with type OHPLUS")
+        console.log("✅ User document created in boohk_users collection with type OHPLUS")
         console.log("✅ setDoc completed successfully")
       } catch (setDocError: any) {
         console.error("❌ Error creating user document:", setDocError)
@@ -402,7 +402,7 @@ export default function LoginPage() {
         throw setDocError
       }
 
-      console.log("Verifying iboard_users document creation...")
+      console.log("Verifying boohk_users document creation...")
       let docSnap = await getDoc(userDocRef)
 
       // Retry up to 3 times if document doesn't exist immediately
@@ -415,13 +415,13 @@ export default function LoginPage() {
       }
 
       if (!docSnap.exists()) {
-        console.error("❌ Failed to create iboard_users document - document does not exist after retries")
+        console.error("❌ Failed to create boohk_users document - document does not exist after retries")
         console.error("❌ Document reference:", userDocRef.path)
         console.error("❌ This is the critical error causing the login redirect")
-        throw new Error("Failed to create iboard_users document after retries")
+        throw new Error("Failed to create boohk_users document after retries")
       }
 
-      console.log("✅ iboard_users document verified successfully")
+      console.log("✅ boohk_users document verified successfully")
       console.log("✅ Document data:", docSnap.data())
       console.log("✅ User registration completed successfully - user should stay logged in")
       console.log('warren')
@@ -472,7 +472,7 @@ export default function LoginPage() {
       console.error("=== REGISTRATION FAILED ===")
       console.error("Registration failed:", error)
       console.log("Error code:", error.code, "Error message:", error.message)
-      console.log("handleCompleteRegistration failed - no iboard_users created")
+      console.log("handleCompleteRegistration failed - no boohk_users created")
 
       // End registration on error
       endRegistration()
@@ -806,7 +806,7 @@ export default function LoginPage() {
           fill
           className="object-cover -z-10"
         />
-        <img src="/boohk-logo.png" width="72" height="90" style={{position: 'absolute', top: '20px', right: '20px', flexShrink: 0, padding: '16px'}} />
+        <img src="/boohk-logo.png" width="62" height="77.5" style={{position: 'absolute', top: '20px', right: '20px', flexShrink: 0, padding: '16px'}} />
         {/* Floating geometric shapes */}
         <div className="absolute inset-0">
           {/* Various floating cubes and rectangles */}
@@ -973,7 +973,7 @@ export default function LoginPage() {
             priority
           />
         </div>
-        <img src="/boohk-logo.png" width="72" height="90" style={{position: 'absolute', top: '20px', right: '20px', flexShrink: 0, padding: '16px'}} />
+        <img src="/boohk-logo.png" width="62" height="77.5" style={{position: 'absolute', top: '20px', right: '20px', flexShrink: 0, padding: '16px'}} />
         <img src="/boohk-text-login.png" alt="boohk" style={{position: 'absolute', bottom: 50, left: 20, width: 'auto', height: '60px', paddingLeft: '20px', paddingBottom: '20px'}} />
         <div style={{position: 'absolute', bottom: 20, left: 20, color: '#FFF', fontFamily: 'Inter', fontSize: '25.734px', fontWeight: 600, lineHeight: '100%', paddingLeft: '20px', paddingBottom: '20px'}}>OOH Retail Solutions</div>
       </div>

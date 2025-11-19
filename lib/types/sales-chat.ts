@@ -4,8 +4,8 @@ export interface SalesThread {
   id: string
   participants: string[] // Array of user IDs in the conversation
   receiverId: string // The other user's ID
-  receiver_name?: string // Name from iboard_users collection
-  receiver_photo_url?: string // Photo URL from iboard_users
+  receiver_name?: string // Name from boohk_users collection
+  receiver_photo_url?: string // Photo URL from boohk_users
   seller_photo?: string // Seller's photo URL
   lastMessage?: {
     text: string

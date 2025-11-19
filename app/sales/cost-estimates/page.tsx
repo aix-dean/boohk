@@ -245,7 +245,7 @@ function CostEstimatesPageContent() {
     try {
       const { doc, getDoc } = await import("firebase/firestore")
       const { db } = await import("@/lib/firebase")
-      const userDocRef = doc(db, "iboard_users", user.uid)
+      const userDocRef = doc(db, "boohk_users", user.uid)
       const userDoc = await getDoc(userDocRef)
       if (userDoc.exists()) {
         const userDataFetched = userDoc.data()
@@ -283,14 +283,14 @@ function CostEstimatesPageContent() {
     }
 
     try {
-      // Fetch user signature from iboard_users collection
+      // Fetch user signature from boohk_users collection
       let userSignatureDataUrl: string | null = null
       let signatureDate: Date | null = null
       if (costEstimate.createdBy) {
         try {
           const { doc, getDoc } = await import("firebase/firestore")
           const { db } = await import("@/lib/firebase")
-          const userDocRef = doc(db, "iboard_users", costEstimate.createdBy)
+          const userDocRef = doc(db, "boohk_users", costEstimate.createdBy)
           const userDoc = await getDoc(userDocRef)
 
           if (userDoc.exists()) {
@@ -467,14 +467,14 @@ function CostEstimatesPageContent() {
         })
 
         // If no PDF exists, generate it and save to database
-        // Fetch user signature from iboard_users collection
+        // Fetch user signature from boohk_users collection
         let userSignatureDataUrl: string | null = null
         let signatureDate: Date | null = null
         if (fullCostEstimate.createdBy) {
           try {
             const { doc, getDoc } = await import("firebase/firestore")
             const { db } = await import("@/lib/firebase")
-            const userDocRef = doc(db, "iboard_users", fullCostEstimate.createdBy)
+            const userDocRef = doc(db, "boohk_users", fullCostEstimate.createdBy)
             const userDoc = await getDoc(userDocRef)
 
             if (userDoc.exists()) {
@@ -656,14 +656,14 @@ function CostEstimatesPageContent() {
         })
 
         // If no PDF exists, generate it and save to database (same as download)
-        // Fetch user signature from iboard_users collection
+        // Fetch user signature from boohk_users collection
         let userSignatureDataUrl: string | null = null
         let signatureDate: Date | null = null
         if (fullCostEstimate.createdBy) {
           try {
             const { doc, getDoc } = await import("firebase/firestore")
             const { db } = await import("@/lib/firebase")
-            const userDocRef = doc(db, "iboard_users", fullCostEstimate.createdBy)
+            const userDocRef = doc(db, "boohk_users", fullCostEstimate.createdBy)
             const userDoc = await getDoc(userDocRef)
 
             if (userDoc.exists()) {
@@ -964,7 +964,7 @@ function CostEstimatesPageContent() {
             try {
               const { doc, getDoc } = await import("firebase/firestore")
               const { db } = await import("@/lib/firebase")
-              const userDocRef = doc(db, "iboard_users", user.uid)
+              const userDocRef = doc(db, "boohk_users", user.uid)
               const userDoc = await getDoc(userDocRef)
 
               if (userDoc.exists()) {
@@ -1054,14 +1054,14 @@ function CostEstimatesPageContent() {
         })
 
         try {
-          // Fetch user signature from iboard_users collection
+          // Fetch user signature from boohk_users collection
           let userSignatureDataUrl: string | null = null
           let signatureDate: Date | null = null
           if (fullCostEstimate.createdBy) {
             try {
               const { doc, getDoc } = await import("firebase/firestore")
               const { db } = await import("@/lib/firebase")
-              const userDocRef = doc(db, "iboard_users", fullCostEstimate.createdBy)
+              const userDocRef = doc(db, "boohk_users", fullCostEstimate.createdBy)
               const userDoc = await getDoc(userDocRef)
 
               if (userDoc.exists()) {
