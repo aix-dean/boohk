@@ -1,8 +1,8 @@
 import * as XLSX from 'xlsx';
-import { Transaction } from 'oh-db-models';
+import { Booking } from 'oh-db-models';
 
 export async function exportTransactionsToExcel(
-  transactions: Transaction[],
+  transactions: Booking[],
   companyName?: string
 ) {
   // Transform transactions data for Excel export
@@ -17,17 +17,37 @@ export async function exportTransactionsToExcel(
       return `${currency === 'IDR' ? 'Rp' : '₱'}${amount.toLocaleString()}`;
     };
 
+    const getMillis = (date: Date | any): number => {
+      if (!date) return 0
+
+      if (date instanceof Date) {
+        return date.getTime()
+      } else if (typeof date === 'number') {
+        // Assume it's already milliseconds
+        return date
+      } else if (date && typeof date === 'object' && date.seconds) {
+        // Handle Firestore timestamp
+        return date.seconds * 1000
+      } else if (date && typeof date === 'object' && date.toMillis) {
+        // Handle Firestore timestamp with toMillis
+        return date.toMillis()
+      } else {
+        // Try to parse as string or other format
+        const d = new Date(date)
+        return isNaN(d.getTime()) ? 0 : d.getTime()
+      }
+    }
+
     return {
-      'Date': formatDate(transaction.createdAt),
-      'Site': transaction.client?.name || transaction.merchantName || 'Unknown',
-      'Site Name': transaction.id?.slice(-6) || 'N/A',
-      'Booking ID': `BK${transaction.id?.slice(-4) || '0000'}`,
-      'Total Days': transaction.items?.length || 1,
-      'Gross Amount': formatCurrency(transaction.amount || 0, transaction.currency),
-      'Fees': formatCurrency(transaction.fees?.platformFee || 0, transaction.currency),
-      'Tax (12%)': formatCurrency((transaction.amount || 0) * 0.12, transaction.currency),
-      'Discount': '₱0',
-      'Payout Amount': formatCurrency(transaction.fees?.netAmount || (transaction.amount || 0), transaction.currency),
+      'Date': formatDate(transaction.created),
+      'Site': transaction.items?.name || 'Unknown',
+      'Airing Ticket': transaction.airing_code || '-',
+      'Total Days': transaction.start_date && transaction.end_date ? Math.ceil((getMillis(transaction.end_date) - getMillis(transaction.start_date)) / (1000 * 60 * 60 * 24)) : transaction.costDetails?.days || 1,
+      'Gross Amount': formatCurrency(transaction.total_cost || 0, 'PHP'),
+      'Fees': formatCurrency(transaction.costDetails?.otherFees || 0, 'PHP'),
+      'Tax (12%)': formatCurrency(transaction.costDetails?.vatAmount || 0, 'PHP'),
+      'Discount': formatCurrency(transaction.costDetails?.discount || 0, 'PHP'),
+      'Payout Amount': formatCurrency((transaction.total_cost || 0) - (transaction.costDetails?.vatAmount || 0) - (transaction.costDetails?.otherFees || 0) - (transaction.costDetails?.discount || 0), 'PHP'),
       'Status': transaction.status || 'Unknown'
     };
   });
@@ -40,8 +60,7 @@ export async function exportTransactionsToExcel(
   const colWidths = [
     { wch: 12 }, // Date
     { wch: 20 }, // Site
-    { wch: 15 }, // Site Name
-    { wch: 12 }, // Booking ID
+    { wch: 15 }, // Airing Ticket
     { wch: 10 }, // Total Days
     { wch: 15 }, // Gross Amount
     { wch: 12 }, // Fees

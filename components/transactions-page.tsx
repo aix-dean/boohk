@@ -9,33 +9,32 @@ import { TransactionsTable } from "@/components/transactions-table"
 import { TransactionMetrics } from "@/components/transaction-metrics"
 import TransactionDetailsDialog from "@/components/TransactionDetailsDialog"
 import { BookingDetailsDialog } from "@/components/BookingDetailsDialog"
-import { Transaction } from 'oh-db-models'
-import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore"
+import { collection, query, where, getDocs, orderBy, limit, startAfter, Timestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useAuth } from "@/contexts/auth-context"
-import { searchTransactions } from "@/lib/algolia-service"
+import { searchBookings } from "@/lib/algolia-service"
 import { exportTransactionsToExcel } from "@/lib/excel-export"
 import { bookingService } from "@/lib/booking-service"
-import type { Booking } from "@/lib/booking-service"
+import { Booking } from 'oh-db-models'
 
 interface TransactionsPageProps {
   title: string
 }
 
 export default function TransactionsPage({ title }: TransactionsPageProps) {
-  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [bookings, setBookings] = useState<Booking[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
   const [isExporting, setIsExporting] = useState(false)
   const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false)
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
+  const [selectedTransaction, setSelectedTransaction] = useState<Booking | null>(null)
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [isLoadingBooking, setIsLoadingBooking] = useState(false)
   const [selectedPeriod, setSelectedPeriod] = useState('this-month')
-  const [metricsTransactions, setMetricsTransactions] = useState<Transaction[]>([])
+  const [metricsBookings, setMetricsBookings] = useState<Booking[]>([])
   const { userData } = useAuth()
 
   // Helper function to get date range for selected period
@@ -60,125 +59,150 @@ export default function TransactionsPage({ title }: TransactionsPageProps) {
   }
 
   const handleExport = async () => {
-    if (transactions.length === 0) {
-      alert('No transactions to export')
+    if (bookings.length === 0) {
+      alert('No bookings to export')
       return
     }
 
     setIsExporting(true)
     try {
-      await exportTransactionsToExcel(transactions)
+      await exportTransactionsToExcel(bookings)
     } catch (error) {
       console.error('Export failed:', error)
-      alert('Failed to export transactions. Please try again.')
+      alert('Failed to export bookings. Please try again.')
     } finally {
       setIsExporting(false)
     }
   }
 
-  const handleRowClick = async (transaction: Transaction) => {
-    const isForReview = transaction.status?.toLowerCase() === "for review"
-
-    // Always try to fetch booking data if bookingId exists
-    let bookingData: Booking | null = null
-    if (transaction.bookingId) {
-      try {
-        bookingData = await bookingService.getBookingById(transaction.bookingId)
-      } catch (error) {
-        console.error('Error fetching booking:', error)
-        // Continue without booking data - don't show error for non-review transactions
-      }
-    }
+  const handleRowClick = (booking: Booking) => {
+    const isForReview = booking.status?.toLowerCase() === "for review"
 
     if (isForReview) {
       // For "for review" status, show booking details dialog
-      if (bookingData) {
-        setSelectedBooking(bookingData)
-        setIsBookingDialogOpen(true)
-      } else {
-        alert('Booking details not found')
-      }
+      setSelectedBooking(booking)
+      setIsBookingDialogOpen(true)
     } else {
-      // For other statuses, show transaction details dialog with booking data if available
-      setSelectedTransaction(transaction)
-      setSelectedBooking(bookingData) // Pass booking data even for non-review transactions
+      // For other statuses, show transaction details dialog with booking data
+      setSelectedTransaction(booking)
+      setSelectedBooking(booking) // Pass booking data even for non-review transactions
       setIsTransactionDialogOpen(true)
     }
   }
 
-  // Fetch transactions for the table (all transactions)
+  // Fetch bookings for the table (all bookings)
   useEffect(() => {
-      console.log('fetchTransactions called with searchTerm:', `"${searchTerm}"`, 'trimmed:', `"${searchTerm.trim()}"`, 'isEmpty:', !searchTerm.trim())
-    const fetchTransactions = async () => {
+      console.log('fetchBookings called with searchTerm:', `"${searchTerm}"`, 'trimmed:', `"${searchTerm.trim()}"`, 'isEmpty:', !searchTerm.trim())
+    const fetchBookings = async () => {
       if (!userData?.company_id) return
 
       try {
         setLoading(true)
         if (searchTerm.trim()) {
           // Use Algolia for search
-          const searchResults = await searchTransactions(searchTerm, userData.company_id, currentPage - 1, 15)
-          setTransactions(searchResults.hits as unknown as Transaction[])
+          const searchResults = await searchBookings(searchTerm, userData.company_id, currentPage - 1, 15)
+
+          // Convert Algolia results to Booking format with proper date handling
+          const processedBookings: Booking[] = searchResults.hits.map(hit => {
+            const booking = hit as unknown as Booking
+
+            // Convert date fields from strings to proper formats
+            if (booking.created && typeof booking.created === 'string') {
+              booking.created = new Date(booking.created)
+            }
+            if (booking.start_date && typeof booking.start_date === 'string') {
+              booking.start_date = Timestamp.fromDate(new Date(booking.start_date))
+            }
+            if (booking.end_date && typeof booking.end_date === 'string') {
+              booking.end_date = Timestamp.fromDate(new Date(booking.end_date))
+            }
+
+            return booking
+          })
+
+          setBookings(processedBookings)
           setTotalItems(searchResults.nbHits)
           console.log('Fetching from Firestore (no search)')
         } else {
           // Use Firestore for initial load (no search)
-          const transactionsRef = collection(db, "transactions")
-          const q = query(
-            transactionsRef,
-            where("companyId", "==", userData.company_id),
-            orderBy("createdAt", "desc"),
-            limit(50)
+          const itemsPerPage = 15
+          const bookingsRef = collection(db, "booking")
+          let q = query(
+            bookingsRef,
+            where("company_id", "==", userData.company_id),
+            orderBy("created", "desc")
           )
+
+          // Add pagination for pages beyond the first
+          if (currentPage > 1) {
+            const prevPageQuery = query(
+              bookingsRef,
+              where("company_id", "==", userData.company_id),
+              orderBy("created", "desc"),
+              limit((currentPage - 1) * itemsPerPage)
+            )
+            const prevSnapshot = await getDocs(prevPageQuery)
+            const lastDoc = prevSnapshot.docs[prevSnapshot.docs.length - 1]
+            if (lastDoc) {
+              q = query(q, startAfter(lastDoc))
+            }
+          }
+
+          q = query(q, limit(itemsPerPage))
           const snapshot = await getDocs(q)
-          const transactionsData: Transaction[] = snapshot.docs.map(doc => ({
+          const bookingsData: Booking[] = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
-          } as Transaction))
-          setTransactions(transactionsData)
-          setTotalItems(transactionsData.length)
+          } as Booking))
+          setBookings(bookingsData)
+
+          // Get total count for pagination
+          const countQuery = query(bookingsRef, where("company_id", "==", userData.company_id))
+          const countSnapshot = await getDocs(countQuery)
+          setTotalItems(countSnapshot.size)
         }
       } catch (error) {
-        console.error("Error fetching transactions:", error)
-        setTransactions([])
+        console.error("Error fetching bookings:", error)
+        setBookings([])
         setTotalItems(0)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchTransactions()
+    fetchBookings()
   }, [userData?.company_id, searchTerm, currentPage])
 
-  // Fetch transactions for metrics (filtered by period)
+  // Fetch bookings for metrics (filtered by period)
   useEffect(() => {
-    const fetchMetricsTransactions = async () => {
+    const fetchMetricsBookings = async () => {
       if (!userData?.company_id) return
 
       try {
         const dateRange = getDateRange(selectedPeriod)
         if (!dateRange) return
 
-        const transactionsRef = collection(db, "transactions")
+        const bookingsRef = collection(db, "booking")
         const q = query(
-          transactionsRef,
-          where("companyId", "==", userData.company_id),
-          where("createdAt", ">=", dateRange.start),
-          where("createdAt", "<=", dateRange.end),
-          orderBy("createdAt", "desc")
+          bookingsRef,
+          where("company_id", "==", userData.company_id),
+          where("created", ">=", dateRange.start),
+          where("created", "<=", dateRange.end),
+          orderBy("created", "desc")
         )
         const snapshot = await getDocs(q)
-        const metricsData: Transaction[] = snapshot.docs.map(doc => ({
+        const metricsData: Booking[] = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        } as Transaction))
-        setMetricsTransactions(metricsData)
+        } as Booking))
+        setMetricsBookings(metricsData)
       } catch (error) {
-        console.error("Error fetching metrics transactions:", error)
-        setMetricsTransactions([])
+        console.error("Error fetching metrics bookings:", error)
+        setMetricsBookings([])
       }
     }
 
-    fetchMetricsTransactions()
+    fetchMetricsBookings()
   }, [userData?.company_id, selectedPeriod])
 
 
@@ -200,7 +224,7 @@ export default function TransactionsPage({ title }: TransactionsPageProps) {
           </Select>
         </div>
 
-        <TransactionMetrics transactions={metricsTransactions} />
+        <TransactionMetrics transactions={metricsBookings} />
 
         {/* Search and Export */}
         <div className="flex items-center justify-between mb-4">
@@ -227,7 +251,7 @@ export default function TransactionsPage({ title }: TransactionsPageProps) {
           <div className="text-center py-8">Loading transactions...</div>
         ) : (
           <TransactionsTable
-            transactions={transactions}
+            transactions={bookings}
             totalItems={totalItems}
             currentPage={currentPage}
             onPageChange={setCurrentPage}

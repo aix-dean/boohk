@@ -1,13 +1,13 @@
-import { Transaction } from 'oh-db-models'
+import { Booking } from 'oh-db-models'
 
 interface TransactionMetricsProps {
-  transactions: Transaction[]
+  transactions: Booking[]
 }
 
 export function TransactionMetrics({ transactions }: TransactionMetricsProps) {
   const totalTransactions = transactions.length
-  const totalRetailRevenue = transactions.reduce((sum, t) => sum + (t.amount || 0), 0)
-  const totalFees = transactions.reduce((sum, t) => sum + (t.fees?.totalFee || 0) + ((t as any).tax?.taxAmount || 0) + ((t as any).discount?.discountTotal || 0), 0)
+  const totalRetailRevenue = transactions.reduce((sum, t) => sum + (t.transaction?.amount || 0), 0)
+  const totalFees = transactions.reduce((sum, t) => sum + (t.transaction?.fees.totalFee || 0) + (t.tax?.taxAmount || 0) + (t.discount?.discountTotal || 0), 0)
   const netSales = totalRetailRevenue - totalFees
 
   return (
