@@ -105,6 +105,7 @@ async function removeServiceAssignmentFromIndex(serviceAssignmentId: string) {
   }
 }
 import type { QuotationProduct, ProjectCompliance, ClientCompliance } from "@/lib/types/quotation"
+import type { Media } from "oh-db-models"
 
 // Initialize Firebase Storage
 const storage = getStorage()
@@ -2335,5 +2336,156 @@ export async function getNewsItemsByCategory(categoryId: string, limitCount = 5)
   } catch (error) {
     console.error("Error fetching news items by category:", error)
     return []
+  }
+}
+
+// MEDIA LIBRARY FUNCTIONS
+
+// Get paginated media library items for a company
+export async function getPaginatedMediaLibrary(
+  companyId: string,
+  itemsPerPage = 16,
+  lastDoc: QueryDocumentSnapshot<DocumentData> | null = null,
+  options: { searchTerm?: string } = {},
+): Promise<PaginatedResult<Media>> {
+  try {
+    const mediaLibraryRef = collection(db, "media_library")
+    const { searchTerm = "" } = options
+
+    // Start with basic constraints
+    const constraints: any[] = [
+      where("companyId", "==", companyId),
+      where("deleted", "==", false),
+      orderBy("uploadDate", "desc"),
+      limit(itemsPerPage),
+    ]
+
+    // Create the query with all constraints
+    let q = query(mediaLibraryRef, ...constraints)
+
+    // If we have a last document, start after it for pagination
+    if (lastDoc) {
+      q = query(q, startAfter(lastDoc))
+    }
+
+    const querySnapshot = await getDocs(q)
+
+    // Get the last visible document for next pagination
+    const lastVisible = querySnapshot.docs.length > 0 ? querySnapshot.docs[querySnapshot.docs.length - 1] : null
+
+    // Check if there are more documents to fetch
+    const hasMore = querySnapshot.docs.length === itemsPerPage
+
+    // Convert the documents to Media objects
+    const mediaItems: Media[] = []
+    querySnapshot.forEach((doc) => {
+      const mediaItem = { id: doc.id, ...doc.data() } as Media
+
+      // If there's a search term, filter client-side
+      if (searchTerm && typeof searchTerm === "string") {
+        const searchLower = searchTerm.toLowerCase()
+        if (mediaItem.title?.toLowerCase().includes(searchLower) || mediaItem.name?.toLowerCase().includes(searchLower)) {
+          mediaItems.push(mediaItem)
+        }
+      } else {
+        mediaItems.push(mediaItem)
+      }
+    })
+
+    return {
+      items: mediaItems,
+      lastDoc: lastVisible,
+      hasMore,
+    }
+  } catch (error) {
+    console.error("Error fetching paginated media library:", error)
+    return {
+      items: [],
+      lastDoc: null,
+      hasMore: false,
+    }
+  }
+}
+
+// Get count of media library items for a company
+export async function getMediaLibraryCount(companyId: string, searchTerm = ""): Promise<number> {
+  try {
+    const mediaLibraryRef = collection(db, "media_library")
+    const q = query(
+      mediaLibraryRef,
+      where("companyId", "==", companyId),
+      where("deleted", "==", false)
+    )
+
+    if (searchTerm && typeof searchTerm === "string") {
+      const querySnapshot = await getDocs(q)
+      const searchLower = searchTerm.toLowerCase()
+
+      let count = 0
+      querySnapshot.forEach((doc) => {
+        const mediaItem = doc.data() as Media
+        if (mediaItem.title?.toLowerCase().includes(searchLower) || mediaItem.name?.toLowerCase().includes(searchLower)) {
+          count++
+        }
+      })
+
+      return count
+    } else {
+      const snapshot = await getCountFromServer(q)
+      return snapshot.data().count
+    }
+  } catch (error) {
+    console.error("Error getting media library count:", error)
+    return 0
+  }
+}
+
+// Create a new media library item
+export async function createMediaLibrary(mediaData: Omit<Media, "id" | "uploadDate" | "modifiedDate" | "deleted" | "dateDeleted">): Promise<string> {
+  try {
+    const newMedia = {
+      ...mediaData,
+      uploadDate: serverTimestamp(),
+      modifiedDate: serverTimestamp(),
+      deleted: false,
+      dateDeleted: null,
+    }
+
+    const docRef = await addDoc(collection(db, "media_library"), newMedia)
+    return docRef.id
+  } catch (error) {
+    console.error("Error creating media library item:", error)
+    throw error
+  }
+}
+
+// Soft delete a media library item
+export async function softDeleteMediaLibrary(mediaId: string): Promise<void> {
+  try {
+    const mediaRef = doc(db, "media", mediaId)
+    await updateDoc(mediaRef, {
+      deleted: true,
+      dateDeleted: serverTimestamp(),
+      modifiedDate: serverTimestamp(),
+    })
+  } catch (error) {
+    console.error("Error soft deleting media library item:", error)
+    throw error
+  }
+}
+
+// Upload file to Firebase Storage for media library
+export async function uploadMediaFile(file: File, companyId: string): Promise<string> {
+  try {
+    const timestamp = Date.now()
+    const fileName = `media/${companyId}/${timestamp}_${file.name}`
+    const storageRef = ref(storage, fileName)
+    const snapshot = await uploadBytes(storageRef, file)
+    const downloadURL = await getDownloadURL(snapshot.ref)
+    console.log("Media file uploaded successfully:", downloadURL)
+    return downloadURL
+  } catch (error) {
+    console.error("Error uploading media file to Firebase Storage:", error)
+    throw error
   }
 }
