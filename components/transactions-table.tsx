@@ -97,7 +97,7 @@ export function TransactionsTable({
       <div className="border-t border-gray-200">
         {transactions.map((transaction) => {
            const isForReview = transaction.status?.toLowerCase() === "for review"
-           const isClickable = onRowClick && transaction.bookingId
+           const isClickable = onRowClick && (isForReview ? transaction.bookingId : true)
            return (
              <React.Fragment key={transaction.id}>
                <hr className={`border-gray-200 ${isForReview ? 'mb-2' : ''}`} />

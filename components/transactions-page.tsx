@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { TransactionsTable } from "@/components/transactions-table"
 import { TransactionMetrics } from "@/components/transaction-metrics"
+import TransactionDetailsDialog from "@/components/TransactionDetailsDialog"
 import { BookingDetailsDialog } from "@/components/BookingDetailsDialog"
 import { Transaction } from 'oh-db-models'
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore"
@@ -28,6 +29,8 @@ export default function TransactionsPage({ title }: TransactionsPageProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
   const [isExporting, setIsExporting] = useState(false)
+  const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false)
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [isLoadingBooking, setIsLoadingBooking] = useState(false)
@@ -74,22 +77,32 @@ export default function TransactionsPage({ title }: TransactionsPageProps) {
   }
 
   const handleRowClick = async (transaction: Transaction) => {
-    if (!transaction.bookingId) return
+    const isForReview = transaction.status?.toLowerCase() === "for review"
 
-    setIsLoadingBooking(true)
-    try {
-      const booking = await bookingService.getBookingById(transaction.bookingId)
-      if (booking) {
-        setSelectedBooking(booking)
+    // Always try to fetch booking data if bookingId exists
+    let bookingData: Booking | null = null
+    if (transaction.bookingId) {
+      try {
+        bookingData = await bookingService.getBookingById(transaction.bookingId)
+      } catch (error) {
+        console.error('Error fetching booking:', error)
+        // Continue without booking data - don't show error for non-review transactions
+      }
+    }
+
+    if (isForReview) {
+      // For "for review" status, show booking details dialog
+      if (bookingData) {
+        setSelectedBooking(bookingData)
         setIsBookingDialogOpen(true)
       } else {
         alert('Booking details not found')
       }
-    } catch (error) {
-      console.error('Error fetching booking:', error)
-      alert('Failed to load booking details. Please try again.')
-    } finally {
-      setIsLoadingBooking(false)
+    } else {
+      // For other statuses, show transaction details dialog with booking data if available
+      setSelectedTransaction(transaction)
+      setSelectedBooking(bookingData) // Pass booking data even for non-review transactions
+      setIsTransactionDialogOpen(true)
     }
   }
 
@@ -237,6 +250,14 @@ export default function TransactionsPage({ title }: TransactionsPageProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Transaction Details Dialog */}
+      <TransactionDetailsDialog
+        transaction={selectedTransaction}
+        booking={selectedBooking}
+        isOpen={isTransactionDialogOpen}
+        onClose={() => setIsTransactionDialogOpen(false)}
+      />
 
       {/* Booking Details Dialog */}
       <BookingDetailsDialog
