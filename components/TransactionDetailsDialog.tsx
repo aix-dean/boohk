@@ -22,7 +22,7 @@ export default function transactionDetailsDialog({
   const bookingData = transaction // Since transaction is now Booking
 
   const formatCurrency = (amount: number, currency: string = 'PHP') => {
-    return `${currency === 'IDR' ? 'Rp' : '₱'}${amount.toLocaleString()}`
+    return `${currency === 'IDR' ? 'Rp' : '₱'}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
   const formatDate = (date: Date | any) => {
@@ -109,7 +109,7 @@ export default function transactionDetailsDialog({
             </div>
             <div className="flex gap-2">
               <span className="text-[#333333] text-xs">Amount:</span>
-              <span className="text-[#333333] text-xs font-bold">{bookingData.transaction?.amount || "-"}</span>
+              <span className="text-[#333333] text-xs font-bold">{bookingData.transaction?.amount ? formatCurrency(bookingData.transaction.amount, 'PHP') : "-"}</span>
             </div>
             <div className="flex gap-2">
               <span className="text-[#333333] text-xs">Site:</span>

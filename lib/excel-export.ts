@@ -14,7 +14,7 @@ export async function exportTransactionsToExcel(
     };
 
     const formatCurrency = (amount: number, currency: string = 'PHP') => {
-      return `${currency === 'IDR' ? 'Rp' : '₱'}${amount.toLocaleString()}`;
+      return `${currency === 'IDR' ? 'Rp' : '₱'}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     const getMillis = (date: Date | any): number => {
@@ -43,11 +43,11 @@ export async function exportTransactionsToExcel(
       'Site': transaction.items?.name || 'Unknown',
       'Airing Ticket': transaction.airing_code || '-',
       'Total Days': transaction.start_date && transaction.end_date ? Math.ceil((getMillis(transaction.end_date) - getMillis(transaction.start_date)) / (1000 * 60 * 60 * 24)) : transaction.costDetails?.days || 1,
-      'Gross Amount': formatCurrency(transaction.total_cost || 0, 'PHP'),
-      'Fees': formatCurrency(transaction.costDetails?.otherFees || 0, 'PHP'),
-      'Tax (12%)': formatCurrency(transaction.costDetails?.vatAmount || 0, 'PHP'),
-      'Discount': formatCurrency(transaction.costDetails?.discount || 0, 'PHP'),
-      'Payout Amount': formatCurrency((transaction.total_cost || 0) - (transaction.costDetails?.vatAmount || 0) - (transaction.costDetails?.otherFees || 0) - (transaction.costDetails?.discount || 0), 'PHP'),
+      'Gross Amount': formatCurrency(transaction.transaction?.amount || 0, 'PHP'),
+      'Fees': formatCurrency(transaction.transaction?.fees?.totalFee || 0, 'PHP'),
+      'Tax (12%)': formatCurrency(transaction.tax?.taxAmount || 0, 'PHP'),
+      'Discount': formatCurrency(transaction.discount?.discountTotal || 0, 'PHP'),
+      'Payout Amount': formatCurrency((transaction.transaction?.amount || 0) - ((transaction.tax?.taxAmount || 0) + (transaction.transaction?.fees?.totalFee || 0) + (transaction.discount?.discountTotal || 0)), 'PHP'),
       'Status': transaction.status || 'Unknown'
     };
   });
