@@ -41,9 +41,6 @@ interface CMSResponse {
   [key: string]: any
 }
 
-interface PlayerStatusResponse {
-  onlineStatus: number
-}
 
 export async function checkPlayerOnlineStatus(playerIds: string[]): Promise<boolean> {
   try {
@@ -56,8 +53,9 @@ export async function checkPlayerOnlineStatus(playerIds: string[]): Promise<bool
     })
 
     if (response.ok) {
-      const data: PlayerStatusResponse = await response.json()
-      return data.onlineStatus === 1 
+      const data: any = await response.json()
+      console.log("Player Status Response: ", data[0].onlineStatus) 
+      return data[0].onlineStatus === 1 
     } else {
       console.error("Failed to check player status:", response.status, response.statusText)
       return false

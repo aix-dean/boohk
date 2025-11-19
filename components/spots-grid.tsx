@@ -15,6 +15,9 @@ import { useToast } from "@/hooks/use-toast"
 import { BookingCongratulationsDialog } from "@/components/BookingCongratulationsDialog"
 import { SpotContentDialog } from "@/components/SpotContentDialog"
 import { convertSegmentPathToStaticExportFilename } from "next/dist/shared/lib/segment-cache/segment-value-encoding"
+import { create } from "domain"
+import { createHash } from "crypto"
+import https from 'https';
 
 interface Spot {
   id: string
@@ -342,6 +345,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
   useEffect(() => {
     if (!productId) return
 
+
     const fetchSpotImages = async () => {
       try {
         // Fetch product
@@ -398,6 +402,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
 
     fetchSpotImages()
   }, [productId])
+
 
 
   const handleSpotClick = (spotNumber: number) => {
@@ -497,15 +502,32 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
             endTime: product.cms.end_time || "23:59"
           }]
         }
+        // Get file size and MD5 before creating playlist
+        let fileInfo: any = { size: 12000, md5: "placeholder-md5" }
+        if (selectedBooking.url) {
+          try {
+            const response = await fetch('/api/file-info', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url: selectedBooking.url })
+            })
+            if (response.ok) {
+              fileInfo = await response.json()
+            }
+          } catch (error) {
+            console.error('Error getting file info:', error)
+          }
+        }
+
         const pages = selectedBooking.url ? [
           {
             name: `booking-${selectedBooking.id}-page`,
             widgets: [
               {
                 zIndex: 1,
-                type: "STREAM_MEDIA",
-                size: 12000,
-                md5: "placeholder-md5",
+                type: "VIDEO",
+                size: fileInfo.size,
+                md5: fileInfo.md5,
                 duration: duration,
                 url: selectedBooking.url,
                 layout: {
@@ -558,7 +580,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
           }))
 
           await createCMSContentDeployment(playerIds, schedule, cmsPages)
-          
+
         }
       }
 
@@ -723,8 +745,6 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
                           }).catch(() => {
                             setPlayerOnline(false)
                           })
-
-                          // 4. Open the dialog
                           setIsDialogOpen(true)
                         }}
                       >
@@ -857,7 +877,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
             <DialogFooter>
               <Button variant="outline" onClick={() => { setIsDialogOpen(false); setIsDeclineConfirmDialogOpen(true); }} className="w-[90px] h-[24px] px-[29px] rounded-[6px] border-[1.5px] border-[#C4C4C4] bg-white">Reject</Button>
               <Button onClick={() => { setIsDialogOpen(false); setIsConfirmDialogOpen(true); }} disabled={!playerOnline} className="w-[120px] h-[24px] rounded-[6.024px] bg-[#30C71D]">
-                {playerOnline ? <><Loader2 className="animate-spin mr-1 h-4 w-4" />Accepting...</> : "Accept"}
+                {isAccepting ? <><Loader2 className="animate-spin mr-1 h-4 w-4" />Accepting...</> : "Accept"}
               </Button>
             </DialogFooter>
           </DialogContent>
