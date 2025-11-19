@@ -138,8 +138,8 @@ export default function UploadPage() {
 
       console.log("User created in tenant:", firebaseUser.uid)
 
-      // Create user document in iboard_users collection with type="OHPLUS"
-      const userDocRef = doc(db, "iboard_users", firebaseUser.uid)
+      // Create user document in boohk_users collection with type="OHPLUS"
+      const userDocRef = doc(db, "boohk_users", firebaseUser.uid)
       const userData = {
         email: firebaseUser.email,
         uid: firebaseUser.uid,
@@ -158,7 +158,7 @@ export default function UploadPage() {
       }
 
       await setDoc(userDocRef, userData)
-      console.log("User document created in iboard_users collection with type OHPLUS")
+      console.log("User document created in boohk_users collection with type OHPLUS")
       console.log("User data from point_person:", userData)
 
       // Assign role "sales" to user_roles collection

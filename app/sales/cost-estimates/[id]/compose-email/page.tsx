@@ -91,7 +91,7 @@ export default function ComposeEmailPage() {
           try {
             const { doc, getDoc } = await import("firebase/firestore")
             const { db } = await import("@/lib/firebase")
-            const userDocRef = doc(db, "iboard_users", user.uid)
+            const userDocRef = doc(db, "boohk_users", user.uid)
             const userDoc = await getDoc(userDocRef)
 
             if (userDoc.exists()) {

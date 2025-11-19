@@ -185,7 +185,7 @@ export default function RequestsPage() {
       }
 
       try {
-        const userDocRef = doc(db, "iboard_users", sellerId)
+        const userDocRef = doc(db, "boohk_users", sellerId)
         const userDocSnap = await getDoc(userDocRef)
 
         if (userDocSnap.exists()) {

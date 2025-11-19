@@ -126,7 +126,7 @@ export default function DepartmentDetailsPage() {
       return
     }
 
-    const q = query(collection(db, "iboard_users"), where("company_id", "==", userData.company_id))
+    const q = query(collection(db, "boohk_users"), where("company_id", "==", userData.company_id))
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       const usersData = snapshot.docs.map((doc) => {

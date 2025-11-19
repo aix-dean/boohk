@@ -645,7 +645,7 @@ The Boohk Team`,
       let signatureDate: Date | null = null
       if (editableQuotation.created_by) {
         try {
-          const userDocRef = doc(db, "iboard_users", editableQuotation.created_by)
+          const userDocRef = doc(db, "boohk_users", editableQuotation.created_by)
           const userDoc = await getDoc(userDocRef)
 
           if (userDoc.exists()) {
@@ -1058,7 +1058,7 @@ The Boohk Team`,
         let signatureDate: Date | null = null
         if (historyItem.created_by) {
           try {
-            const userDocRef = doc(db, "iboard_users", historyItem.created_by)
+            const userDocRef = doc(db, "boohk_users", historyItem.created_by)
             const userDoc = await getDoc(userDocRef)
 
             if (userDoc.exists()) {
@@ -1777,7 +1777,7 @@ The Boohk Team`,
       let signatureDate: Date | null = null
       if (quotation.created_by) {
         try {
-          const userDocRef = doc(db, "iboard_users", quotation.created_by)
+          const userDocRef = doc(db, "boohk_users", quotation.created_by)
           const userDoc = await getDoc(userDocRef)
 
           if (userDoc.exists()) {
@@ -1874,7 +1874,7 @@ The Boohk Team`,
       let signatureDate: Date | null = null
       if (quotation.created_by) {
         try {
-          const userDocRef = doc(db, "iboard_users", quotation.created_by)
+          const userDocRef = doc(db, "boohk_users", quotation.created_by)
           const userDoc = await getDoc(userDocRef)
 
           if (userDoc.exists()) {

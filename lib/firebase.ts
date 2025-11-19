@@ -15,7 +15,7 @@ const firebaseConfig = {
 };
 
 // Tenant ID for OHPLUS
-export const TENANT_ID = "ohplus-07hsi"
+export const TENANT_ID = "boohk-ah1wg"
 
 const app = initializeApp(firebaseConfig)
 let analytics;
