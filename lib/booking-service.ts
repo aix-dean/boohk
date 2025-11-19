@@ -30,6 +30,9 @@ export interface Booking {
   company_id: string // This seems redundant with client.company_id, but keeping for now as per screenshot
   contract?: string
   cost: number
+  channel: {
+    name: string
+  }
   costDetails: {
     basePrice: number
     days: number

@@ -46,8 +46,8 @@ const SpotContentDialog: React.FC<SpotContentDialogProps> = ({ open, onOpenChang
   }, [spot?.booking_id])
 
   if (!spot) return null
-  const originalWidth = booking?.items?.width;
-  const originalHeight = booking?.items?.height;
+  const originalWidth = booking?.items?.specs_rental.width;
+  const originalHeight = booking?.items?.specs_rental.height;
   let scaledWidth = originalWidth;
   let scaledHeight = originalHeight;
   if (originalWidth && originalHeight) {
@@ -166,8 +166,8 @@ const SpotContentDialog: React.FC<SpotContentDialogProps> = ({ open, onOpenChang
           </div>
 
           {/* Content Section */}
-          <div className="relative flex items-center justify-center">
-            <div className={`rounded-[10px] bg-black flex items-center justify-center overflow-hidden ${scaledWidth && scaledHeight ? '' : 'aspect-square'}`} style={scaledWidth && scaledHeight ? { width: `${scaledWidth}px`, height: `${scaledHeight}px` } : {}}>
+          <div className="relative flex items-center justify-center bg-gray-100">
+            <div className={`flex items-center justify-center overflow-hidden ${scaledWidth && scaledHeight ? '' : 'aspect-square'}`} style={scaledWidth && scaledHeight ? { width: `${scaledWidth}px`, height: `${scaledHeight}px` } : {}}>
               {spot.imageUrl ? (
                 <video
                   key={spot.imageUrl}
