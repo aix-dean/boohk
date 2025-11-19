@@ -493,6 +493,11 @@ export async function hasPermission(
       return false
     }
 
+    // Admin users have access to all pages, overriding other permission checks
+    if (userRoles.includes("admin")) {
+      return true
+    }
+
     // Check each role for the permission
     for (const roleId of userRoles) {
       const role = HARDCODED_ROLES[roleId]

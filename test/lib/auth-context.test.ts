@@ -367,3 +367,205 @@ describe('Auth Context - Role Assignment', () => {
     })
   })
 })
+
+describe('Auth Context - Login Functionality', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should successfully login existing user with boohk_users doc', async () => {
+    const { useAuth } = await import('@/contexts/auth-context')
+
+    // Mock Firebase auth functions
+    const mockSignInWithEmailAndPassword = vi.mocked(require('firebase/auth')).signInWithEmailAndPassword
+    const mockGetDocs = vi.mocked(require('firebase/firestore')).getDocs
+
+    const mockFirebaseUser = {
+      uid: 'existing-user-id',
+      email: 'existing@example.com',
+    }
+
+    mockSignInWithEmailAndPassword.mockResolvedValueOnce({
+      user: mockFirebaseUser,
+    } as any)
+
+    // Mock boohk_users query to return existing document
+    mockGetDocs.mockResolvedValueOnce({
+      empty: false,
+      docs: [{
+        data: () => ({
+          uid: 'existing-user-id',
+          type: 'OHPLUS',
+          // other fields
+        }),
+      }],
+    } as any)
+
+    // Mock fetchUserData or other dependencies if needed
+
+    const { login } = useAuth()
+
+    await expect(login('existing@example.com', 'password123')).resolves.not.toThrow()
+
+    // Verify no sign out occurred, etc.
+    // Additional assertions based on side effects
+  })
+
+  it('should successfully login existing user without boohk_users doc and create it', async () => {
+    const { useAuth } = await import('@/contexts/auth-context')
+
+    // Mock Firebase auth functions
+    const mockSignInWithEmailAndPassword = vi.mocked(require('firebase/auth')).signInWithEmailAndPassword
+    const mockGetDocs = vi.mocked(require('firebase/firestore')).getDocs
+    const mockSetDoc = vi.mocked(require('firebase/firestore')).setDoc
+    const mockWriteBatch = vi.mocked(require('firebase/firestore')).writeBatch
+
+    const mockFirebaseUser = {
+      uid: 'new-user-id',
+      email: 'newuser@example.com',
+    }
+
+    mockSignInWithEmailAndPassword.mockResolvedValueOnce({
+      user: mockFirebaseUser,
+    } as any)
+
+    // Mock boohk_users query to return empty (no document)
+    mockGetDocs.mockResolvedValueOnce({
+      empty: true,
+      docs: [],
+    } as any)
+
+    // Mock batch commit
+    const mockBatch = {
+      set: vi.fn(),
+      commit: vi.fn().mockResolvedValue(undefined)
+    }
+    mockWriteBatch.mockReturnValue(mockBatch as any)
+
+    // Mock getUserRoles to return some roles
+    mockGetUserRoles.mockResolvedValueOnce(['sales'])
+
+    const { login } = useAuth()
+
+    await expect(login('newuser@example.com', 'password123')).resolves.not.toThrow()
+
+    // Verify document creation
+    expect(mockSetDoc).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        uid: 'new-user-id',
+        email: 'newuser@example.com',
+        type: 'OHPLUS',
+        role: 'sales',
+        roles: ['sales'],
+        permissions: [],
+        onboarding: false,
+      }),
+      expect.any(Object)
+    )
+
+    // Verify wallet creation
+    expect(mockBatch.set).toHaveBeenCalledWith(
+      expect.any(Object), // walletDocRef
+      expect.objectContaining({
+        balance: 0,
+        seller_id: 'new-user-id',
+      })
+    )
+
+    expect(mockBatch.commit).toHaveBeenCalled()
+  })
+
+  it('should fail login with invalid credentials', async () => {
+    const { useAuth } = await import('@/contexts/auth-context')
+
+    const mockSignInWithEmailAndPassword = vi.mocked(require('firebase/auth')).signInWithEmailAndPassword
+
+    mockSignInWithEmailAndPassword.mockRejectedValueOnce({ code: 'auth/wrong-password' } as never)
+
+    const { login } = useAuth()
+
+    await expect(login('test@example.com', 'wrongpassword')).rejects.toMatchObject({ code: 'auth/wrong-password' })
+  })
+
+  it('should fail login with tenant auth failure', async () => {
+    const { useAuth } = await import('@/contexts/auth-context')
+
+    const mockSignInWithEmailAndPassword = vi.mocked(require('firebase/auth')).signInWithEmailAndPassword
+
+    mockSignInWithEmailAndPassword.mockRejectedValueOnce({ code: 'auth/internal-error' } as never)
+
+    const { login } = useAuth()
+
+    await expect(login('test@example.com', 'password123')).rejects.toMatchObject({ code: 'auth/internal-error' })
+  })
+
+  it('should display toast for login errors', async () => {
+    const { useAuth } = await import('@/contexts/auth-context')
+
+    const mockSignInWithEmailAndPassword = vi.mocked(require('firebase/auth')).signInWithEmailAndPassword
+    const mockToast = vi.fn()
+
+    // Mock toast from useToast
+    vi.mock('@/hooks/use-toast', () => ({
+      useToast: () => ({ toast: mockToast }),
+    }))
+
+    mockSignInWithEmailAndPassword.mockRejectedValueOnce(new Error('Login failed') as never)
+
+    const { login } = useAuth()
+
+    await expect(login('test@example.com', 'password123')).rejects.toThrow('Login failed')
+
+    expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Login Error',
+      description: 'Login failed',
+      variant: 'destructive',
+    }))
+  })
+
+  it('should redirect to dashboard after successful login and remain authenticated', async () => {
+    const { useAuth } = await import('@/contexts/auth-context')
+
+    const mockSignInWithEmailAndPassword = vi.mocked(require('firebase/auth')).signInWithEmailAndPassword
+    const mockGetDocs = vi.mocked(require('firebase/firestore')).getDocs
+
+    const mockFirebaseUser = {
+      uid: 'user-id',
+      email: 'test@example.com',
+    }
+
+    mockSignInWithEmailAndPassword.mockResolvedValueOnce({
+      user: mockFirebaseUser,
+    } as any)
+
+    mockGetDocs.mockResolvedValueOnce({
+      empty: false,
+      docs: [{
+        data: () => ({
+          uid: 'user-id',
+          type: 'OHPLUS',
+          roles: ['sales'],
+        }),
+      }],
+    } as any)
+
+    // Mock router
+    const mockRouterPush = vi.fn()
+    vi.mock('next/navigation', () => ({
+      useRouter: () => ({ push: mockRouterPush }),
+    }))
+
+    const { login, getRoleDashboardPath } = useAuth()
+    getRoleDashboardPath.mockReturnValueOnce('/sales/dashboard')
+
+    await login('test@example.com', 'password123')
+
+    expect(mockRouterPush).toHaveBeenCalledWith('/sales/dashboard')
+
+    // Check persistent authentication (mock user state)
+    expect(useAuth().user).not.toBeNull()
+  })
+
+  // Add more tests here for other scenarios
+})
