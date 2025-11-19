@@ -119,7 +119,7 @@ function MediaLibraryContent() {
         </div>
 
         <MediaUploadDialog onSuccess={handleUploadSuccess}>
-          <Button className="bg-white text-xs border text-gray-600 py-0">
+          <Button className="bg-white text-xs border text-gray-600 py-0 hover:bg-white">
             Upload Media
           </Button>
         </MediaUploadDialog>
@@ -134,7 +134,7 @@ function MediaLibraryContent() {
           <h3 className="text-lg font-medium mb-2">No media yet</h3>
           <p className="text-gray-500 mb-4">Upload your first media file to get started</p>
           <MediaUploadDialog onSuccess={handleUploadSuccess}>
-            <Button variant="outline">
+            <Button variant="outline" className="hover:bg-transparent">
               <Plus className="mr-2 h-4 w-4" />
               Upload Media
             </Button>
