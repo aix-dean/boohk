@@ -1,15 +1,16 @@
 "use client"
 
 import React from "react"
-import { Transaction } from 'oh-db-models'
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { Booking } from 'oh-db-models'
 
 interface TransactionsTableProps {
-  transactions: Transaction[]
+  transactions: Booking[]
   totalItems: number
   currentPage: number
   onPageChange: (page: number) => void
   itemsPerPage?: number
-  onRowClick?: (transaction: Transaction) => void
+  onRowClick?: (booking: Booking) => void
 }
 
 export function TransactionsTable({
@@ -51,6 +52,26 @@ export function TransactionsTable({
 
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
   }
+  const getMillis = (date: Date | any): number => {
+    if (!date) return 0
+
+    if (date instanceof Date) {
+      return date.getTime()
+    } else if (typeof date === 'number') {
+      // Assume it's already milliseconds
+      return date
+    } else if (date && typeof date === 'object' && date.seconds) {
+      // Handle Firestore timestamp
+      return date.seconds * 1000
+    } else if (date && typeof date === 'object' && date.toMillis) {
+      // Handle Firestore timestamp with toMillis
+      return date.toMillis()
+    } else {
+      // Try to parse as string or other format
+      const d = new Date(date)
+      return isNaN(d.getTime()) ? 0 : d.getTime()
+    }
+  }
 
   const getStatusStyle = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -79,132 +100,115 @@ export function TransactionsTable({
     <div className="bg-white rounded-[10px] overflow-hidden px-[15px]">
       {/* Table Header */}
       <div className="bg-white px-4 py-1.5">
-        <div className="grid grid-cols-10 gap-6 text-xs font-semibold text-gray-700">
-          <div className="col-span-1 py-1 px-2 mt-1">Date</div>
-          <div className="col-span-1 py-1 px-2 mt-1">Site Name</div>
-          <div className="col-span-1 py-1 px-2 mt-1">Booking ID</div>
-          <div className="col-span-1 py-1 px-2 mt-1">Total Days</div>
-          <div className="col-span-1 py-1 px-2 mt-1">Gross Amount</div>
-          <div className="col-span-1 py-1 px-2 mt-1">Fees</div>
-          <div className="col-span-1 py-1 px-2 mt-1">Tax (12%)</div>
-          <div className="col-span-1 py-1 px-2 mt-1">Discount</div>
-          <div className="col-span-1 py-1 px-2 mt-1">Payout Amount</div>
-          <div className="col-span-1 py-1 px-2 mt-1">Status</div>
+        <div className="grid grid-cols-10 gap-2 text-xs font-semibold text-gray-700">
+          <div className="min-w-16 py-1 px-2 mt-1">Date</div>
+          <div className="min-w-24 py-1 px-2 mt-1">Site</div>
+          <div className="min-w-20 py-1 px-2 mt-1">Airing Ticket</div>
+          <div className="min-w-16 py-1 px-2 mt-1">Total Days</div>
+          <div className="min-w-20 py-1 px-2 mt-1">Gross Amount</div>
+          <div className="min-w-16 py-1 px-2 mt-1">Fees</div>
+          <div className="min-w-16 py-1 px-2 mt-1">Tax (12%)</div>
+          <div className="min-w-16 py-1 px-2 mt-1">Discount</div>
+          <div className="min-w-20 py-1 px-2 mt-1">Payout Amount</div>
+          <div className="min-w-16 py-1 px-2 mt-1">Status</div>
         </div>
       </div>
 
       {/* Table Rows */}
       <div className="border-t border-gray-200">
-        {transactions.map((transaction) => {
-           const isForReview = transaction.status?.toLowerCase() === "for review"
-           const isClickable = onRowClick && (isForReview ? transaction.bookingId : true)
+        {transactions.map((booking) => {
+           const isForReview = booking.status?.toLowerCase() === "for review"
+           const isClickable = onRowClick && (isForReview ? booking.id : true)
            return (
-             <React.Fragment key={transaction.id}>
-               <hr className={`border-gray-200 ${isForReview ? 'mb-2' : ''}`} />
+             <div key={booking.id}>
+               <hr key={`hr-${booking.id}`} className={`border-gray-200 ${isForReview ? 'mb-2' : ''}`} />
                <div
+                 key={`row-${booking.id}`}
                  className={`px-4 rounded-[10px] ${isForReview ? 'bg-[#F6F9FF] border-2 border-[#B8D9FF] border-solid mb-1' : 'bg-white'} ${isClickable ? 'cursor-pointer hover:bg-gray-50' : ''}`}
-                 onClick={() => isClickable && onRowClick(transaction)}
+                 onClick={() => isClickable && onRowClick(booking)}
                >
-                <div className="grid grid-cols-10 gap-6 text-xs items-center">
+                <div className="grid grid-cols-10 gap-2 text-xs items-center">
                 {/* Date */}
-                <div className="col-span-1 py-1 px-2 mt-1 text-gray-900">
-                  {formatDate(transaction.createdAt)}
+                <div className="min-w-16 py-1 px-2 mt-1 text-gray-900">
+                  {formatDate(booking.created)}
                 </div>
 
                 {/* Site Name */}
-                <div className="text-xs font-medium text-gray-900">
-                  {transaction.client?.name || transaction.merchantName || 'Unknown'}
+                <div className="min-w-24 text-xs font-medium text-gray-900 truncate">
+                  {booking.items?.name || 'Unknown'}
                 </div>
 
-                {/* Booking ID */}
-                <div className="col-span-1 py-1 px-2 mt-1 text-gray-900">
-                  {transaction.reservationId || '-'}
+                {/* Airing Code */}
+                <div className="min-w-20 py-1 px-2 mt-1 text-gray-900 truncate">
+                  {booking.airing_code || '-'}
                 </div>
 
                 {/* Total Days */}
-                <div className="col-span-1 py-1 px-2 mt-1 text-gray-900">
-                  {transaction.items?.length || 1}
+                <div className="min-w-16 py-1 px-2 mt-1 text-gray-900">
+                  {booking.start_date && booking.end_date ? Math.ceil((getMillis(booking.end_date) - getMillis(booking.start_date)) / (1000 * 60 * 60 * 24)) : booking.costDetails?.days || 1}
                 </div>
 
                 {/* Gross Amount */}
-                <div className="col-span-1 py-1 px-2 mt-1 text-gray-900 font-medium">
-                  {formatCurrency(transaction.amount || 0, transaction.currency)}
+                <div className="min-w-20 py-1 px-2 mt-1 text-gray-900 font-medium truncate">
+                  {formatCurrency(booking.total_cost || 0, 'PHP')}
                 </div>
 
                 {/* Fees */}
-                <div className="col-span-1 py-1 px-2 mt-1 text-gray-900">
-                  {formatCurrency(transaction.fees?.totalFee || 0, transaction.currency)}
+                <div className="min-w-16 py-1 px-2 mt-1 text-gray-900 truncate">
+                  {formatCurrency(booking.costDetails?.otherFees || 0, 'PHP')}
                 </div>
 
                 {/* Tax (12%) */}
-                <div className="col-span-1 py-1 px-2 mt-1 text-gray-900">
-                  {formatCurrency((transaction.tax?.taxAmount || 0), transaction.currency)}
+                <div className="min-w-16 py-1 px-2 mt-1 text-gray-900 truncate">
+                  {formatCurrency(booking.costDetails?.vatAmount || 0, 'PHP')}
                 </div>
 
                 {/* Discount */}
-                <div className="col-span-1 py-1 px-2 mt-1 text-gray-900">
-                  {formatCurrency((transaction.discount?.discountTotal || 0), transaction.currency)}
+                <div className="min-w-16 py-1 px-2 mt-1 text-gray-900 truncate">
+                  {formatCurrency(booking.costDetails?.discount || 0, 'PHP')}
                 </div>
 
                 {/* Payout Amount */}
-                <div className="col-span-1 py-1 px-2 mt-1 text-gray-900 font-medium">
-                  {formatCurrency(transaction.amount - (transaction.tax?.taxAmount || 0 + transaction.fees?.totalFee || 0 + transaction.discount?.discountTotal || 0), transaction.currency)}
+                <div className="min-w-20 py-1 px-2 mt-1 text-gray-900 font-medium truncate">
+                  {formatCurrency((booking.transaction?.amount || 0) - ((booking.tax?.taxAmount || 0) + (booking.transaction?.fees.totalFee || 0) + (booking.discount?.discountTotal || 0)), 'PHP')}
                 </div>
 
                 {/* Status */}
-                <div className="col-span-1 py-1 px-2 mt-1">
-                  <span className={`text-xs font-medium ${getStatusStyle(transaction.status || '')}`}>
-                    {transaction.status ? transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1).toLowerCase() : 'Unknown'}
+                <div className="min-w-16 py-1 px-2 mt-1">
+                  <span className={`text-xs font-medium ${getStatusStyle(booking.status || '')}`}>
+                    {booking.status ? booking.status.charAt(0).toUpperCase() + booking.status.slice(1).toLowerCase() : 'Unknown'}
                   </span>
                 </div>
               </div>
             </div>
-          </React.Fragment>
+          </div>
         )
         })}
       </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-gray-200">
-          <div className="text-sm text-gray-700">
-            Page {currentPage} of {totalPages}
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-
-            {/* Page numbers */}
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i
-              if (pageNum > totalPages) return null
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => onPageChange(pageNum)}
-                  className={`px-3 py-1 text-sm font-medium rounded-md ${
-                    pageNum === currentPage
-                      ? 'text-blue-600 bg-blue-50 border border-blue-300'
-                      : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  {pageNum}
-                </button>
-              )
-            })}
-
-            <button
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
+        <div className="flex items-center justify-center px-6 py-4 bg-white border-t border-gray-200">
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-gray-700">
+              {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => onPageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => onPageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}

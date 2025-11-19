@@ -152,8 +152,8 @@ export async function POST(request: Request) {
       attributesToRetrieve = "quotation_number,client_name,items,seller_id,status,created,client_company_name,client_email,client_phone,client_address,client_designation,total_amount,company_id,projectCompliance,projectName"
       attributesToHighlight = "quotation_number,client_name,created"
     } else if (indexName === 'booking') {
-      attributesToRetrieve = "reservation_id,product_name,client,project_name,start_date,end_date,status,created,quotation_id,product_id,company_id,client_name,client_company_name"
-      attributesToHighlight = "reservation_id,product_name,client_name,client_company_name"
+      attributesToRetrieve = "id,cancel_reason,category_id,client,company_id,contract,cost,costDetails,tax,discount,created,end_date,media_order,payment_method,product_id,product_name,product_owner,project_name,promos,projectCompliance,requirements,reservation_id,seller_id,spot_numbers,start_date,status,total_cost,type,updated,user_id,quotation_id,quotation_number,isCollectibles,items,url,for_screening,airing_code"
+      attributesToHighlight = "reservation_id,product_name,client.name,client.company_name"
     } else if (indexName === 'reports') {
       attributesToRetrieve = "siteName,date,reportType,createdByName,category,company_id,status,created,report_id,product,logistics_report"
       attributesToHighlight = "siteName,reportType,createdByName"
