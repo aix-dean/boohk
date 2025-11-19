@@ -47,7 +47,7 @@ export function PriceHistoryDialog({
       <DialogContent className="sm:max-w-[550px] p-0">
         <div className="relative">
           {/* Header */}
-          <div className="flex justify-between items-center p-4 border-b">
+          <div className="flex justify-between items-center p-4">
             <h2 className="text-lg font-semibold">Price History</h2>
             <button
               onClick={() => setRowDialogOpen(false)}
@@ -58,21 +58,20 @@ export function PriceHistoryDialog({
           </div>
 
           {/* Product Info */}
-          <div className="p-4 space-y-2">
-            <div className="text-sm text-gray-600">{selectedRowProduct?.name || "N/A"}</div>
-            <div className="text-sm text-gray-500">{getSiteCode(selectedRowProduct) || "N/A"}</div>
-            <div className="text-sm text-gray-500">Current Price</div>
-            <div className="text-sm font-medium">
-              {selectedRowProduct?.price ? `₱${Number(selectedRowProduct.price).toLocaleString()}/month` : "Not set"}
+          <div className="p-3 space-y-2 transform translate-y-[-17px] translate-x-[4px]">
+            <div className="text-base font-bold text-gray-900">{selectedRowProduct?.name || "N/A"}</div>
+            <div className="text-[#333333]" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: '12px', lineHeight: '100%', letterSpacing: '0%' }}>Current Price</div>
+            <div className="text-base font-bold text-gray-900 space-y-2 transform translate-y-[-9px]">
+              {selectedRowProduct?.price ? `Php ${Number(selectedRowProduct.price).toLocaleString()} /spot /day` : "Not set"}
             </div>
           </div>
 
           {/* Price History Table or Update Form */}
-          <div className="px-3 pb-4">
-            <div className="border rounded-lg overflow-hidden">
+          <div className="px-3 pb-4 transform -translate-y-1">
+            <div className="overflow-hidden">
               {/* Table Header */}
-              <div className="bg-gray-50 px-6 py-3 border-b">
-                <div className="grid grid-cols-3 gap-4 text-sm font-medium text-gray-900">
+              <div className="bg-[#f9f9f9] px-6 py-3">
+                <div className="grid grid-cols-3 gap-4 text-xs font-bold text-gray-900">
                   <div>Price</div>
                   <div>Date</div>
                   <div>By</div>
@@ -80,7 +79,7 @@ export function PriceHistoryDialog({
               </div>
 
               {/* Table Body */}
-              <div className="max-h-48 overflow-y-auto">
+              <div className="max-h-48 overflow-y-auto bg-[#f9f9f9] border-t border-gray-200">
                 {loadingPriceHistories.has(selectedRowProduct?.id || "") ? (
                   <div className="text-center py-4">
                     <div className="flex items-center justify-center">
@@ -92,9 +91,9 @@ export function PriceHistoryDialog({
                   <div className="divide-y divide-gray-200">
                     {priceHistories[selectedRowProduct?.id || ""].map((history, index) => (
                       <div key={`history-${history.id || index}`} className="px-6 py-3">
-                        <div className="grid grid-cols-3 gap-4 text-sm">
-                          <div className="font-medium">
-                            ₱{Number(history.price).toLocaleString()}
+                        <div className="grid grid-cols-3 gap-4 text-xs">
+                          <div className="font-normal">
+                            Php {Number(history.price).toLocaleString()} /spot /day
                           </div>
                           <div>
                             {history.created instanceof Timestamp
@@ -118,7 +117,7 @@ export function PriceHistoryDialog({
           </div>
 
           {/* Update Price Form */}
-          <div className="p-4 border-t">
+          <div className="p-4">
             {showUpdateForm && (
               <div className="flex flex-col gap-2">
                 <Label htmlFor="price-in-dialog" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: '14px', lineHeight: '100%', letterSpacing: '0%' }}>
@@ -129,7 +128,7 @@ export function PriceHistoryDialog({
                   <Input
                     id="price-in-dialog"
                     type="text"
-                    className="w-32"
+                    className="w-[108px] h-[24px]"
                     value={newPriceInDialog}
                     onChange={(e) => {
                       const value = e.target.value.replace(/,/g, '').replace(/\D/g, '');
@@ -139,8 +138,8 @@ export function PriceHistoryDialog({
                   <span className="text-gray-500">/spot/day</span>
                   <Button
                     onClick={handleUpdatePriceInDialog}
-                    disabled={isUpdatingPriceInDialog}
-                    className="bg-blue-500 hover:bg-blue-600 ml-auto"
+                    disabled={isUpdatingPriceInDialog || newPriceInDialog === ""}
+                    className="bg-[#1d0beb] hover:bg-[#1a0ad6] w-[82px] h-[25px] rounded-md text-xs font-bold text-white ml-auto"
                   >
                     {isUpdatingPriceInDialog ? (
                       <>
@@ -159,9 +158,9 @@ export function PriceHistoryDialog({
                 <Button
                   onClick={() => {
                     setShowUpdateForm(true)
-                    setNewPriceInDialog(selectedRowProduct?.price ? Number(selectedRowProduct.price).toLocaleString() : "")
+                    setNewPriceInDialog("")
                   }}
-                  className="bg-[#ff3131] hover:bg-[#e02828]"
+                  className="bg-white border border-gray-300 rounded-[5px] h-6 text-xs font-medium text-[#333333] hover:bg-gray-50"
                 >
                   Update Price
                 </Button>
