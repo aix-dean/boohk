@@ -75,6 +75,7 @@ export default function LoginPage() {
   const [pendingRegistration, setPendingRegistration] = useState<any>(null)
   const [isStartingTour, setIsStartingTour] = useState(false)
   const pointPersonDataRef = useRef<any>(null)
+  const [dialogTransform, setDialogTransform] = useState('translateY(100vh)')
 
   const { user, userData, getRoleDashboardPath, refreshUserData, login, loginOHPlusOnly, startRegistration, endRegistration } = useAuth()
   const router = useRouter()
@@ -103,6 +104,14 @@ export default function LoginPage() {
       }
     }
   }, [user, userData, router, getRoleDashboardPath, currentStep])
+
+  useEffect(() => {
+    if (currentStep === 2) {
+      setTimeout(() => setDialogTransform('translateY(0)'), 300)
+    } else {
+      setDialogTransform('translateY(100vh)')
+    }
+  }, [currentStep])
 
   // Fetch point_person data from companies collection
   const fetchPointPersonData = async (email: string) => {
@@ -581,7 +590,9 @@ export default function LoginPage() {
 
     if (activationFile) {
       console.log('Starting validation process for file:', activationFile.name)
+      console.log('Setting isValidating to true')
       setIsValidating(true)
+      console.log('isValidating should now be true')
       const formData = new FormData()
       formData.append('activationKey', activationFile)
 
@@ -648,7 +659,12 @@ export default function LoginPage() {
         console.error('Failed to validate activation key, error:', error)
         setError('Failed to validate activation key')
       } finally {
-        setIsValidating(false)
+        // Add minimum delay to ensure loading GIF is visible
+        console.log('Setting isValidating to false after timeout')
+        setTimeout(() => {
+          console.log('Timeout reached, setting isValidating to false')
+          setIsValidating(false)
+        }, 2000)
       }
     } else {
       console.log('No .lic file found in dropped files')
@@ -667,7 +683,9 @@ export default function LoginPage() {
       console.log('Processing file:', file.name)
       if (file.name.endsWith('.lic')) {
         console.log('Starting validation process for file:', file.name)
+        console.log('Setting isValidating to true')
         setIsValidating(true)
+        console.log('isValidating should now be true')
         const formData = new FormData()
         formData.append('activationKey', file)
 
@@ -734,7 +752,12 @@ export default function LoginPage() {
           console.error('Failed to validate activation key, error:', error)
           setError('Failed to validate activation key')
         } finally {
-          setIsValidating(false)
+          // Add minimum delay to ensure loading GIF is visible
+          console.log('Setting isValidating to false after timeout')
+          setTimeout(() => {
+            console.log('Timeout reached, setting isValidating to false')
+            setIsValidating(false)
+          }, 2000)
         }
       } else {
         console.log('File does not end with .lic')
@@ -767,8 +790,17 @@ export default function LoginPage() {
   console.log('isActivated:', isActivated)
   console.log('isValidating:', isValidating)
 
+  if (currentStep === 3) {
+    console.log('Rendering step 3, isValidating:', isValidating)
+  }
+
   return currentStep === 3 ? (
     <div className="min-h-screen flex">
+      {isValidating && (
+        <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
+          <img src="/boohk-loading.gif" alt="Loading" style={{ width: '419px', height: '419px', flexShrink: 0 }} />
+        </div>
+      )}
       {/* Left side - Content */}
       <div className="flex-1 bg-white flex items-center justify-center p-8">
         <div className="max-w-xl w-full space-y-6">
@@ -980,10 +1012,10 @@ export default function LoginPage() {
 
       {/* Password Setup Dialog */}
       <Dialog open={currentStep === 2} onOpenChange={(open) => { if (!open) setCurrentStep(1); }}>
-        <DialogContent className="bg-white rounded-[50px] shadow-lg p-8 w-full flex" style={{width: '800px', height: '359px', flexShrink: 0}}>
+        <DialogContent className="bg-white rounded-[50px] shadow-lg p-8 w-full flex [animation-duration:0s]" style={{width: '800px', height: '359px', flexShrink: 0, position: 'fixed', top: '50%', left: '50%', transform: `translate(-50%, -50%) ${dialogTransform}`, transition: 'transform 0.5s ease-out'}}>
 <div className="flex-1 flex items-center justify-center flex-shrink-0">
   <Image
-    src="/owen-face.png"
+    src="/owen-face-1.png"
     alt="Login illustration"
     width={160}
     height={160}
@@ -1002,12 +1034,16 @@ export default function LoginPage() {
                   <X className="w-5 h-5" />
                 </Button>
               </div>
-              <div>
-                <h1 style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '30px', fontStyle: 'normal', fontWeight: 700, lineHeight: '100%' }}>Hey {pointPersonDataRef.current?.point_person?.first_name || email}!</h1>
+              <div className="mt-0 -mt-4" style={{ marginTop: '0' }}>
+                <h1 style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '30px', fontStyle: 'normal', fontWeight: 700, lineHeight: '100%', paddingBottom: '10px' }}>Hey {pointPersonDataRef.current?.point_person?.first_name || email}!</h1>
+
                 <p style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '16px', fontStyle: 'normal', fontWeight: 300, lineHeight: '100%' }}>
                   {"It's great to finally meet you. I'm "}
+
                   <span style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '16px', fontStyle: 'normal', fontWeight: 700, lineHeight: '100%' }}>Ohwen</span>
                   {", your OHPlus buddy."}
+                  <br />
+                  <br />
                 </p>
                 <p style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '16px', fontStyle: 'normal', fontWeight: 300, lineHeight: '100%' }}>
                   {
