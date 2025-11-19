@@ -168,7 +168,7 @@ export default function LoginPage() {
 
     try {
       console.log("Attempting login for email:", trimmedEmail)
-      // First, try to login as existing user
+      // Attempt login first
       await login(trimmedEmail, password)
       // If successful, auth context will handle redirect
       console.log("Existing user logged in successfully")
@@ -176,31 +176,21 @@ export default function LoginPage() {
       console.error("Login attempt failed:", error)
 
       if (error.code === 'auth/user-not-found') {
-        // User not found in tenant, check if eligible for signup
-        console.log("User not found in tenant, checking for signup eligibility for email:", trimmedEmail)
-
+        // Check companies collection after tenant auth fails
+        console.log("User not found in tenant, checking companies collection for email:", trimmedEmail)
         const pointPersonData = await fetchPointPersonData(trimmedEmail)
 
-        if (!pointPersonData) {
-          setError("This email address is not registered with any company. Please contact your administrator.")
-          setIsLoading(false)
-          return
+        if (pointPersonData) {
+          // Proceed to signup flow since company eligibility is verified
+          console.log("Point person found, proceeding to signup for email:", trimmedEmail)
+          setPointPersonData(pointPersonData)
+          pointPersonDataRef.current = pointPersonData
+          console.log('pointPersonData set to state and ref:', pointPersonData)
+          setCurrentStep(2)
+        } else {
+          console.log("No point person found in companies collection")
+          setError("Invalid email or password.")
         }
-
-        const { point_person } = pointPersonData
-
-        // Check if entered password matches point_person.password
-        if (point_person.password !== password) {
-          setError("Invalid password. Please check your credentials.")
-          setIsLoading(false)
-          return
-        }
-
-        console.log("Signup eligibility verified, proceeding to password change step")
-        setPointPersonData(pointPersonData)
-        pointPersonDataRef.current = pointPersonData
-        console.log('pointPersonData set to state and ref:', pointPersonData)
-        setCurrentStep(2)
       } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         setError("Invalid email or password.")
       } else {
