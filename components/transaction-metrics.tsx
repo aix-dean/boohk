@@ -7,7 +7,7 @@ interface TransactionMetricsProps {
 export function TransactionMetrics({ transactions }: TransactionMetricsProps) {
   const totalTransactions = transactions.length
   const totalRetailRevenue = transactions.reduce((sum, t) => sum + (t.transaction?.amount || 0), 0)
-  const totalFees = transactions.reduce((sum, t) => sum + (t.transaction?.fees.totalFee || 0) + (t.tax?.taxAmount || 0) + (t.discount?.discountTotal || 0), 0)
+  const totalFees = transactions.reduce((sum, t) => sum + (t.transaction?.fees?.totalFee || 0) + (t.tax?.taxAmount || 0) + (t.discount?.discountTotal || 0), 0)
   const netSales = totalRetailRevenue - totalFees
 
   return (
@@ -19,19 +19,19 @@ export function TransactionMetrics({ transactions }: TransactionMetricsProps) {
       <div className="bg-white rounded-lg px-6 py-[17px] border border-gray-200">
         <div className="text-xs text-gray-600 mb-2">Total Retail Revenue</div>
         <div className="text-xl font-semibold text-gray-900">
-          ₱{totalRetailRevenue.toLocaleString()}
+          ₱{totalRetailRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
       </div>
       <div className="bg-white rounded-lg px-6 py-[17px] border border-gray-200">
         <div className="text-xs text-gray-600 mb-2">Fees and Commissions</div>
         <div className="text-xl font-semibold text-gray-900">
-          ₱{totalFees.toLocaleString()}
+          ₱{totalFees.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
       </div>
       <div className="bg-white rounded-lg px-6 py-[17px] border border-gray-200">
         <div className="text-xs text-gray-600 mb-2">Net Sales</div>
         <div className="text-xl font-semibold text-gray-900">
-          ₱{netSales.toLocaleString()}
+          ₱{netSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
       </div>
     </div>

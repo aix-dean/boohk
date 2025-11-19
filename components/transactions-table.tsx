@@ -24,7 +24,7 @@ export function TransactionsTable({
   const totalPages = Math.ceil(totalItems / itemsPerPage)
 
   const formatCurrency = (amount: number, currency: string = 'PHP') => {
-    return `${currency === 'IDR' ? 'Rp' : '₱'}${amount.toLocaleString()}`
+    return `${currency === 'IDR' ? 'Rp' : '₱'}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
   const formatDate = (date: Date | any) => {
@@ -150,27 +150,27 @@ export function TransactionsTable({
 
                 {/* Gross Amount */}
                 <div className="min-w-20 py-1 px-2 mt-1 text-gray-900 font-medium truncate">
-                  {formatCurrency(booking.total_cost || 0, 'PHP')}
+                  {formatCurrency(booking.transaction?.amount || 0, 'PHP')}
                 </div>
 
                 {/* Fees */}
                 <div className="min-w-16 py-1 px-2 mt-1 text-gray-900 truncate">
-                  {formatCurrency(booking.costDetails?.otherFees || 0, 'PHP')}
+                  {formatCurrency(booking.transaction?.fees?.totalFee || 0, 'PHP')}
                 </div>
 
                 {/* Tax (12%) */}
                 <div className="min-w-16 py-1 px-2 mt-1 text-gray-900 truncate">
-                  {formatCurrency(booking.costDetails?.vatAmount || 0, 'PHP')}
+                  {formatCurrency(booking.tax?.taxAmount || 0, 'PHP')}
                 </div>
 
                 {/* Discount */}
                 <div className="min-w-16 py-1 px-2 mt-1 text-gray-900 truncate">
-                  {formatCurrency(booking.costDetails?.discount || 0, 'PHP')}
+                  {formatCurrency(booking.discount?.discountTotal || 0, 'PHP')}
                 </div>
 
                 {/* Payout Amount */}
                 <div className="min-w-20 py-1 px-2 mt-1 text-gray-900 font-medium truncate">
-                  {formatCurrency((booking.transaction?.amount || 0) - ((booking.tax?.taxAmount || 0) + (booking.transaction?.fees.totalFee || 0) + (booking.discount?.discountTotal || 0)), 'PHP')}
+                  {formatCurrency((booking.transaction?.amount || 0) - ((booking.tax?.taxAmount || 0) + (booking.transaction?.fees?.totalFee || 0) + (booking.discount?.discountTotal || 0)), 'PHP')}
                 </div>
 
                 {/* Status */}
