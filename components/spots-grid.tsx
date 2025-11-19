@@ -66,7 +66,9 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null)
   const [hoveredSpots, setHoveredSpots] = useState<Record<number, boolean>>({})
   const [retailSpotNumbers, setRetailSpotNumbers] = useState<number[]>([])
+  const [takenSpotNumbers, setTakenSpotNumbers] = useState<number[]>([])
   const [isOfflineDialogOpen, setIsOfflineDialogOpen] = useState(false)
+  const [selectedSpotNumber, setSelectedSpotNumber] = useState<number | undefined>(undefined)
   const filteredBookings = bookingRequests.filter(booking => booking.for_screening === 0)
   const [playerStatus, setPlayerStatus] = useState<boolean>() // playerId -> online status
   const [playerIds, setPlayerIds] = useState<string[]>([])
@@ -112,6 +114,8 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
             })
           }
         })
+        // Extract taken spot numbers
+        setTakenSpotNumbers(activePages.map((page: any) => page.spot_number))
 
         // Map spot numbers to image URLs
         const urls: Record<number, string> = {}
@@ -291,7 +295,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
                 acceptByUid: userData?.uid,
                 acceptBy: `${userData?.first_name || ""} ${userData?.last_name || ""}`,
                 booking_id: selectedBooking.id,
-                spot_number: maxSpotNumber + index + 1
+                spot_number: selectedSpotNumber || (maxSpotNumber + index + 1)
               }))
             ]
           }
@@ -317,6 +321,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
       // Close dialog and refresh
       setIsDialogOpen(false)
       setSelectedBooking(null)
+      setSelectedSpotNumber(undefined)
       onBookingAccepted?.()
     } catch (error) {
       console.error("Error accepting booking:", error)
@@ -357,6 +362,37 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
       })
     } finally {
       setIsDeclining(false)
+    }
+  }
+  const formatBookingDates = (startDate: any, endDate: any): string => {
+    if (!startDate || !endDate) return "N/A"
+    try {
+      const start = startDate.toDate ? startDate.toDate() : new Date(startDate)
+      const end = endDate.toDate ? endDate.toDate() : new Date(endDate)
+
+      const startMonth = start.toLocaleDateString('en-US', { month: 'short' })
+      const startDay = start.getDate()
+      const startYear = start.getFullYear()
+
+      const endMonth = end.toLocaleDateString('en-US', { month: 'short' })
+      const endDay = end.getDate()
+      const endYear = end.getFullYear()
+
+      // If dates are the same, return single date
+      if (start.getTime() === end.getTime()) {
+        return `${startMonth} ${startDay} ${startYear}`
+      }
+
+      // If same month and year, return "Nov 12 - 20 2020"
+      if (startMonth === endMonth && startYear === endYear) {
+        return `${startMonth} ${startDay} - ${endDay} ${startYear}`
+      }
+
+      // Different months/years, return full range
+      return `${startMonth} ${startDay} - ${endMonth} ${endDay} ${endYear}`
+    } catch (error) {
+      console.error("Error formatting booking dates:", error)
+      return "Invalid Dates"
     }
   }
 
@@ -452,7 +488,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
       <div className="space-y-4">
         {filteredBookings.length > 0 && (
           <>
-            <div style={{ color: '#333', fontFamily: 'Inter', fontSize: '12px', fontWeight: '700', lineHeight: '100%' }}>Booking Requests</div>
+            <div style={{ color: '#333', fontFamily: 'Inter', fontSize: '12px', fontWeight: '700', lineHeight: '100%' }}>Booking Requests ({filteredBookings.length})</div>
             {/* Booking Requests Cards */}
             <div className="mb-4 overflow-x-auto">
               <div className="flex space-x-4 pb-2">
@@ -482,9 +518,15 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
                           <path d="M9 7V15L16 11L9 7ZM21 3H3C1.9 3 1 3.9 1 5V17C1 18.1 1.9 19 3 19H8V21H16V19H21C22.1 19 23 18.1 23 17V5C23 3.9 22.1 3 21 3ZM21 17H3V5H21V17Z" fill="#333333" />
                         </svg>
                         <div className="flex flex-col">
-                          <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>BK#{booking.reservation_id || booking.id.slice(-8)}</div>
+                          <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{booking.reservation_id || booking.id.slice(-8)}</div>
                           <div style={{ fontSize: '12px', fontWeight: 400, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{formatBookingDates(booking.start_date, booking.end_date)}</div>
-                          <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>P{booking.total_cost?.toLocaleString() || booking.cost?.toLocaleString() || "0"}</div>
+                          <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{booking.costDetails?.total.toLocaleString("en-PH", {
+                            style: "currency",
+                            currency: "PHP"
+                          }) || booking.cost?.toLocaleString("en-PH", {
+                            style: "currency",
+                            currency: "PHP"
+                          }) || "0"}</div>
                         </div>
                       </div>
                       <div className="absolute top-2 right-2">
@@ -513,7 +555,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
                 </div>
                 <div className="flex items-center">
                   <span className="font-medium text-gray-900">Total Occupied:</span>
-                  <span className="text-cyan-600 font-medium">{occupiedCount} ({Math.round((occupiedCount / totalSpots) * 100)}%)</span>
+                  <span className="text-gray-700 font-medium">{occupiedCount} ({Math.round((occupiedCount / totalSpots) * 100)}%)</span>
                 </div>
                 <div className="flex items-center">
                   <span className="font-medium text-gray-900">Total Vacant:</span>
@@ -522,7 +564,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
               </div>
               <span
                 onClick={() => router?.push(`/sales/products/${productId}/spots/1`)}
-                className="text-blue-600 cursor-pointer"
+                className="text-gray-700 cursor-pointer"
               >
                 as of {currentDate} {'->'}
               </span>
@@ -530,7 +572,18 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
           )}
           {spotsContent}
         </div>
-        <NewBookingDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} booking={selectedBooking} playerOnline={playerOnline} isAccepting={isAccepting} onReject={() => { setIsDialogOpen(false); setIsDeclineConfirmDialogOpen(true); }} onAccept={() => { setIsDialogOpen(false); setIsConfirmDialogOpen(true); }} />
+
+        <NewBookingDialog 
+        open={isDialogOpen} 
+        onOpenChange={setIsDialogOpen} 
+        booking={selectedBooking} 
+        playerOnline={playerOnline} 
+        isAccepting={isAccepting} 
+        onReject={() => { setIsDialogOpen(false); setIsDeclineConfirmDialogOpen(true); }} 
+        onAccept={(spotNumber) => { setSelectedSpotNumber(spotNumber); setIsDialogOpen(false); setIsConfirmDialogOpen(true); }} 
+        takenSpotNumbers={takenSpotNumbers}
+        retailSpotNumbers={retailSpotNumbers} 
+        totalSpots={totalSpots} />
         <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
           <DialogContent className="w-[283px] h-[153px] p-1">
             <DialogHeader className="relative p-0">
