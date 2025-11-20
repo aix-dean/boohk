@@ -201,9 +201,9 @@ export default function SiteCardDetails({
     <Card className="bg-transparent border-none shadow-none">
       <CardContent className="p-0">
         {/* Site Image and Map */}
-        <div className="flex">
+        <div className="flex flex-col space-y-4">
           {/* Site Image */}
-          <div className="relative flex-1 aspect-square overflow-hidden">
+          <div className="relative aspect-square overflow-hidden">
             {product?.media && product.media.length > 0 ? (
               <>
                 <Image
@@ -244,7 +244,7 @@ export default function SiteCardDetails({
 
           {/* Map View */}
           {(product?.type?.toLowerCase() === "rental" ? product.specs_rental?.location : product.light?.location) && (
-            <div className="flex-1 aspect-square overflow-hidden">
+            <div className="flex-1 min-h-[300px] overflow-hidden">
               <GoogleMap
                 location={product?.type?.toLowerCase() === "rental" ? product.specs_rental.location : product.light.location}
                 lat={product?.specs_rental?.geopoint?.latitude}
