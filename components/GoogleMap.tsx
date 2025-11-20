@@ -13,15 +13,15 @@ const GoogleMap = React.memo(({ location, geopoint, className }: { location: str
   useEffect(() => {
     const initializeMaps = async () => {
       try {
-        await loadGoogleMaps()
-        await initializeMap()
+        const config = await loadGoogleMaps()
+        await initializeMap(config)
       } catch (error) {
         console.error("Error loading Google Maps:", error)
         setMapError(true)
       }
     }
 
-    const initializeMap = async () => {
+    const initializeMap = async (config: { apiKey: string; mapId?: string }) => {
       if (!mapRef.current || !window.google) return
 
       try {
@@ -45,7 +45,7 @@ const GoogleMap = React.memo(({ location, geopoint, className }: { location: str
           center = { lat: results[0].geometry.location.lat(), lng: results[0].geometry.location.lng() }
         }
 
-        const map = new window.google.maps.Map(mapRef.current!, {
+        const mapOptions: google.maps.MapOptions = {
           center,
           zoom: 15,
           disableDefaultUI: true,
@@ -63,7 +63,13 @@ const GoogleMap = React.memo(({ location, geopoint, className }: { location: str
               stylers: [{ visibility: "off" }],
             },
           ],
-        })
+        }
+
+        if (config.mapId) {
+          mapOptions.mapId = config.mapId
+        }
+
+        const map = new window.google.maps.Map(mapRef.current!, mapOptions)
 
         // Trigger resize to ensure map fills container properly
         window.google.maps.event.trigger(map, 'resize')
@@ -135,7 +141,7 @@ const GoogleMap = React.memo(({ location, geopoint, className }: { location: str
         target="_blank"
         rel="noopener noreferrer"
         className="absolute inset-0 z-10"
-      ></a>
+      />
       {!mapLoaded && (
         <div className="absolute inset-0 bg-gray-100 flex items-center justify-center border-none z-5">
           <div className="text-center border-none">
