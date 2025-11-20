@@ -64,6 +64,11 @@ const GoogleMap = React.memo(({ location, geopoint, className }: { location: str
             },
           ],
         })
+      
+        // Override Google Maps default borders and padding
+        mapRef.current!.style.border = 'none'
+        mapRef.current!.style.padding = '0'
+        mapRef.current!.style.margin = '0'
 
         // Add marker
         const markerElement = document.createElement('img')
@@ -124,12 +129,12 @@ const GoogleMap = React.memo(({ location, geopoint, className }: { location: str
       href={getMapUrl()}
       target="_blank"
       rel="noopener noreferrer"
-      className={`relative block ${className}`}
+      className={`relative block border-none ${className}`}
     >
-      <div ref={mapRef} className="w-full h-full" />
+      <div ref={mapRef} className="w-full h-full border-none" />
       {!mapLoaded && (
-        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
-          <div className="text-center">
+        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center border-none">
+          <div className="text-center border-none">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400 mx-auto mb-2" />
             <p className="text-sm text-gray-500">Loading map...</p>
           </div>
