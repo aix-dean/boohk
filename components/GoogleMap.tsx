@@ -31,7 +31,7 @@ const GoogleMap = React.memo(({ location, geopoint, className }: { location: str
         } else {
           const geocoder = new window.google.maps.Geocoder()
           const geocodePromise = new Promise<{ results: google.maps.GeocoderResult[] | null; status: google.maps.GeocoderStatus }>((resolve) => {
-            geocoder.geocode({ address: location }, (results, status) => {
+            geocoder.geocode({ address: location }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
               resolve({ results, status })
             })
           })
@@ -64,6 +64,9 @@ const GoogleMap = React.memo(({ location, geopoint, className }: { location: str
             },
           ],
         })
+
+        // Trigger resize to ensure map fills container properly
+        window.google.maps.event.trigger(map, 'resize')
       
         // Override Google Maps default borders and padding
         mapRef.current!.style.border = 'none'
