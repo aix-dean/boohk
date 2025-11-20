@@ -103,6 +103,9 @@ export default function ITDepartmentDetailsPage() {
     "Finance": "bg-emerald-500",
   }
 
+  // Disabled roles in the edit dialog
+  const disabledRoles: RoleType[] = ['admin', 'logistics', 'cms', 'treasury', 'finance']
+
   // Debounce search term
   useEffect(() => {
     if (searchTimeoutRef.current) {
@@ -388,14 +391,6 @@ export default function ITDepartmentDetailsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="gap-2 bg-transparent"
-            onClick={() => handleActionWithCompanyCheck(() => router.push("/admin/access-management"))}
-          >
-            <Shield className="h-4 w-4" />
-            Roles & Access
-          </Button>
           <Button className="gap-2" onClick={handleAddUser}>
             <UserPlus className="h-4 w-4" />
             Add User
@@ -484,8 +479,8 @@ export default function ITDepartmentDetailsPage() {
       />
 
       <Dialog open={isEditRolesDialogOpen} onOpenChange={setIsEditRolesDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-md h-[400px] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Edit User Roles</DialogTitle>
             <DialogDescription>
               {selectedUser && (
@@ -496,7 +491,7 @@ export default function ITDepartmentDetailsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="flex-1 overflow-y-auto py-4 min-h-0">
             {roleDialogLoading ? (
               <div className="flex items-center justify-center py-4">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
@@ -505,10 +500,11 @@ export default function ITDepartmentDetailsPage() {
             ) : (
               <div className="space-y-3">
                 {roles.map((role) => (
-                  <div key={role.id} className="flex items-start space-x-3 p-3 border rounded-lg">
+                  <div key={role.id} className={`flex items-start space-x-3 p-3 border rounded-lg ${disabledRoles.includes(role.id) ? 'opacity-50' : ''}`}>
                     <Checkbox
                       id={`role-${role.id}`}
                       checked={selectedRoles[role.id] || false}
+                      disabled={disabledRoles.includes(role.id)}
                       onCheckedChange={(checked) =>
                         setSelectedRoles((prev) => ({ ...prev, [role.id]: checked === true }))
                       }
@@ -529,7 +525,7 @@ export default function ITDepartmentDetailsPage() {
             )}
           </div>
 
-          <DialogFooter className="sm:justify-end">
+          <DialogFooter className="sm:justify-end flex-shrink-0">
             <Button variant="outline" onClick={() => setIsEditRolesDialogOpen(false)}>
               Cancel
             </Button>

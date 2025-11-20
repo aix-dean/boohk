@@ -887,16 +887,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log("getRoleDashboardPath called with roles:", roles)
 
     if (!roles || roles.length === 0) {
-      console.log("No roles found, redirecting to /it/teams")
-      return "/it/teams"
+      console.log("No roles found, redirecting to /it/user-management")
+      return "/it/user-management"
     }
 
     if (roles.includes("admin") || roles.includes("sales")) {
       console.log("Has admin or sales role, redirecting to /sales/dashboard")
       return "/sales/dashboard"
     } else {
-      console.log("No admin or sales role, redirecting to /it/teams")
-      return "/it/teams"
+      console.log("No admin or sales role, redirecting to /it/user-management")
+      return "/it/user-management"
     }
   }, [])
 
