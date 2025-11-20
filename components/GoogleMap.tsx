@@ -128,22 +128,23 @@ const GoogleMap = React.memo(({ location, geopoint, className }: { location: str
   }
 
   return (
-    <a
-      href={getMapUrl()}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`relative block border-none ${className}`}
-    >
+    <div className={`relative ${className}`}>
       <div ref={mapRef} className="w-full h-full border-none" />
+      <a
+        href={getMapUrl()}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="absolute inset-0 z-10"
+      ></a>
       {!mapLoaded && (
-        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center border-none">
+        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center border-none z-5">
           <div className="text-center border-none">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400 mx-auto mb-2" />
             <p className="text-sm text-gray-500">Loading map...</p>
           </div>
         </div>
       )}
-    </a>
+    </div>
   )
 })
 

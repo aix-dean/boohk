@@ -79,7 +79,7 @@ export default function SiteInformation({
             {(product?.type?.toLowerCase() === "rental"
               ? product.specs_rental?.location
               : product.light?.location) && (
-              <div className="flex-1 aspect-square overflow-hidden border-none">
+              <div className="relative flex-1 aspect-square overflow-hidden border-none">
                 <GoogleMap
                   location={
                     product?.type?.toLowerCase() === "rental"
