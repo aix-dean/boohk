@@ -417,12 +417,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
       // Get image URL from playlist page widget with matching spot_number
       let imageUrl: string | undefined
-      let endDate: string | undefined
+      let endDate: Date | undefined
       if (page && page.widgets) {
         const widget = activePlaylistPages.find((w: any) => w.spot_number === i)
         if (widget) {
           imageUrl = widget.widgets[0].url
-          endDate = widget.schedules[0]?.endDate
+          const scheduleEndDate = widget.schedules[0]?.endDate
+          endDate = scheduleEndDate?.toDate ? scheduleEndDate.toDate() : new Date(scheduleEndDate)
         }
       }
 
@@ -686,50 +687,46 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     fetchCurrentDayBookings()
   }, [paramsData.id])
 
-  // Fetch bookings for selected date in program list
+  // Fetch bookings for selected date in program list (realtime)
   useEffect(() => {
-    const fetchProgramListBookings = async () => {
-      if (!paramsData.id || paramsData.id === "new") return
+    if (!paramsData.id || paramsData.id === "new") return
 
-      setProgramListBookingsLoading(true)
-      try {
-        const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
-        const selectedDate = new Date(selectedYear, selectedMonth - 1, selectedDay)
-        const startOfDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate())
-        const endOfDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59)
+    setProgramListBookingsLoading(true)
+    const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
+    const selectedDate = new Date(selectedYear, selectedMonth - 1, selectedDay)
+    const startOfDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate())
+    const endOfDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59)
 
-        const bookingsQuery = query(
-          collection(db, "booking"),
-          where("product_id", "==", productId)
-        )
+    const bookingsQuery = query(
+      collection(db, "booking"),
+      where("product_id", "==", productId)
+    )
 
-        const querySnapshot = await getDocs(bookingsQuery)
-        const programListBookingsData: Booking[] = []
+    const unsubscribe = onSnapshot(bookingsQuery, (snapshot) => {
+      const programListBookingsData: Booking[] = []
 
-        querySnapshot.forEach((doc) => {
-          const booking = { id: doc.id, ...doc.data() } as Booking
+      snapshot.forEach((doc) => {
+        const booking = { id: doc.id, ...doc.data() } as Booking
 
-          // Check if booking covers selected date
-          if (booking.start_date && booking.end_date) {
-            const startDate = booking.start_date.toDate ? booking.start_date.toDate() : new Date(booking.start_date as any)
-            const endDate = booking.end_date.toDate ? booking.end_date.toDate() : new Date(booking.end_date as any)
+        // Check if booking covers selected date
+        if (booking.start_date && booking.end_date) {
+          const startDate = booking.start_date.toDate ? booking.start_date.toDate() : new Date(booking.start_date as any)
+          const endDate = booking.end_date.toDate ? booking.end_date.toDate() : new Date(booking.end_date as any)
 
-            if (startDate <= endOfDay && endDate >= startOfDay) {
-              programListBookingsData.push(booking)
-            }
+          if (startDate <= endOfDay && endDate >= startOfDay) {
+            programListBookingsData.push(booking)
           }
-        })
+        }
+      })
 
-        setProgramListBookings(programListBookingsData)
+      setProgramListBookings(programListBookingsData)
+      setProgramListBookingsLoading(false)
+    }, (error) => {
+      console.error("Error fetching program list bookings:", error)
+      setProgramListBookingsLoading(false)
+    })
 
-      } catch (error) {
-        console.error("Error fetching program list bookings:", error)
-      } finally {
-        setProgramListBookingsLoading(false)
-      }
-    }
-
-    fetchProgramListBookings()
+    return unsubscribe
   }, [paramsData.id, selectedYear, selectedMonth, selectedDay])
 
   // Fetch booking requests (pending bookings) for this product

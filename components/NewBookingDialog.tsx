@@ -3,7 +3,6 @@ import { X, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogFooter } from "@/components/ui/dialog"
 import type { Booking } from "@/lib/booking-service"
-import { BookingSpotSelectionDialog } from "@/components/BookingSpotSelectionDialog"
 
 interface NewBookingDialogProps {
   open: boolean
@@ -12,10 +11,11 @@ interface NewBookingDialogProps {
   playerOnline: boolean | null
   isAccepting: boolean
   onReject: () => void
-  onAccept: (spotNumber?: number) => void
+  onAccept: () => void
   retailSpotNumbers: number[]
   takenSpotNumbers: number[]
   totalSpots: number
+  activePages: any[]
 }
 
 export function NewBookingDialog({
@@ -28,9 +28,9 @@ export function NewBookingDialog({
   onAccept,
   takenSpotNumbers,
   retailSpotNumbers,
-  totalSpots
+  totalSpots,
+  activePages
 }: NewBookingDialogProps) {
-  const [isSpotSelectionOpen, setIsSpotSelectionOpen] = useState(false)
   // Local function to format booking dates
   const formatBookingDates = (startDate: any, endDate: any): string => {
     if (!startDate || !endDate) return "N/A"
@@ -148,23 +148,11 @@ export function NewBookingDialog({
         )}
         <DialogFooter>
           <Button variant="outline" onClick={onReject} className="w-[90px] h-[24px] px-[29px] rounded-[6px] border-[1.5px] border-[#C4C4C4] bg-white">Decline</Button>
-          <Button onClick={() => setIsSpotSelectionOpen(true)} disabled={!playerOnline} className="w-[120px] h-[24px] rounded-[6.024px] bg-[#30C71D]">
+          <Button onClick={onAccept} disabled={!playerOnline} className="w-[120px] h-[24px] rounded-[6.024px] bg-[#30C71D]">
             {isAccepting ? <><Loader2 className="animate-spin mr-1 h-4 w-4" />Accepting...</> : "Accept"}
           </Button>
         </DialogFooter>
       </DialogContent>
-
-      <BookingSpotSelectionDialog
-        open={isSpotSelectionOpen}
-        onOpenChange={setIsSpotSelectionOpen}
-        retailSpotNumbers={retailSpotNumbers}
-        takenSpotNumbers={takenSpotNumbers}
-        totalSpots={totalSpots}
-        onSpotSelect={(spotNumber) => {
-          onAccept(spotNumber)
-          setIsSpotSelectionOpen(false)
-        }}
-      />
     </Dialog>
   )
 }

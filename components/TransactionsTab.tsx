@@ -73,26 +73,26 @@ const TransactionsTab: React.FC<TransactionsTabProps> = ({
     switch (status?.toUpperCase()) {
       case "COMPLETED":
         return (
-          <span className="text-green-700 font-bold text-[#30c71d]">
+          <span className="font-bold text-[#30c71d]">
             Completed
           </span>
         )
       case "FOR REVIEW":
         return (
-          <span className="text-blue-700 font-bold text-[##2d3fff]">
-            FOR REVIEW
+          <span className="font-bold text-[##2d3fff]">
+            For Review
           </span>
         )
       case "DECLINED":
         return (
-          <span className="text-red-700 font-bold text-[#f95151]">
-            DECLINED
+          <span className="font-bold text-[#f95151]">
+            Declined
           </span>
         )
       default:
         return (
           <span className="text-gray-700 font-bold">
-            {status || "UNKNOWN"}
+            {`${status.charAt(0).toUpperCase()}${status.slice(1, status.length)}` || "UNKNOWN"}
           </span>
         )
     }
@@ -180,7 +180,7 @@ const TransactionsTab: React.FC<TransactionsTabProps> = ({
               <>
                 <div className="w-full overflow-x-auto border-b border-gray-200 bg-white">
                   <div className="min-w-[880px]">
-                    <div className="grid grid-cols-[100px_120px_250px_120px_120px_100px] gap-4 pb-2 border-b border-gray-500 text-xs font-semibold text-gray-600 mb-4 px-4">
+                    <div className="grid grid-cols-[100px_120px_250px_120px_120px_100px] gap-4 pb-2 border-b border-gray-300 text-xs font-semibold text-[#333] mb-4 px-4">
                       <div>Date</div>
                       <div>ATC</div>
                       <div>Booking Dates</div>
@@ -201,7 +201,7 @@ const TransactionsTab: React.FC<TransactionsTabProps> = ({
                             const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
                             return `${startFormatted} - ${endFormatted} • ${days} Days`;
                           })() : 'N/A'}</div>
-                          <div className="font-bold">{formatTotalAmount(booking.amounts.totalAmount)}</div>
+                          <div className="font-bold">{formatTotalAmount(booking.costDetails.total)}</div>
                           <div>{renderBookingStatusBadge(booking.status)}</div>
                           <div>
                             <button onClick={() => { setSelectedBooking(booking); setBookingDialogOpen(true); }}>

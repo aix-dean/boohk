@@ -161,17 +161,18 @@ const ProgramListTab: React.FC<ProgramListTabProps> = ({
             <div className="min-w-[800px]">
               <div className="space-y-3">
                 {Array.from({ length: totalSpots }, (_, i) => i + 1).map((spotNumber) => {
+                  const page = filteredPages.find(p => p.spot_number === spotNumber)
                   const booking = bookings.find(b => b.spot_number === spotNumber)
-                  const startDate = booking?.start_date?.toDate ? booking.start_date.toDate() : booking?.start_date ? new Date(booking.start_date as any) : null
-                  const endDate = booking?.end_date?.toDate ? booking.end_date.toDate() : booking?.end_date ? new Date(booking.end_date as any) : null
+                  const startDate = page?.schedules?.[0]?.startDate?.toDate ? page.schedules[0].startDate.toDate() : page?.schedules?.[0]?.startDate ? new Date(page.schedules[0].startDate) : null
+                  const endDate = page?.schedules?.[0]?.endDate?.toDate ? page.schedules[0].endDate.toDate() : page?.schedules?.[0]?.endDate ? new Date(page.schedules[0].endDate) : null
                   return (
                     <div key={spotNumber} className={`grid grid-cols-5 gap-4 px-4 py-2 items-center text-xs rounded-[10px] hover:bg-white transition-all duration-200 shadow-lg h-[100px] ${retailSite.includes(spotNumber) ? ' bg-[#f6f9ff] border-4 border-blue-400' : 'bg-white border border-transparent'}`}>
                       <div className="text-center">Spot {spotNumber}</div>
                       <div>{booking?.airing_code || '-'}</div>
                       <div>
-                        {booking?.url ? (
+                        {page?.widgets?.[0]?.url ? (
                           <video
-                            src={booking.url}
+                            src={page.widgets[0].url}
                             className="w-[76px] h-[80px] object-cover rounded"
                             preload="metadata"
                           >

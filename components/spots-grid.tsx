@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { useAuth } from "@/contexts/auth-context"
 import { db } from "@/lib/firebase"
-import { collection, query, where, getDocs, getDoc, updateDoc, doc, addDoc, serverTimestamp, orderBy, limit } from "firebase/firestore"
+import { collection, query, where, getDocs, getDoc, updateDoc, doc, addDoc, serverTimestamp, orderBy, limit, onSnapshot } from "firebase/firestore"
 import type { Booking } from "@/lib/booking-service"
 import { formatBookingDates } from "@/lib/booking-service"
 import { createCMSContentDeployment, checkPlayerOnlineStatus } from "@/lib/cms-api"
@@ -18,6 +18,7 @@ import { convertSegmentPathToStaticExportFilename } from "next/dist/shared/lib/s
 import { create } from "domain"
 import { createHash } from "crypto"
 import { NewBookingDialog } from "@/components/NewBookingDialog"
+import { BookingSpotSelectionDialog } from "@/components/BookingSpotSelectionDialog"
 import https from 'https';
 import { MediaPlayer } from "./MediaPlayer"
 
@@ -27,6 +28,14 @@ interface Spot {
   status: "occupied" | "vacant"
   clientName?: string
   imageUrl?: string
+  endDate?: Date
+  booking_id?: string
+}
+
+interface Page {
+  spot_number: number
+  schedules?: any[]
+  widgets?: any[]
 }
 
 interface SpotsGridProps {
@@ -69,16 +78,19 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
   const [takenSpotNumbers, setTakenSpotNumbers] = useState<number[]>([])
   const [isOfflineDialogOpen, setIsOfflineDialogOpen] = useState(false)
   const [selectedSpotNumber, setSelectedSpotNumber] = useState<number | undefined>(undefined)
+  const [isSpotSelectionOpen, setIsSpotSelectionOpen] = useState(false)
   const filteredBookings = bookingRequests.filter(booking => booking.for_screening === 0)
   const [playerStatus, setPlayerStatus] = useState<boolean>() // playerId -> online status
   const [playerIds, setPlayerIds] = useState<string[]>([])
   const [playerOnline, setPlayerOnline] = useState<boolean | null>(null)
+  const [activePages, setActivePages] = useState<Page[]>([])
 
   useEffect(() => {
     if (!productId) return
 
+    let unsubscribe: (() => void) | null = null
 
-    const fetchSpotImages = async () => {
+    const setupListener = async () => {
       try {
         // Fetch product
         const productRef = doc(db, "products", productId)
@@ -89,52 +101,59 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
         setPlayerIds(product.playerIds || [])
         setRetailSpotNumbers(product.retail_spot?.spot_number || [])
 
-        // Query playlists
-        const playlistQuery = query(
-          collection(db, "playlist"),
-          where("product_id", "==", productId),
-          where("playerIds", "==", product.playerIds)
-        )
-        const playlistSnap = await getDocs(playlistQuery)
-        const playlists = playlistSnap.docs.map(doc => doc.data())
-        // Filter active pages
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-        const activePages = []
-        playlists.forEach(playlist => {
-          if (playlist.pages) {
-            playlist.pages.forEach((page: any) => {
-              if (page.schedules?.every((schedule: any) => {
-                let endDate = schedule.endDate?.toDate ? schedule.endDate.toDate() : new Date(schedule.endDate)
-                endDate.setHours(0, 0, 0, 0)
-                return endDate >= today
-              })) {
-                activePages.push(page)
+        // Set up real-time listener for playlists
+        unsubscribe = onSnapshot(
+          query(
+            collection(db, "playlist"),
+            where("product_id", "==", productId),
+            where("playerIds", "==", product.playerIds)
+          ),
+          (snapshot) => {
+            const playlists = snapshot.docs.map(doc => doc.data())
+            // Filter active pages
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+            let activePagesTemp: Page[] = []
+            playlists.forEach(playlist => {
+              if (playlist.pages) {
+                playlist.pages.forEach((page: Page) => {
+                  if (page.schedules?.every((schedule: any) => {
+                    let endDate = schedule.endDate?.toDate ? schedule.endDate.toDate() : new Date(schedule.endDate)
+                    endDate.setHours(0, 0, 0, 0)
+                    return endDate >= today
+                  })) {
+                    activePagesTemp.push(page)
+                  }
+                })
+              }
+            })
+            setActivePages(activePagesTemp)
+            // Extract taken spot numbers
+            setTakenSpotNumbers(activePagesTemp.map((page: Page) => page.spot_number))
+
+            // Map spot numbers to image URLs
+            const urls: Record<number, string> = {}
+            activePagesTemp.forEach((page: Page) => {
+              if (page.spot_number && page.widgets && page.widgets.length > 0) {
+                // Assume first widget has the url
+                const widget = page.widgets[0]
+                if (widget.url) {
+                  urls[page.spot_number] = widget.url
+                }
               }
             })
           }
-        })
-        // Extract taken spot numbers
-        setTakenSpotNumbers(activePages.map((page: any) => page.spot_number))
-
-        // Map spot numbers to image URLs
-        const urls: Record<number, string> = {}
-        activePages.forEach((page: any) => {
-          if (page.spot_number && page.widgets && page.widgets.length > 0) {
-            // Assume first widget has the url
-            const widget = page.widgets[0]
-            if (widget.url) {
-              urls[page.spot_number] = widget.url
-            }
-          }
-        })
-
+        )
       } catch (error) {
-        console.error("Error fetching spot images:", error)
+        console.error("Error setting up listener:", error)
       }
     }
 
-    fetchSpotImages()
+    setupListener()
+
+    return () => {
+      if (unsubscribe) unsubscribe()
+    }
   }, [productId])
 
 
@@ -147,10 +166,9 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
     }
   }
 
-  const handleAcceptBooking = async () => {
+  const handleAcceptBooking = async (spotNumber: number) => {
 
     if (!selectedBooking) return
-
 
     try {
       // Generate airing_code
@@ -211,7 +229,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
 
         // Calculate the maximum spot_number from active pages
         let maxSpotNumber = 0
-        activePages.forEach(page => {
+        activePages.forEach((page: Page) => {
           if (page.spot_number && page.spot_number > maxSpotNumber) maxSpotNumber = page.spot_number
         })
 
@@ -275,8 +293,20 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
           }
         ] : []
 
+        // Create new pages with full properties
+        const newBookingPages = pages.map((page, index) => ({
+          ...page,
+          schedules: [schedules],
+          client_id: selectedBooking.client.id,
+          client_name: selectedBooking.client.name || selectedBooking.client?.name,
+          acceptByUid: userData?.uid,
+          acceptBy: `${userData?.first_name || ""} ${userData?.last_name || ""}`,
+          booking_id: selectedBooking.id,
+          spot_number: spotNumber
+        }))
+
         // Combine active existing pages with new booking pages
-        const newPages = [...activePages, ...pages]
+        const allPages = [...activePages, ...newBookingPages]
 
         // Create playlist document for specific product
         if (product.id) {
@@ -285,21 +315,16 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
             product_id: product.id,
             company_id: product.company_id,
             created: serverTimestamp(),
-            pages: [
-              ...activePages,
-              ...pages.map((page, index) => ({
-                ...page,
-                schedules: [schedules],
-                client_id: selectedBooking.client.id,
-                client_name: selectedBooking.client.name || selectedBooking.client?.name,
-                acceptByUid: userData?.uid,
-                acceptBy: `${userData?.first_name || ""} ${userData?.last_name || ""}`,
-                booking_id: selectedBooking.id,
-                spot_number: selectedSpotNumber || (maxSpotNumber + index + 1)
-              }))
-            ]
+            pages: allPages
           }
           await addDoc(collection(db, "playlist"), playlistDoc)
+
+          // Sort playlist pages by spot_number ascending before CMS deployment
+          playlistDoc.pages.sort((a, b) => (a.spot_number || 0) - (b.spot_number || 0))
+
+          // Update activePages and takenSpotNumbers immediately for real-time UI update
+          setActivePages(prev => [...prev, ...newBookingPages])
+          setTakenSpotNumbers(prev => [...prev, spotNumber])
 
           console.log("Player is online, proceeding with CMS deployment")
           const playerIds = product.playerIds || []
@@ -471,7 +496,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
             {/* Client Name */}
             <div className={`text-[11px] truncate ${spot.status === "occupied" ? "text-black" : "text-[#a1a1a1]"
               }`}>
-              {`${spot.endDate ? `Till ${new Date(spot.endDate).toLocaleDateString("en-US", {
+              {`${spot.endDate ? `Till ${spot.endDate.toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
                 year: "numeric",
@@ -573,17 +598,31 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
           {spotsContent}
         </div>
 
-        <NewBookingDialog 
-        open={isDialogOpen} 
-        onOpenChange={setIsDialogOpen} 
-        booking={selectedBooking} 
-        playerOnline={playerOnline} 
-        isAccepting={isAccepting} 
-        onReject={() => { setIsDialogOpen(false); setIsDeclineConfirmDialogOpen(true); }} 
-        onAccept={(spotNumber) => { setSelectedSpotNumber(spotNumber); setIsDialogOpen(false); setIsConfirmDialogOpen(true); }} 
+        <NewBookingDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        booking={selectedBooking}
+        playerOnline={playerOnline}
+        isAccepting={isAccepting}
+        onReject={() => { setIsDialogOpen(false); setIsDeclineConfirmDialogOpen(true); }}
+        onAccept={() => { setIsDialogOpen(false); setIsConfirmDialogOpen(true); }}
         takenSpotNumbers={takenSpotNumbers}
-        retailSpotNumbers={retailSpotNumbers} 
-        totalSpots={totalSpots} />
+        retailSpotNumbers={retailSpotNumbers}
+        totalSpots={totalSpots}
+        activePages={activePages} />
+        <BookingSpotSelectionDialog
+          open={isSpotSelectionOpen}
+          onOpenChange={setIsSpotSelectionOpen}
+          retailSpotNumbers={retailSpotNumbers}
+          totalSpots={totalSpots}
+          takenSpotNumbers={takenSpotNumbers}
+          activePages={activePages}
+          booking={selectedBooking}
+          onSpotSelect={(spotNumber) => {
+            handleAcceptBooking(spotNumber)
+            setIsSpotSelectionOpen(false)
+          }}
+        />
         <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
           <DialogContent className="w-[283px] h-[153px] p-1">
             <DialogHeader className="relative p-0">
@@ -598,8 +637,8 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
             </div>
             <div className="flex justify-center gap-2">
               <Button variant="outline" onClick={() => { setIsConfirmDialogOpen(false); setIsDialogOpen(true); }} className="w-[129px] h-[28px] rounded-[5.992px] border-[1.198px] border-[#C4C4C4] bg-[#FFF]">Cancel</Button>
-              <Button onClick={async () => { setIsConfirming(true); try { await handleAcceptBooking(); } finally { setIsConfirming(false); setIsConfirmDialogOpen(false); } }} disabled={isConfirming} className="w-[115px] h-[28px] rounded-[5.992px] bg-[#1D0BEB]">
-                {isConfirming ? <><Loader2 className="animate-spin mr-1 h-4 w-4" />Confirming...</> : "Yes, proceed"}
+              <Button onClick={() => { setIsConfirmDialogOpen(false); setIsSpotSelectionOpen(true); }} className="w-[115px] h-[28px] rounded-[5.992px] bg-[#1D0BEB]">
+                Yes, proceed
               </Button>
             </div>
           </DialogContent>
