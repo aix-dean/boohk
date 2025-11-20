@@ -41,6 +41,31 @@ interface CMSResponse {
   [key: string]: any
 }
 
+
+export async function checkPlayerOnlineStatus(playerIds: string[]): Promise<boolean> {
+  try {
+    const response = await fetch("https://cms-novacloud-272363630855.asia-southeast1.run.app/api/v1/players/status/player-info", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ playerIds })
+    })
+
+    if (response.ok) {
+      const data: any = await response.json()
+      console.log("Player Status Response: ", data[0].onlineStatus) 
+      return data[0].onlineStatus === 1 
+    } else {
+      console.error("Failed to check player status:", response.status, response.statusText)
+      return false
+    }
+  } catch (error) {
+    console.error("Error checking player online status:", error)
+    return false
+  }
+}
+
 export async function createCMSContentDeployment(
   playerIds: string[],
   schedule: CMSSchedule,

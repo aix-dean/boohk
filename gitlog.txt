@@ -8958,7 +8958,7 @@ Date:   2025-09-02T07:30:09+00:00
 
     feat: add seller info to job order details page
     
-    Integrate seller name display using iboard_users collection.
+    Integrate seller name display using boohk_users collection.
     
     #VERCEL_SKIP
     
@@ -25728,7 +25728,7 @@ Date:   2025-08-05T06:50:27+00:00
 
     feat: enhance IT inventory form with user fetching and assignment
     
-    Fetch users from `iboard_users` filtered by `company_id` and update dropdown.
+    Fetch users from `boohk_users` filtered by `company_id` and update dropdown.
     
     #VERCEL_SKIP
     
@@ -37227,7 +37227,7 @@ Date:   2025-07-15T03:55:31+00:00
 
     feat: switch user data fetch to uid instead of email
     
-    Update auth context to use uid for fetching user data from iboard_users.
+    Update auth context to use uid for fetching user data from boohk_users.
     
     Co-authored-by: undefined <undefined+undefined@users.noreply.github.com>
 
@@ -51695,7 +51695,7 @@ Date:   2025-07-02T05:56:11+00:00
 
     fix: correct Firestore collection for user data and license key
     
-    Update user data fetch from "users" to "iboard_users" collection.
+    Update user data fetch from "users" to "boohk_users" collection.
     
     #VERCEL_SKIP
     

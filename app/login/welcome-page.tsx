@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
+import { Loader2, ArrowRight } from "lucide-react"
 
 interface WelcomePageProps {
    onStartTour: () => void
@@ -31,36 +31,33 @@ export default function WelcomePage({ onStartTour, userName, isLoading = false }
           {/* Description text */}
           {/* Increased text size from default to text-lg */}
           <div className="space-y-5 text-muted-foreground leading-relaxed text-lg">
-            <p>
-            <span className="font-semibold text-foreground">Great!</span> Now let me give you a quick little tour so you can get comfy. It’ll only take a minute!
+                      <img
+              src="/owen-face.png"
+              alt="User icon"
+              style={{  height: '51px', }}
+            />
+            <p style={{ marginTop: 0 }}>
+            <span style={{ color: '#333', fontFamily: 'Inter', fontSize: '30px', fontStyle: 'normal', fontWeight: '700', lineHeight: '100%' }}>Great! <br /></span> <span style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '16px', fontStyle: 'normal', fontWeight: 300, lineHeight: '100%' }}>We are so thrilled to have you here! Take a look around, settle in, and let’s enjoy the wonderful world of OOH together!</span>
             </p>
           </div>
 
           {/* Start Tour button */}
           <div className="pt-6 flex justify-end">
             <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-medium text-lg flex items-center gap-3 transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              style={{ width: '114.963px', height: '23.493px', flexShrink: 0, borderRadius: '6.024px', background: '#1D0BEB', color: '#FFF', textAlign: 'center', fontFamily: 'Inter', fontSize: '12px', fontStyle: 'normal', fontWeight: '700', lineHeight: '100%' }}
               onClick={onStartTour}
               disabled={isLoading}
             >
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Starting Tour...</span>
+                  <span>Lets go</span>
+                  <ArrowRight className="w-4 h-4 ml-2" />
                 </>
               ) : (
                 <>
-                  <span className="transition-transform duration-300 group-hover:translate-x-1">
-                    Start Tour
-                  </span>
-                  <svg
-                    className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  <span>Lets go</span>
+                  <ArrowRight className="w-4 h-4 ml-2" />
                 </>
               )}
             </Button>

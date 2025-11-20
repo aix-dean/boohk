@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
+import { useRouter, usePathname } from 'next/navigation'
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -15,6 +16,8 @@ import { generateLicenseKey } from "@/lib/utils"
 import { assignRoleToUser, getUserRoles, type RoleType } from "@/lib/hardcoded-access-service"
 import { subscriptionService } from "@/lib/subscription-service"
 import type { SubscriptionData } from "@/lib/types/subscription"
+
+import { useToast } from "@/hooks/use-toast"
 
 interface UserData {
   uid: string
@@ -106,6 +109,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionData | null>(null)
   const [loading, setLoading] = useState(true)
   const [isRegistering, setIsRegistering] = useState(false)
+  const [hasInitialRedirectDone, setHasInitialRedirectDone] = useState(false)
+
+  const router = useRouter()
+  const pathname = usePathname()
+  const { toast } = useToast()
 
   const fetchSubscriptionData = useCallback(async (licenseKey: string, companyId?: string) => {
     try {
@@ -147,8 +155,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         console.log("Fetching user data for UID:", firebaseUser.uid)
 
-        // Query iboard_users collection by uid field
-        const usersQuery = query(collection(db, "iboard_users"), where("uid", "==", firebaseUser.uid))
+        // Query boohk_users collection by uid field
+        const usersQuery = query(collection(db, "boohk_users"), where("uid", "==", firebaseUser.uid))
         const usersSnapshot = await getDocs(usersQuery)
 
         let fetchedUserData: UserData
@@ -195,6 +203,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } : undefined,
             ...data,
           }
+
+          // Sync roles between user_roles and boohk_users
+          const currentRoles = data.roles || [];
+          const sortedCurrent = [...currentRoles].sort();
+          const sortedUserRoles = [...userRoles].sort();
+          if (sortedCurrent.length !== sortedUserRoles.length || !sortedCurrent.every((r, i) => r === sortedUserRoles[i])) {
+            await updateDoc(userDoc.ref, {
+              roles: userRoles,
+              updated: serverTimestamp()
+            });
+            console.log("Synced roles in boohk_users to match user_roles");
+          }
         } else {
           console.log("User document doesn't exist, creating basic one")
 
@@ -218,7 +238,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
 
           // Create the user document with uid field
-          const userDocRef = doc(db, "iboard_users", firebaseUser.uid)
+          const userDocRef = doc(db, "boohk_users", firebaseUser.uid)
           const userData = {
             ...fetchedUserData,
             created: serverTimestamp(),
@@ -241,7 +261,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           batch.set(walletDocRef, walletData)
           await batch.commit()
 
-          console.log("Basic user document created in iboard_users collection")
+          console.log("Basic user document created in boohk_users collection")
           console.log("Wallet document created in wallets collection")
           console.log("✅ Basic user and wallet documents creation completed successfully atomically")
         }
@@ -316,7 +336,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log("Assigning license key:", licenseKey, "to user:", uid)
 
-      const userDocRef = doc(db, "iboard_users", uid)
+      const userDocRef = doc(db, "boohk_users", uid)
       await setDoc(userDocRef, { license_key: licenseKey }, { merge: true })
 
       setUserData((prev) => (prev ? { ...prev, license_key: licenseKey } : null))
@@ -332,7 +352,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user?.uid) return
 
     try {
-      const userDocRef = doc(db, "iboard_users", user.uid)
+      const userDocRef = doc(db, "boohk_users", user.uid)
       await updateDoc(userDocRef, {
         lastActivity: serverTimestamp()
       })
@@ -355,7 +375,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("Checking OHPLUS account for uid:", uid)
 
       // Query for user document with this uid
-      const usersQuery = query(collection(db, "iboard_users"), where("uid", "==", uid))
+      const usersQuery = query(collection(db, "boohk_users"), where("uid", "==", uid))
       const usersSnapshot = await getDocs(usersQuery)
 
       console.log("Query snapshot empty:", usersSnapshot.empty)
@@ -364,6 +384,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!usersSnapshot.empty) {
         const userDoc = usersSnapshot.docs[0]
         const data = userDoc.data()
+        console.log("Document exists: true")
         console.log("User document data:", data)
         console.log("User data type:", data.type)
         console.log("User data uid:", data.uid)
@@ -376,7 +397,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log("❌ User document exists but type is not OHPLUS:", data.type)
         }
       } else {
-        console.log("❌ No user document found in iboard_users collection")
+        console.log("Document exists: false")
+        console.log("❌ No user document found in boohk_users collection")
         console.log("❌ This means the user registration failed to create the document")
       }
 
@@ -391,25 +413,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     setLoading(true)
     try {
+      console.log("=== LOGIN DEBUG START ===")
+      console.log("Attempting login for email:", email)
+      console.log("Firebase project ID:", auth.app.options.projectId)
+      console.log("Tenant ID:", tenantAuth.tenantId)
+      console.log("Tenant auth app project ID:", tenantAuth.app.options.projectId)
       console.log("Logging in user with tenant ID:", tenantAuth.tenantId)
-      try {
-        // Try tenant auth first
-        const userCredential = await signInWithEmailAndPassword(tenantAuth, email, password)
-        setUser(userCredential.user)
-        await fetchUserData(userCredential.user)
-      } catch (tenantError: any) {
-        if (tenantError.code === 'auth/user-not-found') {
-          console.log("User not found in tenant, trying parent auth")
-          // Try parent auth
-          const userCredential = await signInWithEmailAndPassword(auth, email, password)
-          setUser(userCredential.user)
-          await fetchUserData(userCredential.user)
-        } else {
-          throw tenantError
-        }
-      }
-    } catch (error) {
-      console.error("Login error:", error)
+      // Try tenant auth only
+      console.log("Trying tenant auth...")
+      const userCredential = await signInWithEmailAndPassword(tenantAuth, email, password)
+      console.log("✅ Tenant auth successful for user:", userCredential.user.uid)
+      setUser(userCredential.user)
+      await fetchUserData(userCredential.user)
+    } catch (error: any) {
+      console.error("❌ Login error:", error)
+      console.log("=== LOGIN DEBUG END ===")
+      // Don't show toast here, let the caller handle it
       setLoading(false)
       throw error
     }
@@ -547,8 +566,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("Roles type:", typeof assignedRoles)
       console.log("Roles value:", assignedRoles)
 
-      // Create user document in iboard_users collection
-      const userDocRef = doc(db, "iboard_users", firebaseUser.uid)
+      // Create user document in boohk_users collection
+      const userDocRef = doc(db, "boohk_users", firebaseUser.uid)
       const userData = {
         email: firebaseUser.email,
         uid: firebaseUser.uid,
@@ -595,7 +614,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       batch.set(walletDocRef, walletData)
       await batch.commit()
 
-      console.log("User document created in iboard_users collection")
+      console.log("User document created in boohk_users collection")
       console.log("Wallet document created in wallets collection")
       console.log("✅ User and wallet documents creation completed successfully atomically")
       console.log("Final user data that was saved:", userData)
@@ -672,6 +691,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUserData(null)
       setProjectData(null)
       setSubscriptionData(null)
+      setHasInitialRedirectDone(false)
     } catch (error) {
       console.error("Logout error:", error)
       setLoading(false)
@@ -700,7 +720,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) throw new Error("User not authenticated.")
 
     console.log("Updating user data:", updates)
-    const userDocRef = doc(db, "iboard_users", user.uid)
+    const userDocRef = doc(db, "boohk_users", user.uid)
     const updatedFields = { ...updates, updated: serverTimestamp() }
     await updateDoc(userDocRef, updatedFields)
 
@@ -743,9 +763,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log("✅ Fetching user data for OHPLUS account")
           await fetchUserData(firebaseUser)
         } else {
-          console.log("❌ No OHPLUS account found, signing out user")
-          console.log("❌ This is likely why the user gets redirected to login")
-          await signOut(tenantAuth)
+          console.log("Handling missing or incorrect OHPLUS account gracefully")
+          const usersQuery = query(collection(db, "boohk_users"), where("uid", "==", firebaseUser.uid))
+          const usersSnapshot = await getDocs(usersQuery)
+          if (usersSnapshot.empty) {
+            console.log("Creating new boohk_users document with OHPLUS type")
+            const userRoles = await getUserRoles(firebaseUser.uid)
+            const fetchedUserData = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              license_key: null,
+              company_id: null,
+              role: userRoles.length > 0 ? userRoles[0] : null,
+              roles: userRoles,
+              permissions: [],
+              onboarding: false,
+              signature: undefined,
+            }
+            const userDocRef = doc(db, "boohk_users", firebaseUser.uid)
+            const userDataToSave = {
+              ...fetchedUserData,
+              type: "OHPLUS",
+              created: serverTimestamp(),
+              updated: serverTimestamp(),
+            }
+            const walletDocRef = doc(db, "wallets", firebaseUser.uid)
+            const walletData = {
+              balance: 0,
+              created: serverTimestamp(),
+              seller_id: firebaseUser.uid,
+              seller_reference: userDocRef,
+              updated: serverTimestamp(),
+            }
+            const batch = writeBatch(db)
+            batch.set(userDocRef, userDataToSave, { merge: true })
+            batch.set(walletDocRef, walletData)
+            await batch.commit()
+            console.log("Created boohk_users and wallets documents")
+          } else {
+            console.log("Updating existing boohk_users document to set type to OHPLUS")
+            const userDoc = usersSnapshot.docs[0]
+            await updateDoc(userDoc.ref, {
+              type: "OHPLUS",
+              updated: serverTimestamp()
+            })
+            console.log("Updated type to OHPLUS")
+          }
+          await fetchUserData(firebaseUser)
         }
       } else {
         console.log("Auth state changed: user logged out")
@@ -765,6 +830,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!userData) {
         console.log("hasRole: No userData available")
         return false
+      }
+
+      // Admin override
+      if (userData.roles?.includes("admin")) {
+        console.log("Admin override: granting access due to admin role");
+        return true;
       }
 
       console.log("=== HAS ROLE DEBUG ===")
@@ -787,20 +858,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Fallback: check userData.role (from iboard_users document)
+      // Fallback: check userData.role (from boohk_users document)
       if (userData.role) {
         if (Array.isArray(requiredRoles)) {
           const hasRoleInDocument = requiredRoles.includes(userData.role as RoleType)
           console.log("Checking roles in document:", requiredRoles, "User role:", userData.role, "Result:", hasRoleInDocument)
           if (hasRoleInDocument) {
-            console.log("✅ Found role in iboard_users document")
+            console.log("✅ Found role in boohk_users document")
             return true
           }
         } else {
           const hasRoleInDocument = userData.role === requiredRoles
           console.log("Checking role in document:", requiredRoles, "User role:", userData.role, "Result:", hasRoleInDocument)
           if (hasRoleInDocument) {
-            console.log("✅ Found role in iboard_users document")
+            console.log("✅ Found role in boohk_users document")
             return true
           }
         }
@@ -815,16 +886,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const getRoleDashboardPath = useCallback((roles: RoleType[]): string | null => {
     console.log("getRoleDashboardPath called with roles:", roles)
 
-    // Skip onboarding check - go directly to role dashboard
     if (!roles || roles.length === 0) {
-      console.log("No roles found, returning null")
-      return null
+      console.log("No roles found, redirecting to /it/teams")
+      return "/it/teams"
     }
 
-    // Always redirect to sales dashboard regardless of roles
-    console.log("Redirecting to sales dashboard")
-    return "/sales/dashboard"
+    if (roles.includes("admin") || roles.includes("sales")) {
+      console.log("Has admin or sales role, redirecting to /sales/dashboard")
+      return "/sales/dashboard"
+    } else {
+      console.log("No admin or sales role, redirecting to /it/teams")
+      return "/it/teams"
+    }
   }, [])
+
+  // Redirect based on roles after authentication
+  useEffect(() => {
+    if (userData && !loading && !isRegistering && !pathname.startsWith("/account") && !hasInitialRedirectDone) {
+      const path = getRoleDashboardPath(userData.roles)
+      console.log("Auth context redirect: Current pathname:", pathname, "Calculated path:", path, "User roles:", userData.roles)
+      if (path) {
+        console.log("Auth context: Redirecting to", path)
+        router.push(path)
+        setHasInitialRedirectDone(true)
+      }
+    }
+  }, [userData, loading, isRegistering, pathname, getRoleDashboardPath, router, hasInitialRedirectDone])
 
   // Debug function to check current user permissions
   const debugUserPermissions = useCallback(() => {
