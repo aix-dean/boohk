@@ -105,6 +105,27 @@ export function MediaUploadDialog({ children, onSuccess }: MediaUploadDialogProp
       // Upload file to storage
       const downloadURL = await uploadMediaFile(file, userData.company_id)
 
+      // Get video duration if it's a video
+      let duration: number | undefined
+      if (file.type.startsWith("video/")) {
+        duration = await new Promise<number>((resolve, reject) => {
+          const video = document.createElement('video')
+          video.preload = 'metadata'
+
+          video.onloadedmetadata = () => {
+            window.URL.revokeObjectURL(video.src)
+            resolve(video.duration)
+          }
+
+          video.onerror = () => {
+            window.URL.revokeObjectURL(video.src)
+            reject(new Error('Failed to load video metadata'))
+          }
+
+          video.src = window.URL.createObjectURL(file)
+        })
+      }
+
       // Create media library record
       const mediaData = {
         name: file.name,
@@ -114,6 +135,7 @@ export function MediaUploadDialog({ children, onSuccess }: MediaUploadDialogProp
         companyId: userData.company_id,
         url: downloadURL,
         uploadedBy: userData.uid,
+        ...(duration !== undefined && { duration }),
       }
 
       await createMediaLibrary(mediaData)
@@ -152,8 +174,17 @@ export function MediaUploadDialog({ children, onSuccess }: MediaUploadDialogProp
         {children}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Upload Media</DialogTitle>
+        <DialogHeader className="relative">
+          <DialogTitle>Upload</DialogTitle>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="absolute -top-2 right-0 h-6 w-6 p-0"
+            onClick={() => setOpen(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -213,24 +244,46 @@ export function MediaUploadDialog({ children, onSuccess }: MediaUploadDialogProp
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">
-                <div className="flex items-center space-x-3">
-                  <div className="text-sm">
-                    <p className="font-medium">{file.name}</p>
-                    <p className="text-gray-500">
-                      {(file.size / (1024 * 1024)).toFixed(2)} MB
-                    </p>
-                  </div>
+              <div className="space-y-3">
+                {/* File Preview */}
+                <div className="flex justify-center">
+                  {file.type.startsWith("image/") ? (
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt="Preview"
+                      className="max-h-32 max-w-full rounded-lg object-contain"
+                      onLoad={() => URL.revokeObjectURL(URL.createObjectURL(file))}
+                    />
+                  ) : file.type.startsWith("video/") ? (
+                    <video
+                      src={URL.createObjectURL(file)}
+                      controls
+                      className="max-h-32 max-w-full rounded-lg"
+                      onLoad={() => URL.revokeObjectURL(URL.createObjectURL(file))}
+                    />
+                  ) : null}
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={removeFile}
-                  disabled={uploading}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+
+                {/* File Info */}
+                <div className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">
+                  <div className="flex items-center space-x-3">
+                    <div className="text-sm">
+                      <p className="font-medium">{file.name}</p>
+                      <p className="text-gray-500">
+                        {(file.size / (1024 * 1024)).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={removeFile}
+                    disabled={uploading}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -248,6 +301,7 @@ export function MediaUploadDialog({ children, onSuccess }: MediaUploadDialogProp
             <Button
               onClick={handleSubmit}
               disabled={uploading || !title.trim() || !file}
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
               {uploading ? (
                 <>
