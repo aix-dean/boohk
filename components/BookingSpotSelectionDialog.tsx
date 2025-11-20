@@ -46,7 +46,6 @@ export function BookingSpotSelectionDialog({
         isRetail: retailSpotNumbers.includes(i),
         isTaken: activePages.some((page: any) => page.spot_number === i)
       }) // Using (i + 1) to generate sequential numbers (1, 2, 3, ...)
-      console.log(`Generated spot: ${activePages.some((page: any) => page.spot_number === i)} spot number: ${i}`)
     }
 
     return spots

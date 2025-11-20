@@ -130,7 +130,7 @@ const TransactionsTab: React.FC<TransactionsTabProps> = ({
               booking.status?.toUpperCase() === "CONFIRMED"
             ).length;
             const completedBookings = filteredBookings.filter(booking =>
-              booking.status?.toUpperCase() === "COMPLETED"
+              booking.status?.toUpperCase() === "COMPLETED" || booking.status?.toUpperCase() === "ONGOING"
             ).length;
             const declinedBookings = filteredBookings.filter(booking =>
               booking.status?.toUpperCase() === "DECLINED"

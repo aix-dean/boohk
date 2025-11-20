@@ -15,6 +15,7 @@ import { BookingCongratulationsDialog } from "@/components/BookingCongratulation
 import { SpotContentDialog } from "@/components/SpotContentDialog"
 import { NewBookingDialog } from "@/components/NewBookingDialog"
 import { BookingSpotSelectionDialog } from "@/components/BookingSpotSelectionDialog"
+import { OperatorProgramContentDialog } from "@/components/OperatorProgramContentDialog"
 import { MediaPlayer } from "./MediaPlayer"
 
 interface Spot {
@@ -79,6 +80,33 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
   const [playerIds, setPlayerIds] = useState<string[]>([])
   const [playerOnline, setPlayerOnline] = useState<boolean | null>(null)
   const [activePages, setActivePages] = useState<Page[]>([])
+  const [isOperatorDialogOpen, setIsOperatorDialogOpen] = useState(false)
+  const [selectedOperatorSpot, setSelectedOperatorSpot] = useState<Spot | null>(null)
+  const [isCheckingOperatorPlayer, setIsCheckingOperatorPlayer] = useState(false)
+  const [operatorPlayerOnline, setOperatorPlayerOnline] = useState<boolean | null>(null)
+
+  // Add local state for spots to allow mutations
+  const [localSpots, setLocalSpots] = useState<Spot[]>(spots)
+
+  // Sync localSpots with props.spots when it changes
+  useEffect(() => {
+    setLocalSpots(spots)
+  }, [spots])
+
+  // Update imageUrl for operator spots when activePages changes
+  useEffect(() => {
+    setLocalSpots(prevSpots =>
+      prevSpots.map(spot => {
+        if (!retailSpotNumbers.includes(spot.number)) {
+          // For operator spots, find matching page in activePages
+          const matchingPage = activePages.find(page => page.spot_number === spot.number)
+          const newImageUrl = matchingPage?.widgets?.[0]?.url || null
+          return { ...spot, imageUrl: newImageUrl }
+        }
+        return spot // Retail spots unchanged
+      })
+    )
+  }, [activePages, retailSpotNumbers])
 
   useEffect(() => {
     if (!productId) return
@@ -101,42 +129,45 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
           query(
             collection(db, "playlist"),
             where("product_id", "==", productId),
-            where("playerIds", "==", product.playerIds)
+            orderBy("created", "desc"),
+            limit(1)
           ),
           (snapshot) => {
-            const playlists = snapshot.docs.map(doc => doc.data())
-            // Filter active pages
-            const today = new Date()
-            today.setHours(0, 0, 0, 0)
-            let activePagesTemp: Page[] = []
-            playlists.forEach(playlist => {
-              if (playlist.pages) {
-                playlist.pages.forEach((page: Page) => {
-                  if (page.schedules?.every((schedule: any) => {
-                    let endDate = schedule.endDate?.toDate ? schedule.endDate.toDate() : new Date(schedule.endDate)
-                    endDate.setHours(0, 0, 0, 0)
-                    return endDate >= today
-                  })) {
-                    activePagesTemp.push(page)
-                  }
-                })
-              }
-            })
-            setActivePages(activePagesTemp)
-            // Extract taken spot numbers
-            setTakenSpotNumbers(activePagesTemp.map((page: Page) => page.spot_number))
+            if (!snapshot.empty) {
+              const latestPlaylist = snapshot.docs[0].data()
+              const existingPages = latestPlaylist.pages || []
 
-            // Map spot numbers to image URLs
-            const urls: Record<number, string> = {}
-            activePagesTemp.forEach((page: Page) => {
-              if (page.spot_number && page.widgets && page.widgets.length > 0) {
-                // Assume first widget has the url
-                const widget = page.widgets[0]
-                if (widget.url) {
-                  urls[page.spot_number] = widget.url
+              // Filter out expired pages (where any schedule has endDate in the past)
+              const today = new Date()
+              today.setHours(0, 0, 0, 0)
+              const activePagesTemp = existingPages.filter((page: any) =>
+                page.schedules?.every((schedule: any) => {
+                  let scheduleEndDate = schedule.endDate?.toDate
+                    ? schedule.endDate.toDate()
+                    : new Date(schedule.endDate)
+                  scheduleEndDate.setHours(0, 0, 0, 0)
+                  return scheduleEndDate >= today
+                })
+              )
+              setActivePages(activePagesTemp)
+              // Extract taken spot numbers
+              setTakenSpotNumbers(activePagesTemp.map((page: Page) => page.spot_number))
+
+              // Map spot numbers to image URLs
+              const urls: Record<number, string> = {}
+              activePagesTemp.forEach((page: Page) => {
+                if (page.spot_number && page.widgets && page.widgets.length > 0) {
+                  // Assume first widget has the url
+                  const widget = page.widgets[0]
+                  if (widget.url) {
+                    urls[page.spot_number] = widget.url
+                  }
                 }
-              }
-            })
+              })
+            } else {
+              setActivePages([])
+              setTakenSpotNumbers([])
+            }
           }
         )
       } catch (error) {
@@ -154,10 +185,15 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
 
 
   const handleSpotClick = (spotNumber: number) => {
-    const spot = spots.find(s => s.number === spotNumber)
+    const spot = localSpots.find(s => s.number === spotNumber)
     if (spot) {
-      setSelectedSpot(spot)
-      setIsSpotDialogOpen(true)
+      if (retailSpotNumbers.includes(spot.number)) {
+        setSelectedSpot(spot)
+        setIsSpotDialogOpen(true)
+      } else {
+        setSelectedOperatorSpot(spot)
+        setIsOperatorDialogOpen(true)
+      }
     }
   }
 
@@ -451,28 +487,73 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
 
   const spotsContent = (
     <div className="flex gap-[13.758px] overflow-x-scroll pb-4 w-full pr-4">
-      {spots.map((spot) => (
-        <div
-          key={spot.id}
-          className={`relative flex-shrink-0 w-[110px] h-[197px] bg-white p-1.5 rounded-[14px]  shadow-[-1px_3px_7px_-1px_rgba(0,0,0,0.25)] ${retailSpotNumbers.includes(spot.number) ? 'border-4 border-[#737fff]' : 'border border-gray-200'} overflow-hidden cursor-pointer hover:shadow-lg transition-shadow flex flex-col`}
-          onClick={() => onSpotToggle ? onSpotToggle(spot.number) : handleSpotClick(spot.number)}
-          onMouseEnter={() => setHoveredSpots(prev => ({ ...prev, [spot.number]: true }))}
-          onMouseLeave={() => setHoveredSpots(prev => ({ ...prev, [spot.number]: false }))}
-        >
+      {localSpots.map((spot) => {
+        const isRetailNoContent = retailSpotNumbers.includes(spot.number) && !spot.imageUrl
+        const isClickable = !isRetailNoContent
+        return (
+          <div
+            key={spot.id}
+            className={`relative flex-shrink-0 w-[110px] h-[197px] bg-white p-1.5 rounded-[14px]  shadow-[-1px_3px_7px_-1px_rgba(0,0,0,0.25)] ${retailSpotNumbers.includes(spot.number) ? 'border-4 border-[#737fff]' : 'border border-gray-200'} overflow-hidden ${isClickable ? 'cursor-pointer hover:shadow-lg' : ''} transition-shadow flex flex-col`}
+            onClick={isClickable ? () => {
+              if (retailSpotNumbers.includes(spot.number)) {
+                setSelectedSpot(spot)
+                setIsSpotDialogOpen(true)
+              } else {
+                if (spot.imageUrl) {
+                  // For viewing existing content, always open but check player for edit
+                  setIsCheckingOperatorPlayer(true);
+                  checkPlayerOnlineStatus(playerIds).then(status => {
+                    setOperatorPlayerOnline(status);
+                    setSelectedOperatorSpot(spot);
+                    setIsOperatorDialogOpen(true);
+                    setIsCheckingOperatorPlayer(false);
+                  }).catch(() => {
+                    setOperatorPlayerOnline(false);
+                    setSelectedOperatorSpot(spot);
+                    setIsOperatorDialogOpen(true);
+                    setIsCheckingOperatorPlayer(false);
+                  });
+                } else {
+                  // For creating new content, check player first
+                  setIsCheckingOperatorPlayer(true);
+                  checkPlayerOnlineStatus(playerIds).then(status => {
+                    if (!status) {
+                      setIsOfflineDialogOpen(true);
+                    } else {
+                      setSelectedOperatorSpot(spot);
+                      setIsOperatorDialogOpen(true);
+                    }
+                    setIsCheckingOperatorPlayer(false);
+                  }).catch(() => {
+                    setIsOfflineDialogOpen(true);
+                    setIsCheckingOperatorPlayer(false);
+                  });
+                }
+              }
+            } : undefined}
+          >
           {/* Image Section */}
-          <div className="flex-1 p-1 rounded-[10px] bg-white flex justify-center relative overflow-hidden">
+          <div className="flex-1 relative rounded-[10px] bg-white flex justify-center overflow-hidden">
             {(() => {
-              const imageUrl = spot.imageUrl
-              return imageUrl ? (
+    
+              return spot.imageUrl ? (
                 <>
-                  <MediaPlayer url={imageUrl} className="w-full h-full object-cover rounded-[10px]" controls={false} playing={hoveredSpots[spot.number] || false} />
+                  <MediaPlayer url={spot.imageUrl} className="w-full h-full object-cover rounded-[10px]" controls={false} playing={hoveredSpots[spot.number] || false} />
                 </>
               ) : (
-                <>
-
-                </>
+                <div className="w-full h-full rounded-[10px] bg-gray-300">
+                  
+                </div>
               )
             })()}
+             {retailSpotNumbers.includes(spot.number) ? (
+              <div>
+              </div>
+            ) : (
+              <div className="w-full bg-[#333] text-white text-xs absolute bottom-0 text-center py-0.5 rounded-md opacity-80">
+                Operator's Program
+              </div>
+            )}
           </div>
 
           {/* Content Section */}
@@ -499,7 +580,8 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
             </div>
           </div>
         </div>
-      ))}
+        )
+      })}
     </div>
   )
 
@@ -540,7 +622,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
                         <div className="flex flex-col">
                           <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{booking.reservation_id || booking.id.slice(-8)}</div>
                           <div style={{ fontSize: '12px', fontWeight: 400, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{formatBookingDates(booking.start_date, booking.end_date)}</div>
-                          <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{booking.transaction?.total.toLocaleString("en-PH", {
+                          <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{booking.transaction?.amount.toLocaleString("en-PH", {
                             style: "currency",
                             currency: "PHP"
                           }) || booking.cost?.toLocaleString("en-PH", {
@@ -740,11 +822,19 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
           />
         )}
         <SpotContentDialog
-          open={isSpotDialogOpen}
-          onOpenChange={setIsSpotDialogOpen}
-          spot={selectedSpot}
-        />
-        <Dialog open={isOfflineDialogOpen} onOpenChange={setIsOfflineDialogOpen}>
+           open={isSpotDialogOpen}
+           onOpenChange={setIsSpotDialogOpen}
+           spot={selectedSpot}
+         />
+         <OperatorProgramContentDialog
+            open={isOperatorDialogOpen}
+            onOpenChange={setIsOperatorDialogOpen}
+            spot={selectedOperatorSpot}
+            productId={productId}
+            activePages={activePages}
+            playerOnline={operatorPlayerOnline ?? true}
+          />
+          <Dialog open={isOfflineDialogOpen} onOpenChange={setIsOfflineDialogOpen}>
           <DialogContent className="sm:max-w-xs">
             <DialogHeader className="flex flex-col items-center p-4 pb-2 text-center">
               {/* ⚠️ Use a more modern/standard icon for the warning */}
