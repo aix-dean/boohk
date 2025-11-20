@@ -86,6 +86,7 @@ export default function SiteInformation({
                       ? product.specs_rental.location
                       : product.light.location
                   }
+                  geopoint={product?.specs_rental?.geopoint}
                   className="w-full h-full"
                 />
               </div>
