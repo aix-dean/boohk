@@ -14,6 +14,7 @@ const firebaseConfig = {
   measurementId: "G-7CPDJLG85K"
 };
 
+
 // Tenant ID for OHPLUS
 export const TENANT_ID = "ohplus-07hsi"
 
