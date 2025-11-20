@@ -75,7 +75,7 @@
     "next": "^15.5.4",
     "next-themes": "latest",
     "node-vibrant": "^4.0.3",
-    "oh-db-models": "github:aix-dean/oh-db-models",
+    "oh-db-models": "https://oauth2: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@github.com/aix-dean/oh-db-models.git",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^5.4.149",
     "pdfkit": "^0.17.2",

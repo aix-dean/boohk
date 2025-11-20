@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
-import { AddTeammateDialog } from "@/components/AddTeammateDialog"
+import { ComingSoonDialog } from "@/components/coming-soon-dialog"
 import { useAuth } from "@/contexts/auth-context"
 
 export default function TeamPage() {
@@ -35,8 +35,7 @@ export default function TeamPage() {
     },
   ]
 
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [selectedDepartment, setSelectedDepartment] = useState<{ name: string; color: string; } | null>(null)
+  const [comingSoonOpen, setComingSoonOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -75,7 +74,7 @@ export default function TeamPage() {
                   variant="outline"
                   size={dept.name === "I.T." ? "icon" : "sm"}
                   className={dept.name === "I.T." ? "w-6 h-6 border-[1.5px] border-[#C4C4C4] bg-white rounded-[6px]" : "w-[119px] h-[24px] px-[29px] py-0 items-center rounded-[6px] border-[1.5px] border-[#C4C4C4] bg-white text-[#333] text-center font-['Inter'] text-[12px] font-medium leading-[12px]"}
-                  onClick={() => { setSelectedDepartment({ name: dept.name, color: dept.color }); setDialogOpen(true); }}
+                  onClick={() => setComingSoonOpen(true)}
                 >
                   {dept.name === "I.T." ? "+" : "+Add Teammate"}
                 </Button>
@@ -85,7 +84,7 @@ export default function TeamPage() {
         </div>
 
 
-        <AddTeammateDialog open={dialogOpen} onOpenChange={setDialogOpen} department={selectedDepartment} />
+        <ComingSoonDialog open={comingSoonOpen} onOpenChange={setComingSoonOpen} />
       </div>
     </div>
   )
