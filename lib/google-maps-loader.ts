@@ -1,7 +1,6 @@
 let isLoading = false
 let isLoaded = false
-let loadPromise: Promise<{ apiKey: string; mapId?: string }> | null = null
-let config: { apiKey: string; mapId?: string } | null = null
+let loadPromise: Promise<void> | null = null
 
 declare global {
   interface Window {
@@ -10,7 +9,7 @@ declare global {
   }
 }
 
-export function loadGoogleMaps(): Promise<{ apiKey: string; mapId?: string }> {
+export function loadGoogleMaps(): Promise<void> {
   // Return existing promise if already loading
   if (loadPromise) {
     return loadPromise
@@ -19,7 +18,7 @@ export function loadGoogleMaps(): Promise<{ apiKey: string; mapId?: string }> {
   // Return resolved promise if already loaded
   if (isLoaded || (window.google && window.google.maps)) {
     isLoaded = true
-    return Promise.resolve(config!)
+    return Promise.resolve()
   }
 
   // Check if script already exists
@@ -30,7 +29,7 @@ export function loadGoogleMaps(): Promise<{ apiKey: string; mapId?: string }> {
       const checkLoaded = () => {
         if (window.google && window.google.maps) {
           isLoaded = true
-          resolve(config!)
+          resolve()
         } else {
           setTimeout(checkLoaded, 100)
         }
@@ -53,9 +52,9 @@ export function loadGoogleMaps(): Promise<{ apiKey: string; mapId?: string }> {
         return
       }
 
-      config = await response.json()
+      const config = await response.json()
 
-      if (!config || !config.apiKey) {
+      if (!config.apiKey) {
         reject(new Error("Google Maps API key not configured"))
         return
       }
@@ -63,14 +62,14 @@ export function loadGoogleMaps(): Promise<{ apiKey: string; mapId?: string }> {
       isLoading = true
 
       const script = document.createElement("script")
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${config.apiKey}&libraries=places,marker&callback=initGoogleMapsGlobal`
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${config.apiKey}&libraries=places&callback=initGoogleMapsGlobal`
       script.async = true
       script.defer = true
 
       window.initGoogleMapsGlobal = () => {
         isLoaded = true
         isLoading = false
-        resolve(config!)
+        resolve()
         delete window.initGoogleMapsGlobal
       }
 
