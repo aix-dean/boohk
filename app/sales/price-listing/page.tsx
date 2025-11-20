@@ -945,7 +945,6 @@ function PriceListingContent() {
                                         )}
                                       </div>
                                       <div>
-                                        <div className="text-sm text-[#a1a1a1]">{getSiteCode(product) || "N/A"}</div>
                                         <div className="text-sm font-medium text-[#000000]">{product.name}</div>
                                       </div>
                                     </div>
@@ -1364,18 +1363,6 @@ console.log('Rendering ProductCard for:', product);
         </div>
         <CardContent className="p-4 flex-1 flex flex-col h-full">
           <div className="flex flex-col gap-2 flex-1">
-            {/* Site Code - Gray text */}
-            <div
-              className="font-medium truncate"
-              style={{
-                color: "#737373",
-                fontSize: "13.6px",
-                lineHeight: "1.2",
-              }}
-            >
-              {siteCode || "N/A"}
-            </div>
-
             {/* Product Name - Black text, larger font and bold */}
             <h3
               className="font-bold truncate"

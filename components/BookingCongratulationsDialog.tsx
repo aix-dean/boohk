@@ -5,6 +5,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { X } from "lucide-react"
 import Image from "next/image"
 import { formatBookingDates } from "@/lib/booking-service"
+import Barcode from 'react-barcode';
 
 interface Booking {
   id: string
@@ -56,7 +57,7 @@ export function BookingCongratulationsDialog({ open, onOpenChange, booking }: Bo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[557px] h-[460px] max-w-none p-0 bg-white border-0">
+      <DialogContent className="w-[900px] h-[460px] max-w-none p-0 bg-white border-0">
         <div className="relative w-full h-full bg-white rounded-lg p-6 flex flex-col">
           {/* Close button */}
           <button
@@ -86,8 +87,8 @@ export function BookingCongratulationsDialog({ open, onOpenChange, booking }: Bo
             </div>
 
             {/* White Body */}
-            <div className="w-full bg-white rounded-b-lg p-4">
-              <div className="grid grid-cols-3 gap-4">
+            <div className="w-full bg-white rounded-b-lg p-4 relative">
+              <div className="grid grid-cols-[1fr_1fr_1.5fr] gap-4">
                 {/* Confirmation Details */}
                 <div>
                   <div className="text-gray-800 text-xs font-bold mb-2">Confirmation Details</div>
@@ -112,8 +113,10 @@ export function BookingCongratulationsDialog({ open, onOpenChange, booking }: Bo
 
                 {/* Content */}
                 <div>
-                  <div className="text-gray-800 text-xs mb-2">Content</div>
-                  <div className="w-36 h-36 bg-gray-100 rounded-lg overflow-hidden relative">
+                  <div className="text-gray-800 text-xs mb-2"style={{ transform: 'translate(-80px,0px)' }}>Content</div>
+
+                  <div className=" w-[320px] h-[160px] bg-gray-100 rounded-lg overflow-hidden"style={{ transform: 'translate(-80px,0px)' }}>
+                    {/* The media */}
                     {booking.url ? (
                       booking.url.includes('.mp4') || booking.url.includes('video') ? (
                         <video src={booking.url} className="w-full h-full object-cover" controls autoPlay />
@@ -125,8 +128,27 @@ export function BookingCongratulationsDialog({ open, onOpenChange, booking }: Bo
                         <span className="text-gray-500 text-xs">No Media</span>
                       </div>
                     )}
-
                   </div>
+                </div>
+              </div>
+
+              {/* STACKED barcode overlay - Moved outside content div */}
+              <div
+                className="absolute right-4 top-12 px-1 py-1 flex flex-col items-center"
+                style={{ transform: 'translate(25px, 30px)' }}
+              >
+                <div style={{ transform: 'rotate(90deg)' }}>
+                  <Barcode
+                    value={ticketCode}
+                    format="CODE128"
+                    width={1}
+                    height={50}
+                    displayValue={false}
+                    lineColor="#000000"
+                  />
+                </div>
+                <div className="text-black text-xs font-bold mt-1" style={{ transform: 'translate(45px, -40px) rotate(270deg)' }}>
+                  {ticketCode}
                 </div>
               </div>
             </div>
