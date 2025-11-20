@@ -292,8 +292,8 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
         const newBookingPages = pages.map((page, index) => ({
           ...page,
           schedules: [schedules],
-          client_id: selectedBooking.client?.id || '',
-          client_name: selectedBooking.client?.name || 'Unknown Client',
+          client_id: selectedBooking.client.id,
+          client_name: selectedBooking.client.name || selectedBooking.client?.name,
           acceptByUid: userData?.uid,
           acceptBy: `${userData?.first_name || ""} ${userData?.last_name || ""}`,
           booking_id: selectedBooking.id,
@@ -425,8 +425,8 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
         selectedReasons,
         otherReason,
         declinedAt: serverTimestamp(),
-        clientId: selectedBooking.client?.id || '',
-        clientName: selectedBooking.client?.name || 'Unknown Client',
+        clientId: selectedBooking.client?.id,
+        clientName: selectedBooking.client?.name,
         startDate: selectedBooking.start_date,
         endDate: selectedBooking.end_date,
         totalCost: selectedBooking.total_cost || selectedBooking.cost,
@@ -540,7 +540,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
                         <div className="flex flex-col">
                           <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{booking.reservation_id || booking.id.slice(-8)}</div>
                           <div style={{ fontSize: '12px', fontWeight: 400, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{formatBookingDates(booking.start_date, booking.end_date)}</div>
-                          <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{(booking.transaction?.total || booking.cost || 0).toLocaleString("en-PH", {
+                          <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{booking.transaction?.total.toLocaleString("en-PH", {
                             style: "currency",
                             currency: "PHP"
                           }) || booking.cost?.toLocaleString("en-PH", {
