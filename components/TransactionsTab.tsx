@@ -5,8 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, MoreVertical, CheckCircle, Clock3, XCircle } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import type { Booking } from "@/lib/booking-service"
+import { Booking } from "oh-db-models"
 
 interface TransactionsTabProps {
   selectedYear: number
@@ -79,7 +78,7 @@ const TransactionsTab: React.FC<TransactionsTabProps> = ({
         )
       case "FOR REVIEW":
         return (
-          <span className="font-bold text-[##2d3fff]">
+          <span className="font-bold text-[#2d3fff]">
             For Review
           </span>
         )
@@ -173,7 +172,10 @@ const TransactionsTab: React.FC<TransactionsTabProps> = ({
           if (filteredBookings.length > 0) {
             const offset = (bookingsPage - 1) * itemsPerPage;
             const paginatedBookings = filteredBookings.slice(offset, offset + itemsPerPage);
-            const formatTotalAmount = (totalAmount : number) => {
+            const formatTotalAmount = (totalAmount : any) => {
+              if(totalAmount === undefined || totalAmount === null) {
+                return "-";
+              }
               return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(totalAmount);
             }
             return ( 
@@ -201,7 +203,7 @@ const TransactionsTab: React.FC<TransactionsTabProps> = ({
                             const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
                             return `${startFormatted} - ${endFormatted} • ${days} Days`;
                           })() : 'N/A'}</div>
-                          <div className="font-bold">{formatTotalAmount(booking.costDetails.total)}</div>
+                          <div className="font-bold">{formatTotalAmount(booking.transaction?.amount)}</div>
                           <div>{renderBookingStatusBadge(booking.status)}</div>
                           <div>
                             <button onClick={() => { setSelectedBooking(booking); setBookingDialogOpen(true); }}>
