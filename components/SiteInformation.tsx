@@ -32,9 +32,9 @@ export default function SiteInformation({
         <CardContent className="p-0">
           {/* Site Image and Map */}
           <div className="text-xs font-bold">Site Specifications</div>
-          <div className="flex">
+          <div className="flex border-none">
             {/* Site Image */}
-            <div className="relative flex-1 aspect-square overflow-hidden">
+            <div className="relative flex-1 aspect-square overflow-hidden border-none">
               {product?.media && product.media.length > 0 ? (
                 <>
                   <Image
@@ -43,11 +43,11 @@ export default function SiteInformation({
                     }
                     alt={product.name || "Site image"}
                     fill
-                    className="object-cover"
+                    className="object-cover border-none"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src = "/building-billboard.png";
-                      target.className = "object-cover opacity-50";
+                      target.className = "object-cover opacity-50 border-none";
                     }}
                   />
                   <Button
@@ -64,12 +64,12 @@ export default function SiteInformation({
                   </Button>
                 </>
               ) : (
-                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                <div className="w-full h-full bg-gray-100 flex items-center justify-center border-none">
                   <Image
                     src="/building-billboard.png"
                     alt="Site placeholder"
                     fill
-                    className="object-cover opacity-50"
+                    className="object-cover opacity-50 border-none"
                   />
                 </div>
               )}
@@ -79,14 +79,15 @@ export default function SiteInformation({
             {(product?.type?.toLowerCase() === "rental"
               ? product.specs_rental?.location
               : product.light?.location) && (
-              <div className="flex-1 aspect-square overflow-hidden">
+              <div className="flex-1 aspect-square overflow-hidden border-none">
                 <GoogleMap
                   location={
                     product?.type?.toLowerCase() === "rental"
                       ? product.specs_rental.location
                       : product.light.location
                   }
-                  className="w-full h-full"
+                  geopoint={product?.specs_rental?.geopoint}
+                  className="w-full h-full border-none"
                 />
               </div>
             )}
