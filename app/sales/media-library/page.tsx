@@ -119,9 +119,9 @@ function MediaLibraryContent() {
         </div>
 
         <MediaUploadDialog onSuccess={handleUploadSuccess}>
-          <Button className="bg-white text-xs border text-gray-600 py-0 hover:bg-white">
+          <span className="text-xs text-gray-600 cursor-pointer hover:text-gray-800 px-[10px] py-[6px] rounded border border-gray-300 bg-white hover:bg-gray-100 transition-colors">
             Upload Media
-          </Button>
+          </span>
         </MediaUploadDialog>
       </div>
 
@@ -134,10 +134,10 @@ function MediaLibraryContent() {
           <h3 className="text-lg font-medium mb-2">No media yet</h3>
           <p className="text-gray-500 mb-4">Upload your first media file to get started</p>
           <MediaUploadDialog onSuccess={handleUploadSuccess}>
-            <Button variant="outline" className="hover:bg-transparent">
+            <span className="inline-flex items-center text-sm text-gray-600 cursor-pointer hover:text-gray-800 px-[10px] py-[6px] rounded border border-gray-300 bg-white hover:bg-gray-100 transition-colors">
               <Plus className="mr-2 h-4 w-4" />
               Upload Media
-            </Button>
+            </span>
           </MediaUploadDialog>
         </div>
       ) : (
@@ -186,9 +186,7 @@ export default function MediaLibraryPage() {
   return (
     <RouteProtection requiredRoles="sales">
       <div className="min-h-screen bg-[#fafafa] p-6">
-        <div className="max-w-7xl mx-auto">
-          <MediaLibraryContent />
-        </div>
+        <MediaLibraryContent />
       </div>
     </RouteProtection>
   )
