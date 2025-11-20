@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react"
 import Image from "next/image"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
 import { X } from "lucide-react"
-import { bookingService, Booking, formatBookingDates } from "@/lib/booking-service"
+import { bookingService, formatBookingDates } from "@/lib/booking-service"
+import {Booking} from 'oh-db-models'
 
 interface Spot {
   id: string
@@ -58,6 +59,8 @@ const SpotContentDialog: React.FC<SpotContentDialogProps> = ({ open, onOpenChang
     scaledHeight = Math.floor(originalHeight * scale);
   }
 
+
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[500px] h-[470px] rounded-xl overflow-auto flex flex-col gap-4">
@@ -69,7 +72,7 @@ const SpotContentDialog: React.FC<SpotContentDialogProps> = ({ open, onOpenChang
         </DialogHeader>
         <div className="space-y-2 bg-white rounded-xl">
           {/* Info Section */}
-          <div className="grid grid-cols-2 gap-2 text-left">
+          <div className="grid grid-cols-2 gap-2 text-left mb-4">
             {/* Left Container */}
             <div className="">
               {/* Airing Ticket Code */}
@@ -108,7 +111,7 @@ const SpotContentDialog: React.FC<SpotContentDialogProps> = ({ open, onOpenChang
               <div className="flex items-start">
                 <span className="w-[113px] text-xs text-gray-600 whitespace-nowrap">Channel:</span>
                 <span className="text-xs font-bold whitespace-nowrap ml-2">
-                  {bookingLoading ? "Loading..." : (booking?.client?.company_name || "N/A")}
+                  {bookingLoading ? "Loading..." : (booking?.channel?.name || "N/A")}
                 </span>
               </div>
             </div>
@@ -143,7 +146,7 @@ const SpotContentDialog: React.FC<SpotContentDialogProps> = ({ open, onOpenChang
               <div className="flex items-start">
                 <span className="w-[48px] text-xs text-gray-600 whitespace-nowrap">Amount:</span>
                 <span className="text-xs font-bold whitespace-nowrap ml-2">
-                  {bookingLoading ? "Loading..." : (booking?.amounts.totalAmount ? `₱${booking.amounts.totalAmount.toLocaleString()}` : "N/A")}
+                  {bookingLoading ? "Loading..." : (booking?.transaction?.amount ? `₱${booking.transaction?.amount.toLocaleString()}` : "N/A")}
                 </span>
               </div>
 
@@ -151,7 +154,7 @@ const SpotContentDialog: React.FC<SpotContentDialogProps> = ({ open, onOpenChang
               <div className="flex items-start">
                 <span className="w-[48px] text-xs text-gray-600 whitespace-nowrap">Site:</span>
                 <span className="text-xs font-bold whitespace-nowrap ml-2">
-                  {bookingLoading ? "Loading..." : (booking?.product_owner || "N/A")}
+                  {bookingLoading ? "Loading..." : (booking?.items?.name || "N/A")}
                 </span>
               </div>
 

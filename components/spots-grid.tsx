@@ -8,19 +8,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogFo
 import { useAuth } from "@/contexts/auth-context"
 import { db } from "@/lib/firebase"
 import { collection, query, where, getDocs, getDoc, updateDoc, doc, addDoc, serverTimestamp, orderBy, limit, onSnapshot } from "firebase/firestore"
-import type { Booking } from "@/lib/booking-service"
-import { formatBookingDates } from "@/lib/booking-service"
+import {Booking} from "oh-db-models"
 import { createCMSContentDeployment, checkPlayerOnlineStatus } from "@/lib/cms-api"
 import { useToast } from "@/hooks/use-toast"
 import { BookingCongratulationsDialog } from "@/components/BookingCongratulationsDialog"
-import { BookingDetailsDialog } from "@/components/BookingDetailsDialog"
 import { SpotContentDialog } from "@/components/SpotContentDialog"
-import { convertSegmentPathToStaticExportFilename } from "next/dist/shared/lib/segment-cache/segment-value-encoding"
-import { create } from "domain"
-import { createHash } from "crypto"
 import { NewBookingDialog } from "@/components/NewBookingDialog"
 import { BookingSpotSelectionDialog } from "@/components/BookingSpotSelectionDialog"
-import https from 'https';
 import { MediaPlayer } from "./MediaPlayer"
 
 interface Spot {
@@ -546,7 +540,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
                         <div className="flex flex-col">
                           <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{booking.reservation_id || booking.id.slice(-8)}</div>
                           <div style={{ fontSize: '12px', fontWeight: 400, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{formatBookingDates(booking.start_date, booking.end_date)}</div>
-                          <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{booking.costDetails?.total.toLocaleString("en-PH", {
+                          <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{booking.transaction?.total.toLocaleString("en-PH", {
                             style: "currency",
                             currency: "PHP"
                           }) || booking.cost?.toLocaleString("en-PH", {

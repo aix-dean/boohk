@@ -60,6 +60,7 @@ export function BookingSpotSelectionDialog({
         try {
           await updateDoc(doc(db, "booking", booking.id), {
             spot_number: selectedSpot,
+            status: 'ongoing',
             updated: new Date()
           })
           setSelectedSpot(null)
