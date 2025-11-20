@@ -156,12 +156,12 @@ export default function Step4Welcome({ onNext }: Step4WelcomeProps) {
           <div className="pt-6 flex justify-end">
             <Button
               className="px-8 py-4 rounded-lg font-medium text-lg flex items-center gap-3 bg-blue-600 hover:bg-blue-700"
-              style={{ width: '93.971px', height: '23.493px', flexShrink: 0, borderRadius: '6.024px', border: '1.205px solid var(--GREY, #C4C4C4)', background: '#FFF', color: 'black', textAlign: 'center', fontFamily: 'Inter', fontSize: '12px', fontStyle: 'normal', fontWeight: 500, lineHeight: '100%' }}
+              style={{ height: '23.493px', flexShrink: 0, borderRadius: '6.024px', border: '1.205px solid var(--GREY, #C4C4C4)', background: '#FFF', color: 'black', textAlign: 'center', fontFamily: 'Inter', fontSize: '12px', fontStyle: 'normal', fontWeight: 500, lineHeight: '100%' }}
               onClick={handleNext}
             >
               {hasSelections ? "Continue" : "Skip"}
               <span style={{ color: 'black' }}>
-                <ArrowRight className="w-4 h-4 ml-1" />
+                <ArrowRight className="w-4 h-4" style={{ marginLeft: '4px' }} />
               </span>
             </Button>
           </div>
