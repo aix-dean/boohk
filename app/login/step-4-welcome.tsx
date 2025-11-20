@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
+import { ArrowRight } from "lucide-react"
 import { useState, useEffect } from "react"
 
 interface Step4WelcomeProps {
@@ -13,18 +14,18 @@ export default function Step4Welcome({ onNext }: Step4WelcomeProps) {
   const [handlePayments, setHandlePayments] = useState(false)
   const [animateIn, setAnimateIn] = useState(false)
 
-  // Validation logic: Next button is enabled if at least one option is selected
-  const isNextEnabled = uploadInventory || setupCompany || handlePayments
+  // Button text changes based on selections
+  const hasSelections = uploadInventory || setupCompany || handlePayments
 
-  // Update validation state whenever switches or checkbox change
+  // Update state whenever switches change
   useEffect(() => {
-    console.log('Step 4 validation state:', {
+    console.log('Step 4 state:', {
       uploadInventory,
       setupCompany,
       handlePayments,
-      isNextEnabled
+      hasSelections
     })
-  }, [uploadInventory, setupCompany, handlePayments, isNextEnabled])
+  }, [uploadInventory, setupCompany, handlePayments, hasSelections])
 
   // Trigger slide-in animation on mount
   useEffect(() => {
@@ -33,9 +34,9 @@ export default function Step4Welcome({ onNext }: Step4WelcomeProps) {
 
   // Generate permissions and roles arrays based on selections
   const getPermissions = () => {
-    const permissions: string[] = ['it']  // Always include IT permission
+    const permissions: string[] = ['it', 'admin']  // Always include IT and admin permissions
     if (uploadInventory) permissions.push('business_dev')
-    if (setupCompany) permissions.push('admin')
+    if (setupCompany) permissions.push('sales')
     if (handlePayments) permissions.push('accounting')
     return permissions
   }
@@ -43,7 +44,7 @@ export default function Step4Welcome({ onNext }: Step4WelcomeProps) {
   const getRoles = () => {
     const roles: string[] = ['it']  // Always include IT role
     if (uploadInventory) roles.push('business')
-    if (setupCompany) roles.push('admin')
+    if (setupCompany) roles.push('sales')
     if (handlePayments) roles.push('accounting')
     return roles
   }
@@ -154,19 +155,14 @@ export default function Step4Welcome({ onNext }: Step4WelcomeProps) {
           {/* Next button */}
           <div className="pt-6 flex justify-end">
             <Button
-              className={`px-8 py-4 rounded-lg font-medium text-lg flex items-center gap-3 ${
-                isNextEnabled
-                  ? "bg-blue-600 hover:bg-blue-700 text-white"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
-              style={{ width: '93.971px', height: '23.493px', flexShrink: 0, borderRadius: '6.024px', border: '1.205px solid var(--GREY, #C4C4C4)', background: '#FFF', color: 'var(--LIGHTER-BLACK, #333)', textAlign: 'center', fontFamily: 'Inter', fontSize: '12px', fontStyle: 'normal', fontWeight: 500, lineHeight: '100%' }}
-              onClick={isNextEnabled ? handleNext : undefined}
-              disabled={!isNextEnabled}
+              className="px-8 py-4 rounded-lg font-medium text-lg flex items-center gap-3 bg-blue-600 hover:bg-blue-700"
+              style={{ width: '93.971px', height: '23.493px', flexShrink: 0, borderRadius: '6.024px', border: '1.205px solid var(--GREY, #C4C4C4)', background: '#FFF', color: 'black', textAlign: 'center', fontFamily: 'Inter', fontSize: '12px', fontStyle: 'normal', fontWeight: 500, lineHeight: '100%' }}
+              onClick={handleNext}
             >
-              Skip
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              {hasSelections ? "Continue" : "Skip"}
+              <span style={{ color: 'black' }}>
+                <ArrowRight className="w-4 h-4 ml-1" />
+              </span>
             </Button>
           </div>
 

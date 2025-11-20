@@ -1002,7 +1002,7 @@ export default function LoginPage() {
 
       {/* Password Setup Dialog */}
       <Dialog open={currentStep === 2} onOpenChange={(open) => { if (!open) setCurrentStep(1); }}>
-        <DialogContent className="bg-white rounded-[50px] shadow-lg p-8 w-full flex [animation-duration:0s]" style={{width: '800px', height: '359px', flexShrink: 0, position: 'fixed', top: '50%', left: '50%', transform: `translate(-50%, -50%) ${dialogTransform}`, transition: 'transform 0.5s ease-out'}}>
+        <DialogContent className="bg-white rounded-[50px] shadow-lg p-8 w-full flex [animation-duration:0s]" style={{width: '800px', minHeight: '359px', flexShrink: 0, position: 'fixed', top: '50%', left: '50%', transform: `translate(-50%, -50%) ${dialogTransform}`, transition: 'transform 0.5s ease-out'}}>
 <div className="flex-1 flex items-center justify-center flex-shrink-0">
   <Image
     src="/owen-face-1.png"
