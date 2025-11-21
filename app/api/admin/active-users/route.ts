@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     // First get all users in the company
     const usersQuery = query(
-      collection(db, "iboard_users"),
+      collection(db, "boohk_users"),
       where("company_id", "==", companyId)
     )
 

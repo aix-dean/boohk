@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
 
 export default function ITPage() {
-  redirect('/it/teams')
+  redirect('/it/user-management')
 }

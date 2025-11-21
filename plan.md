@@ -26,7 +26,7 @@ Add a helper function to fetch the current user's signature.updated date:
 const getCurrentUserSignatureDate = async (): Promise<Date | null> => {
   if (!costEstimate?.createdBy) return null
   try {
-    const userDocRef = doc(db, "iboard_users", costEstimate.createdBy)
+    const userDocRef = doc(db, "boohk_users", costEstimate.createdBy)
     const userDoc = await getDoc(userDocRef)
     if (userDoc.exists()) {
       const userData = userDoc.data()
@@ -125,7 +125,7 @@ const generatePDFIfNeeded = async (costEstimate: CostEstimate) => {
     let signatureDate: Date | null = null
     if (costEstimate.createdBy) {
       try {
-        const userDocRef = doc(db, "iboard_users", costEstimate.createdBy)
+        const userDocRef = doc(db, "boohk_users", costEstimate.createdBy)
         const userDoc = await getDoc(userDocRef)
 
         if (userDoc.exists()) {

@@ -670,7 +670,7 @@ export function SideNavigation() {
                   )
                 })}
                 {currentSection === "it" && [
-                  { title: "Teams", href: "/it/teams", icon: TeamsIcon },
+                  { title: "Teams", href: "/it/user-management", icon: TeamsIcon },
                   { title: "Integration", href: "/it/integration", icon: IntegrationIcon },
                 ].map((item) => {
                   const Icon = item.icon

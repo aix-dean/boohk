@@ -53,7 +53,7 @@ export default function SubscriptionPage() {
 
       try {
         setLoadingUserCount(true)
-        const usersRef = collection(db, "iboard_users")
+        const usersRef = collection(db, "boohk_users")
         const usersQuery = query(usersRef, where("company_id", "==", userData.company_id))
         const usersSnapshot = await getDocs(usersQuery)
         setCurrentUserCount(usersSnapshot.size)

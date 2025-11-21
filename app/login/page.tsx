@@ -75,6 +75,7 @@ export default function LoginPage() {
   const [pendingRegistration, setPendingRegistration] = useState<any>(null)
   const [isStartingTour, setIsStartingTour] = useState(false)
   const pointPersonDataRef = useRef<any>(null)
+  const [dialogTransform, setDialogTransform] = useState('translateY(100vh)')
 
   const { user, userData, getRoleDashboardPath, refreshUserData, login, loginOHPlusOnly, startRegistration, endRegistration } = useAuth()
   const router = useRouter()
@@ -103,6 +104,14 @@ export default function LoginPage() {
       }
     }
   }, [user, userData, router, getRoleDashboardPath, currentStep])
+
+  useEffect(() => {
+    if (currentStep === 2) {
+      setTimeout(() => setDialogTransform('translateY(0)'), 300)
+    } else {
+      setDialogTransform('translateY(100vh)')
+    }
+  }, [currentStep])
 
   // Fetch point_person data from companies collection
   const fetchPointPersonData = async (email: string) => {
@@ -159,7 +168,7 @@ export default function LoginPage() {
 
     try {
       console.log("Attempting login for email:", trimmedEmail)
-      // First, try to login as existing user
+      // Attempt login first
       await login(trimmedEmail, password)
       // If successful, auth context will handle redirect
       console.log("Existing user logged in successfully")
@@ -167,31 +176,21 @@ export default function LoginPage() {
       console.error("Login attempt failed:", error)
 
       if (error.code === 'auth/user-not-found') {
-        // User not found in tenant, check if eligible for signup
-        console.log("User not found in tenant, checking for signup eligibility for email:", trimmedEmail)
-
+        // Check companies collection after tenant auth fails
+        console.log("User not found in tenant, checking companies collection for email:", trimmedEmail)
         const pointPersonData = await fetchPointPersonData(trimmedEmail)
 
-        if (!pointPersonData) {
-          setError("This email address is not registered with any company. Please contact your administrator.")
-          setIsLoading(false)
-          return
+        if (pointPersonData) {
+          // Proceed to signup flow since company eligibility is verified
+          console.log("Point person found, proceeding to signup for email:", trimmedEmail)
+          setPointPersonData(pointPersonData)
+          pointPersonDataRef.current = pointPersonData
+          console.log('pointPersonData set to state and ref:', pointPersonData)
+          setCurrentStep(2)
+        } else {
+          console.log("No point person found in companies collection")
+          setError("Invalid email or password.")
         }
-
-        const { point_person } = pointPersonData
-
-        // Check if entered password matches point_person.password
-        if (point_person.password !== password) {
-          setError("Invalid password. Please check your credentials.")
-          setIsLoading(false)
-          return
-        }
-
-        console.log("Signup eligibility verified, proceeding to password change step")
-        setPointPersonData(pointPersonData)
-        pointPersonDataRef.current = pointPersonData
-        console.log('pointPersonData set to state and ref:', pointPersonData)
-        setCurrentStep(2)
       } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         setError("Invalid email or password.")
       } else {
@@ -341,12 +340,12 @@ export default function LoginPage() {
       console.log("User creation successful, proceeding to document creation")
 
       console.log("=== USER DOCUMENT CREATION DEBUG ===")
-      console.log("Creating user document in iboard_users...")
+      console.log("Creating user document in boohk_users...")
       console.log("Firebase user UID:", firebaseUser.uid)
       console.log("Firebase user email:", firebaseUser.email)
 
-      // Create user document in iboard_users collection with type="OHPLUS"
-      const userDocRef = doc(db, "iboard_users", firebaseUser.uid)
+      // Create user document in boohk_users collection with type="OHPLUS"
+      const userDocRef = doc(db, "boohk_users", firebaseUser.uid)
       console.log("User document reference:", userDocRef.path)
 
       // Get permissions and roles from pending registration or use defaults
@@ -385,12 +384,12 @@ export default function LoginPage() {
       }
 
       console.log("User data to be saved:", userData)
-      console.log("User data to be created in iboard_users:", userData)
-      console.log("About to call setDoc for iboard_users")
+      console.log("User data to be created in boohk_users:", userData)
+      console.log("About to call setDoc for boohk_users")
 
       try {
         await setDoc(userDocRef, userData)
-        console.log("✅ User document created in iboard_users collection with type OHPLUS")
+        console.log("✅ User document created in boohk_users collection with type OHPLUS")
         console.log("✅ setDoc completed successfully")
       } catch (setDocError: any) {
         console.error("❌ Error creating user document:", setDocError)
@@ -402,7 +401,7 @@ export default function LoginPage() {
         throw setDocError
       }
 
-      console.log("Verifying iboard_users document creation...")
+      console.log("Verifying boohk_users document creation...")
       let docSnap = await getDoc(userDocRef)
 
       // Retry up to 3 times if document doesn't exist immediately
@@ -415,13 +414,13 @@ export default function LoginPage() {
       }
 
       if (!docSnap.exists()) {
-        console.error("❌ Failed to create iboard_users document - document does not exist after retries")
+        console.error("❌ Failed to create boohk_users document - document does not exist after retries")
         console.error("❌ Document reference:", userDocRef.path)
         console.error("❌ This is the critical error causing the login redirect")
-        throw new Error("Failed to create iboard_users document after retries")
+        throw new Error("Failed to create boohk_users document after retries")
       }
 
-      console.log("✅ iboard_users document verified successfully")
+      console.log("✅ boohk_users document verified successfully")
       console.log("✅ Document data:", docSnap.data())
       console.log("✅ User registration completed successfully - user should stay logged in")
       console.log('warren')
@@ -472,7 +471,7 @@ export default function LoginPage() {
       console.error("=== REGISTRATION FAILED ===")
       console.error("Registration failed:", error)
       console.log("Error code:", error.code, "Error message:", error.message)
-      console.log("handleCompleteRegistration failed - no iboard_users created")
+      console.log("handleCompleteRegistration failed - no boohk_users created")
 
       // End registration on error
       endRegistration()
@@ -581,7 +580,9 @@ export default function LoginPage() {
 
     if (activationFile) {
       console.log('Starting validation process for file:', activationFile.name)
+      console.log('Setting isValidating to true')
       setIsValidating(true)
+      console.log('isValidating should now be true')
       const formData = new FormData()
       formData.append('activationKey', activationFile)
 
@@ -648,7 +649,12 @@ export default function LoginPage() {
         console.error('Failed to validate activation key, error:', error)
         setError('Failed to validate activation key')
       } finally {
-        setIsValidating(false)
+        // Add minimum delay to ensure loading GIF is visible
+        console.log('Setting isValidating to false after timeout')
+        setTimeout(() => {
+          console.log('Timeout reached, setting isValidating to false')
+          setIsValidating(false)
+        }, 2000)
       }
     } else {
       console.log('No .lic file found in dropped files')
@@ -667,7 +673,9 @@ export default function LoginPage() {
       console.log('Processing file:', file.name)
       if (file.name.endsWith('.lic')) {
         console.log('Starting validation process for file:', file.name)
+        console.log('Setting isValidating to true')
         setIsValidating(true)
+        console.log('isValidating should now be true')
         const formData = new FormData()
         formData.append('activationKey', file)
 
@@ -734,7 +742,12 @@ export default function LoginPage() {
           console.error('Failed to validate activation key, error:', error)
           setError('Failed to validate activation key')
         } finally {
-          setIsValidating(false)
+          // Add minimum delay to ensure loading GIF is visible
+          console.log('Setting isValidating to false after timeout')
+          setTimeout(() => {
+            console.log('Timeout reached, setting isValidating to false')
+            setIsValidating(false)
+          }, 2000)
         }
       } else {
         console.log('File does not end with .lic')
@@ -767,8 +780,17 @@ export default function LoginPage() {
   console.log('isActivated:', isActivated)
   console.log('isValidating:', isValidating)
 
+  if (currentStep === 3) {
+    console.log('Rendering step 3, isValidating:', isValidating)
+  }
+
   return currentStep === 3 ? (
     <div className="min-h-screen flex">
+      {isValidating && (
+        <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
+          <img src="/boohk-loading.gif" alt="Loading" style={{ width: '419px', height: '419px', flexShrink: 0 }} />
+        </div>
+      )}
       {/* Left side - Content */}
       <div className="flex-1 bg-white flex items-center justify-center p-8">
         <div className="max-w-xl w-full space-y-6">
@@ -806,7 +828,7 @@ export default function LoginPage() {
           fill
           className="object-cover -z-10"
         />
-        <img src="/boohk-logo.png" width="72" height="90" style={{position: 'absolute', top: '20px', right: '20px', flexShrink: 0, padding: '16px'}} />
+        <img src="/boohk-logo.png" width="62" height="77.5" style={{position: 'absolute', top: '20px', right: '20px', flexShrink: 0, padding: '16px'}} />
         {/* Floating geometric shapes */}
         <div className="absolute inset-0">
           {/* Various floating cubes and rectangles */}
@@ -973,17 +995,17 @@ export default function LoginPage() {
             priority
           />
         </div>
-        <img src="/boohk-logo.png" width="72" height="90" style={{position: 'absolute', top: '20px', right: '20px', flexShrink: 0, padding: '16px'}} />
+        <img src="/boohk-logo.png" width="62" height="77.5" style={{position: 'absolute', top: '20px', right: '20px', flexShrink: 0, padding: '16px'}} />
         <img src="/boohk-text-login.png" alt="boohk" style={{position: 'absolute', bottom: 50, left: 20, width: 'auto', height: '60px', paddingLeft: '20px', paddingBottom: '20px'}} />
         <div style={{position: 'absolute', bottom: 20, left: 20, color: '#FFF', fontFamily: 'Inter', fontSize: '25.734px', fontWeight: 600, lineHeight: '100%', paddingLeft: '20px', paddingBottom: '20px'}}>OOH Retail Solutions</div>
       </div>
 
       {/* Password Setup Dialog */}
       <Dialog open={currentStep === 2} onOpenChange={(open) => { if (!open) setCurrentStep(1); }}>
-        <DialogContent className="bg-white rounded-[50px] shadow-lg p-8 w-full flex" style={{width: '800px', height: '359px', flexShrink: 0}}>
+        <DialogContent className="bg-white rounded-[50px] shadow-lg p-8 w-full flex [animation-duration:0s]" style={{width: '800px', minHeight: '359px', flexShrink: 0, position: 'fixed', top: '50%', left: '50%', transform: `translate(-50%, -50%) ${dialogTransform}`, transition: 'transform 0.5s ease-out'}}>
 <div className="flex-1 flex items-center justify-center flex-shrink-0">
   <Image
-    src="/owen-face.png"
+    src="/owen-face-1.png"
     alt="Login illustration"
     width={160}
     height={160}
@@ -1002,12 +1024,16 @@ export default function LoginPage() {
                   <X className="w-5 h-5" />
                 </Button>
               </div>
-              <div>
-                <h1 style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '30px', fontStyle: 'normal', fontWeight: 700, lineHeight: '100%' }}>Hey {pointPersonDataRef.current?.point_person?.first_name || email}!</h1>
+              <div className="mt-0 -mt-4" style={{ marginTop: '0' }}>
+                <h1 style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '30px', fontStyle: 'normal', fontWeight: 700, lineHeight: '100%', paddingBottom: '10px' }}>Hey {pointPersonDataRef.current?.point_person?.first_name || email}!</h1>
+
                 <p style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '16px', fontStyle: 'normal', fontWeight: 300, lineHeight: '100%' }}>
                   {"It's great to finally meet you. I'm "}
+
                   <span style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '16px', fontStyle: 'normal', fontWeight: 700, lineHeight: '100%' }}>Ohwen</span>
                   {", your OHPlus buddy."}
+                  <br />
+                  <br />
                 </p>
                 <p style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '16px', fontStyle: 'normal', fontWeight: 300, lineHeight: '100%' }}>
                   {
