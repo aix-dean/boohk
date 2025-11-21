@@ -1,8 +1,9 @@
 "use client"
 
+import React, { useRef } from "react"
 import { useState, useEffect, use } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, MapPin, Calendar, Trash2, Upload, X, Loader2 } from "lucide-react"
+import { ArrowLeft, MapPin, Calendar, Trash2, Upload, X, Loader2, AlertTriangle, CheckCircle, XCircle, Clock3, Maximize, Check, ImageIcon, MoreVertical } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -10,9 +11,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore"
-import { db } from "@/lib/firebase"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
+import { doc, getDoc, getDocs, updateDoc, serverTimestamp } from "firebase/firestore"
+import { db} from "@/lib/firebase"
 import { uploadFileToFirebaseStorage } from "@/lib/firebase-service"
 import type { Product } from "@/lib/firebase-service"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -21,6 +22,21 @@ import { useToast } from "@/hooks/use-toast"
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
 import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete"
 import SiteInformation from "@/components/SiteInformation"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { collection, query, where, orderBy, onSnapshot, limit } from "firebase/firestore"
+import { SpotsGrid } from "@/components/spots-grid"
+import { SpotSelectionDialog } from "@/components/spot-selection-dialog"
+import TransactionsTab from "@/components/TransactionsTab"
+import ProgramListTab from "@/components/ProgramListTab"
+import ProofOfPlayTab from "@/components/ProofOfPlayTab"
+import { OperatorProgramContentDialog } from "@/components/OperatorProgramContentDialog"
+import type { Booking } from "@/lib/booking-service"
+import { formatBookingDates } from "@/lib/booking-service"
+import { useAuth } from "@/contexts/auth-context"
+import { loadGoogleMaps } from "@/lib/google-maps-loader"
 // Price validation functions
 const validatePriceInput = (value: string): boolean => {
   // Allow empty string, numbers, and decimal point
@@ -201,10 +217,489 @@ const validateDynamicContent = (cms: { start_time: string; end_time: string; spo
 export default function BusinessProductDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const [product, setProduct] = useState<Product | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { userData } = useAuth()
   const { toast } = useToast()
+  const paramsData = params
+  const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
+
+  // Helper functions for spots data
+  const generateSpotsData = (cms: any, activePlaylistPages: any[]) => {
+    const totalSpots = cms.loops_per_day || 18
+    const spots = []
+    for (let i = 1; i <= totalSpots; i++) {
+      // Find the active playlist page for this spot
+      const page = activePlaylistPages.find(p => p.spot_number === i)
+      const isOccupied = !!page
+
+      // Get image URL from playlist page widget with matching spot_number
+      let imageUrl: string | undefined
+      let endDate: Date | undefined
+      if (page && page.widgets) {
+        const widget = activePlaylistPages.find((w: any) => w.spot_number === i)
+        if (widget) {
+          imageUrl = widget.widgets[0].url
+          const scheduleEndDate = widget.schedules[0]?.endDate
+          endDate = scheduleEndDate?.toDate ? scheduleEndDate.toDate() : new Date(scheduleEndDate)
+        }
+      }
+
+      spots.push({
+        id: `spot-${i}`,
+        number: i,
+        status: (isOccupied ? "occupied" : "vacant") as "occupied" | "vacant",
+        endDate,
+        imageUrl,
+        booking_id: page?.booking_id,
+      })
+    }
+
+    return spots
+  }
+
+  const calculateOccupiedSpots = (cms: any) => {
+    if (currentDayBookingsLoading) {
+      return 0
+    }
+
+    // Count unique spot numbers from current day's bookings
+    const occupiedSpots = new Set()
+    currentDayBookings.forEach(booking => {
+      if (booking.spot_number) {
+        occupiedSpots.add(booking.spot_number)
+      } else {
+        console.log("🔍 DEBUG: Booking has no spot_number:", booking.id, booking.spot_number)
+      }
+    })
+
+    const occupiedCount = occupiedSpots.size
+
+    return occupiedCount
+  }
+
+  const calculateVacantSpots = (cms: any) => {
+    const totalSpots = cms.loops_per_day || 18
+    return totalSpots - calculateOccupiedSpots(cms)
+  }
+
+  const [product, setProduct] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
+  const [imageViewerOpen, setImageViewerOpen] = useState(false)
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const [bookingsLoading, setBookingsLoading] = useState(true)
+  const [bookingsTotal, setBookingsTotal] = useState(0)
+  const [bookingsPage, setBookingsPage] = useState(1)
+  const itemsPerPage = 10
+  const [marketplaceDialogOpen, setMarketplaceDialogOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState("transactions")
+  const [calendarDialogOpen, setCalendarDialogOpen] = useState(false)
+  const [bookedDates, setBookedDates] = useState<Date[]>([])
+  const [calendarLoading, setCalendarLoading] = useState(false)
+  const [screenSchedules, setScreenSchedules] = useState<any[]>([])
+  const [currentDayBookings, setCurrentDayBookings] = useState<Booking[]>([])
+  const [currentDayBookingsLoading, setCurrentDayBookingsLoading] = useState(false)
+  const [companyName, setCompanyName] = useState<string>("")
+  const [companyLoading, setCompanyLoading] = useState(false)
+  const [isSpotSelectionDialogOpen, setIsSpotSelectionDialogOpen] = useState(false)
+  const [spotSelectionProducts, setSpotSelectionProducts] = useState<any[]>([])
+  const [spotSelectionSpotsData, setSpotSelectionSpotsData] = useState<Record<string, any>>({})
+  const [spotSelectionCurrentDate, setSpotSelectionCurrentDate] = useState("")
+  const [spotSelectionType, setSpotSelectionType] = useState<"quotation" | "cost-estimate">("quotation")
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false)
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
+  const [bookingRequests, setBookingRequests] = useState<Booking[]>([])
+  const [bookingRequestsLoading, setBookingRequestsLoading] = useState(false)
+  const [activePlaylistPages, setActivePlaylistPages] = useState<any[]>([])
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
+  const [selectedDay, setSelectedDay] = useState(new Date().getDate())
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const currentYear = new Date().getFullYear()
+  const years = Array.from({ length: currentYear - 2020 + 1 }, (_, i) => 2020 + i)
+  const [selectedContent, setSelectedContent] = useState<any | null>(null)
+  const [contentDialogOpen, setContentDialogOpen] = useState(false)
+  const [programListBookings, setProgramListBookings] = useState<Booking[]>([])
+  const [programListBookingsLoading, setProgramListBookingsLoading] = useState(false)
+
+  const currentDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+
+  const [notification, setNotification] = useState<{
+    show: boolean
+    type: "success" | "error"
+    message: string
+  }>({
+    show: false,
+    type: "success",
+    message: "",
+  })
+
+  const showNotification = (type: "success" | "error", message: string) => {
+    setNotification({
+      show: true,
+      type,
+      message,
+    })
+  }
+
+  const hideNotification = () => {
+    setNotification((prev) => ({ ...prev, show: false }))
+  }
+
+  // Helper function to convert Firebase timestamp to readable date
+  const formatFirebaseDate = (timestamp: any): string => {
+    if (!timestamp) return ""
+
+    try {
+      // Check if it's a Firebase Timestamp object
+      if (timestamp && typeof timestamp === "object" && timestamp.seconds) {
+        const date = new Date(timestamp.seconds * 1000)
+        return date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })
+      }
+
+      // If it's already a string or Date, handle accordingly
+      if (typeof timestamp === "string") {
+        return timestamp
+      }
+
+      if (timestamp instanceof Date) {
+        return timestamp.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })
+      }
+
+      return ""
+    } catch (error) {
+      console.error("Error formatting date:", error)
+      return ""
+    }
+  }
+
+  function formatDate(dateString: any): string {
+    if (!dateString) return "N/A"
+
+    try {
+      const date =
+        typeof dateString === "string"
+          ? new Date(dateString)
+          : dateString instanceof Date
+            ? dateString
+            : dateString.toDate
+              ? dateString.toDate()
+              : new Date()
+
+      return new Intl.DateTimeFormat("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      }).format(date)
+    } catch (error) {
+      console.error("Error formatting date:", error)
+      return "Invalid Date"
+    }
+  }
+
+  function CustomNotification({
+    show,
+    type,
+    message,
+    onClose,
+  }: {
+    show: boolean
+    type: "success" | "error"
+    message: string
+    onClose: () => void
+  }) {
+    useEffect(() => {
+      if (show) {
+        const timer = setTimeout(() => {
+          onClose()
+        }, 4000)
+        return () => clearTimeout(timer)
+      }
+    }, [show, onClose])
+
+    if (!show) return null
+
+    return (
+      <div
+        className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300"
+        role="alert"
+        aria-live="polite"
+      >
+        <div
+          className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border backdrop-blur-sm ${type === "success"
+            ? "bg-green-50/95 border-green-200 text-green-800"
+            : "bg-red-50/95 border-red-200 text-red-800"
+            }`}
+        >
+          <div className="flex-shrink-0">
+            {type === "success" ? (
+              <div className="w-5 h-5 rounded-full bg-green-500 flex items-center text-center break-all min-w-0">
+                <Check className="w-3 h-3 text-white" />
+              </div>
+            ) : (
+              <div className="w-5 h-5 rounded-full bg-red-500 flex items-center text-center break-all min-w-0">
+                <X className="w-3 h-3 text-white" />
+              </div>
+            )}
+          </div>
+          <div className="flex-1">
+            <p className="text-xs sm:text-sm font-medium">{message}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex-shrink-0 p-1 rounded-full hover:bg-black/10 transition-colors"
+            aria-label="Close notification"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const CalendarView: React.FC<{ bookedDates: Date[] }> = ({ bookedDates }) => {
+    const [currentDate, setCurrentDate] = useState(new Date())
+
+    const isDateBooked = (date: Date) => {
+      return bookedDates.some(bookedDate =>
+        bookedDate.getDate() === date.getDate() &&
+        bookedDate.getMonth() === date.getMonth() &&
+        bookedDate.getFullYear() === date.getFullYear()
+      )
+    }
+
+    const generateCalendarMonths = () => {
+      const months = []
+      for (let i = 0; i < 3; i++) {
+        const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1)
+        months.push(monthDate)
+      }
+      return months
+    }
+
+    const generateMonthDays = (monthDate: Date) => {
+      const year = monthDate.getFullYear()
+      const month = monthDate.getMonth()
+      const firstDay = new Date(year, month, 1)
+      const lastDay = new Date(year, month + 1, 0)
+      const startDate = new Date(firstDay)
+      startDate.setDate(startDate.getDate() - firstDay.getDay())
+
+      const days = []
+      const current = new Date(startDate)
+
+      while (current <= lastDay || days.length % 7 !== 0) {
+        days.push(new Date(current))
+        current.setDate(current.getDate() + 1)
+      }
+
+      return days
+    }
+
+    const months = generateCalendarMonths()
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">Booking Calendar</h3>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentDate(new Date())}
+            >
+              Today
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-6">
+          {months.map((monthDate, monthIndex) => {
+            const days = generateMonthDays(monthDate)
+            const monthName = monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+
+            return (
+              <div key={monthIndex} className="border rounded-lg p-4">
+                <h4 className="font-semibold text-center mb-4">{monthName}</h4>
+
+                {/* Day headers */}
+                <div className="grid grid-cols-7 gap-1 mb-2">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <div key={day} className="text-center text-xs sm:text-sm font-medium text-gray-500 py-2">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Calendar days */}
+                <div className="grid grid-cols-7 gap-1">
+                  {days.map((day, dayIndex) => {
+                    const isCurrentMonth = day.getMonth() === monthDate.getMonth()
+                    const isToday = day.toDateString() === new Date().toDateString()
+                    const booked = isDateBooked(day)
+
+                    return (
+                      <div
+                        key={dayIndex}
+                        className={`
+                          text-center py-2 text-sm relative
+                          ${!isCurrentMonth ? 'text-gray-300' : 'text-gray-900'}
+                          ${isToday ? 'bg-blue-100 rounded' : ''}
+                          ${booked ? 'bg-red-100 text-red-800 font-semibold' : ''}
+                        `}
+                      >
+                        {day.getDate()}
+                        {booked && (
+                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-red-500 rounded-full"></div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="flex items-center text-center break-all min-w-0 gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-red-100 border border-red-200 rounded"></div>
+            <span>Booked</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-blue-100 border border-blue-200 rounded"></div>
+            <span>Today</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const GoogleMap = React.memo(({ location, className }: { location: string; className?: string }) => {
+    const mapRef = useRef<HTMLDivElement>(null)
+    const [mapLoaded, setMapLoaded] = useState(false)
+    const [mapError, setMapError] = useState(false)
+
+    useEffect(() => {
+      const initializeMaps = async () => {
+
+        try {
+          await loadGoogleMaps()
+          await initializeMap()
+        } catch (error) {
+          console.error("Error loading Google Maps:", error)
+          setMapError(true)
+        }
+      }
+
+      const initializeMap = async () => {
+        if (!mapRef.current || !window.google) return
+
+        try {
+          const geocoder = new window.google.maps.Geocoder()
+
+          // Geocode the location
+          geocoder.geocode({ address: location }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
+            if (status === "OK" && results && results[0]) {
+              const map = new window.google.maps.Map(mapRef.current!, {
+                center: results[0].geometry.location,
+                zoom: 15,
+                disableDefaultUI: true,
+                gestureHandling: "none",
+                zoomControl: false,
+                mapTypeControl: false,
+                scaleControl: false,
+                streetViewControl: false,
+                rotateControl: false,
+                fullscreenControl: false,
+                styles: [
+                  {
+                    featureType: "poi",
+                    elementType: "labels",
+                    stylers: [{ visibility: "off" }],
+                  },
+                ],
+              })
+
+              // Add marker
+              const markerElement = document.createElement('img');
+              markerElement.src = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#ef4444"/>
+                </svg>
+              `);
+              markerElement.style.width = '32px';
+              markerElement.style.height = '32px';
+
+              new window.google.maps.marker.AdvancedMarkerElement({
+                map: map,
+                position: results[0].geometry.location,
+                title: location,
+                content: markerElement,
+              })
+
+              setMapLoaded(true)
+            } else {
+              console.error("Geocoding failed:", status)
+              setMapError(true)
+            }
+          })
+        } catch (error) {
+          console.error("Error initializing map:", error)
+          setMapError(true)
+        }
+      }
+
+      initializeMaps()
+    }, [location])
+
+    if (mapError) {
+      return (
+        <div className={`bg-gray-100 rounded-lg flex items-center text-center break-all min-w-0 ${className}`}>
+          <div className="text-center text-gray-500">
+            <p className="text-sm">Map unavailable</p>
+            <p className="text-xs mt-1">{location}</p>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className={`relative ${className}`}>
+        <div ref={mapRef} className="w-full h-full" />
+        {!mapLoaded && (
+          <div className="absolute inset-0 bg-gray-100 flex items-center text-center break-all min-w-0">
+            <div className="text-center">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">Loading map...</p>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  });
+
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
@@ -244,12 +739,11 @@ export default function BusinessProductDetailPage() {
    const [orientation, setOrientation] = useState("")
    const [locationVisibility, setLocationVisibility] = useState("")
    const [locationVisibilityUnit, setLocationVisibilityUnit] = useState<string>("ft")
-   // SiteInformation component states
-   const [activeImageIndex, setActiveImageIndex] = useState(0)
-   const [imageViewerOpen, setImageViewerOpen] = useState(false)
-   const [companyName, setCompanyName] = useState("")
-   const [companyLoading, setCompanyLoading] = useState(false)
    const [isCalendarOpen, setIsCalendarOpen] = useState(false)
+   const [isOperatorDialogOpen, setIsOperatorDialogOpen] = useState(false)
+   const [selectedOperatorSpot, setSelectedOperatorSpot] = useState<any>(null)
+   const [operatorPlayerOnline, setOperatorPlayerOnline] = useState<boolean | null>(null)
+   const [isCheckingOperatorPlayer, setIsCheckingOperatorPlayer] = useState(false)
 
   useEffect(() => {
     async function fetchProduct() {
@@ -276,6 +770,279 @@ export default function BusinessProductDetailPage() {
     fetchProduct()
   }, [params])
 
+  // Fetch bookings for this product
+  useEffect(() => {
+    if (!params.id || activeTab !== "transactions") return
+
+    setBookingsLoading(true)
+    const productId = Array.isArray(params.id) ? params.id[0] : params.id
+    const bookingsQuery = query(
+      collection(db, "booking"),
+      where("for_censorship", "==", 1),
+      where("product_id", "==", productId),
+      orderBy("created", "desc")
+    )
+
+    const unsubscribe = onSnapshot(bookingsQuery, (snapshot) => {
+      const allBookings: Booking[] = []
+
+      snapshot.forEach((doc) => {
+        const bookingData = doc.data() as any
+        allBookings.push({
+          id: doc.id,
+          ...bookingData,
+        } as Booking)
+      })
+
+      setBookings(allBookings)
+      setBookingsTotal(allBookings.length)
+      setBookingsLoading(false)
+    }, (error) => {
+      console.error("Error fetching bookings:", error)
+      setBookingsLoading(false)
+    })
+
+    return unsubscribe
+  }, [params.id, activeTab])
+
+  // Reset pages when switching tabs
+  useEffect(() => {
+    if (activeTab !== "booking-summary") {
+      setBookingsPage(1)
+    }
+  }, [activeTab])
+
+  // Fetch screen schedules for spots content status
+  useEffect(() => {
+    const fetchScreenSchedules = async () => {
+      if (!params.id || params.id === "new") return
+
+      try {
+        const productId = Array.isArray(params.id) ? params.id[0] : params.id
+        const q = query(
+          collection(db, "screen_schedule"),
+          where("product_id", "==", productId),
+          where("deleted", "==", false),
+        )
+        const querySnapshot = await getDocs(q)
+        const schedules = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        setScreenSchedules(schedules)
+      } catch (error) {
+        console.error("Error fetching screen schedules:", error)
+      }
+    }
+
+    fetchScreenSchedules()
+  }, [params.id])
+
+  // Fetch current day's bookings for occupied/vacant calculation
+  useEffect(() => {
+    const fetchCurrentDayBookings = async () => {
+      if (!params.id || params.id === "new") return
+
+      setCurrentDayBookingsLoading(true)
+      try {
+        const productId = Array.isArray(params.id) ? params.id[0] : params.id
+        const today = new Date()
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59)
+
+        // Query bookings where start_date <= today <= end_date and status is active
+        const bookingsQuery = query(
+          collection(db, "booking"),
+          where("for_censorship", "==", 2),
+          where("product_id", "==", productId),
+          where("status", "in", ["RESERVED", "COMPLETED"])
+        )
+
+        const querySnapshot = await getDocs(bookingsQuery)
+        const currentDayBookingsData: Booking[] = []
+
+        querySnapshot.forEach((doc) => {
+          const booking = { id: doc.id, ...doc.data() } as Booking
+
+          // Check if booking covers today
+          if (booking.start_date && booking.end_date) {
+            const startDate = booking.start_date.toDate ? booking.start_date.toDate() : new Date(booking.start_date as any)
+            const endDate = booking.end_date.toDate ? booking.end_date.toDate() : new Date(booking.end_date as any)
+
+            if (startDate <= endOfDay && endDate >= startOfDay) {
+              currentDayBookingsData.push(booking)
+            }
+          }
+        })
+
+        setCurrentDayBookings(currentDayBookingsData)
+
+      } catch (error) {
+        console.error("Error fetching current day bookings:", error)
+      } finally {
+        setCurrentDayBookingsLoading(false)
+      }
+    }
+
+    fetchCurrentDayBookings()
+  }, [params.id])
+
+  // Fetch bookings for selected date in program list (realtime)
+  useEffect(() => {
+    if (!params.id || params.id === "new") return
+
+    setProgramListBookingsLoading(true)
+    const productId = Array.isArray(params.id) ? params.id[0] : params.id
+    const selectedDate = new Date(selectedYear, selectedMonth - 1, selectedDay)
+    const startOfDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate())
+    const endOfDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59)
+
+    const bookingsQuery = query(
+      collection(db, "booking"),
+      where("product_id", "==", productId)
+    )
+
+    const unsubscribe = onSnapshot(bookingsQuery, (snapshot) => {
+      const programListBookingsData: Booking[] = []
+
+      snapshot.forEach((doc) => {
+        const booking = { id: doc.id, ...doc.data() } as Booking
+
+        // Check if booking covers selected date
+        if (booking.start_date && booking.end_date) {
+          const startDate = booking.start_date.toDate ? booking.start_date.toDate() : new Date(booking.start_date as any)
+          const endDate = booking.end_date.toDate ? booking.end_date.toDate() : new Date(booking.end_date as any)
+
+          if (startDate <= endOfDay && endDate >= startOfDay) {
+            programListBookingsData.push(booking)
+          }
+        }
+      })
+
+      setProgramListBookings(programListBookingsData)
+      setProgramListBookingsLoading(false)
+    }, (error) => {
+      console.error("Error fetching program list bookings:", error)
+      setProgramListBookingsLoading(false)
+    })
+
+    return unsubscribe
+  }, [params.id, selectedYear, selectedMonth, selectedDay])
+
+  // Fetch booking requests (pending bookings) for this product
+  useEffect(() => {
+    if (!params.id || params.id === "new") {
+      setBookingRequestsLoading(false)
+      return
+    }
+
+    setBookingRequestsLoading(true)
+    const productId = Array.isArray(params.id) ? params.id[0] : params.id
+    const bookingRequestsQuery = query(
+      collection(db, "booking"),
+      where("for_censorship", "==", 1),
+      where("product_id", "==", productId),
+      orderBy("created", "desc")
+    )
+
+    const unsubscribe = onSnapshot(bookingRequestsQuery, (snapshot) => {
+      const allBookingRequests: Booking[] = []
+
+      snapshot.forEach((doc) => {
+        const bookingData = doc.data() as any
+        allBookingRequests.push({
+          id: doc.id,
+          ...bookingData,
+        } as Booking)
+      })
+
+      setBookingRequests(allBookingRequests)
+      setBookingRequestsLoading(false)
+    }, (error) => {
+      console.error("Error fetching booking requests:", error)
+      setBookingRequestsLoading(false)
+    })
+
+    return unsubscribe
+  }, [params.id, userData?.uid])
+
+  // Fetch latest playlist and filter active pages
+  useEffect(() => {
+    if (!params.id || params.id === "new") return
+
+    const productId = Array.isArray(params.id) ? params.id[0] : params.id
+    const playlistQuery = query(
+      collection(db, "playlist"),
+      where("product_id", "==", productId),
+      orderBy("created", "desc"),
+      limit(1)
+    )
+
+    const unsubscribe = onSnapshot(playlistQuery, (playlistSnap) => {
+      const changes = playlistSnap.docChanges()
+      const hasRelevantChange = changes.some(change => change.type === 'added' || change.type === 'modified')
+
+      if (!hasRelevantChange) return
+
+      if (!playlistSnap.empty) {
+        const latestPlaylist = playlistSnap.docs[0].data()
+        const existingPages = latestPlaylist.pages || []
+
+        // Filter out expired pages (where any schedule has endDate in the past)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0) // Set to start of today
+        const activePages = existingPages.filter((page: any) =>
+          page.schedules?.every((schedule: any) => {
+            let scheduleEndDate = schedule.endDate?.toDate
+              ? schedule.endDate.toDate()
+              : new Date(schedule.endDate)
+            scheduleEndDate.setHours(0, 0, 0, 0) // Set to start of that day
+            return scheduleEndDate >= today
+          })
+        )
+        setActivePlaylistPages(activePages)
+      } else {
+        setActivePlaylistPages([])
+      }
+    }, (error) => {
+      console.error("Error fetching playlist:", error)
+      setActivePlaylistPages([])
+    })
+
+    return unsubscribe
+  }, [params.id])
+
+  useEffect(() => {
+    setBookingsPage(1)
+  }, [selectedYear])
+
+  // Fetch content history for this product
+
+  useEffect(() => {
+    const fetchCompanyName = async () => {
+      if (!product?.company_id) {
+        setCompanyName("")
+        return
+      }
+      setCompanyLoading(true)
+      try {
+        const companyDoc = await getDoc(doc(db, "companies", product.company_id))
+        if (companyDoc.exists()) {
+          const companyData = companyDoc.data()
+          setCompanyName(companyData?.name || "Not Set Company")
+        } else {
+          setCompanyName("Not Set Company")
+        }
+      } catch (error) {
+        console.error("Error fetching company:", error)
+        setCompanyName("Not Set Company")
+      } finally {
+        setCompanyLoading(false)
+      }
+    }
+    fetchCompanyName()
+  }, [product?.company_id])
+
   // Update price unit based on site type
   useEffect(() => {
     setPriceUnit(siteType === "static" ? "per month" : "per spot")
@@ -290,8 +1057,43 @@ export default function BusinessProductDetailPage() {
       setValidationError(null)
     }
   }, [cms.start_time, cms.end_time, cms.spot_duration, cms.loops_per_day, siteType])
+  const fetchBookedDates = async () => {
+    if (!params.id) return
+
+    setCalendarLoading(true)
+    try {
+      const productId = Array.isArray(params.id) ? params.id[0] : params.id
+      const bookingsRef = collection(db, "booking")
+      const q = query(bookingsRef, where("product_id", "==", productId))
+      const querySnapshot = await getDocs(q)
+
+      const dates: Date[] = []
+      querySnapshot.forEach((doc) => {
+        const booking = doc.data()
+        if (booking.start_date && booking.end_date) {
+          const startDate = booking.start_date.toDate ? booking.start_date.toDate() : new Date(booking.start_date)
+          const endDate = booking.end_date.toDate ? booking.end_date.toDate() : new Date(booking.end_date)
+
+          // Add all dates between start and end
+          const currentDate = new Date(startDate)
+          while (currentDate <= endDate) {
+            dates.push(new Date(currentDate))
+            currentDate.setDate(currentDate.getDate() + 1)
+          }
+        }
+      })
+
+      setBookedDates(dates)
+    } catch (error) {
+      console.error("Error fetching booked dates:", error)
+    } finally {
+      setCalendarLoading(false)
+    }
+  }
+
   const handleCalendarOpen = () => {
     setIsCalendarOpen(true)
+    fetchBookedDates()
   }
 
   const handleBack = () => {
@@ -646,61 +1448,308 @@ export default function BusinessProductDetailPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="max-w-xs">
-        <div className="space-y-4">
-          <div className="flex flex-row items-center">
-            <Link href="/business/inventory" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mr-2">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <h2
-              className="text-lg"
-              style={{
-                fontFamily: 'Inter',
-                fontWeight: 600,
-                fontSize: '24px',
-                lineHeight: '120%',
-                letterSpacing: '0%',
-                color: '#000000'
-              }}
-            >
-              Site Information
-            </h2>
-          </div>
+    <div className="mx-auto px-4 pt-2 pb-6">
+      {/* Notification */}
+      <CustomNotification
+        show={notification.show}
+        type={notification.type}
+        message={notification.message}
+        onClose={hideNotification}
+      />
 
-          <SiteInformation
-            product={product}
-            activeImageIndex={activeImageIndex}
-            setActiveImageIndex={setActiveImageIndex}
-            setImageViewerOpen={setImageViewerOpen}
-            handleCalendarOpen={handleCalendarOpen}
-            companyName={companyName}
-            companyLoading={companyLoading}
-          />
-
-          {/* Action Buttons */}
-          <div className="border-t pt-4 space-y-2">
-            {!product.deleted && (
-              <>
-                <Button onClick={handleEdit} className="w-full bg-blue-600 hover:bg-blue-700">
-                  Edit Site
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full text-destructive hover:bg-destructive/10 bg-transparent"
-                  onClick={() => setDeleteDialogOpen(true)}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Site
-                </Button>
-              </>
-            )}
-            <Button variant="outline" className="w-full bg-transparent">
-              View Contract
-            </Button>
-          </div>
+      <header className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <Button variant="ghost" size="sm" onClick={() => router.push("/business/dashboard")} className="mr-2">
+            <ArrowLeft className="h-5 w-5 mr-1" />
+          </Button>
+          <h1 className="text-xl font-semibold">Site Information</h1>
         </div>
-      </div>
+      </header>
+
+      {product?.deleted && (
+        <Alert variant="destructive" className="mb-6 border border-red-200 rounded-xl">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Deleted Product</AlertTitle>
+          <AlertDescription>
+            This product has been marked as deleted on {formatDate(product.date_deleted)}. It is no longer visible in
+            product listings.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <main className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <SiteInformation
+          product={product}
+          activeImageIndex={activeImageIndex}
+          setActiveImageIndex={setActiveImageIndex}
+          setImageViewerOpen={setImageViewerOpen}
+          handleCalendarOpen={handleCalendarOpen}
+          companyLoading={companyLoading}
+          companyName={companyName}
+        />
+
+        {/* Right Content - Tabbed Interface */}
+        <section className="lg:col-span-2">
+          {/* Spots Section - Only show for digital sites */}
+          {product && product.content_type?.toLowerCase() === "digital" && product.cms && (
+            <div className="mb-6">
+              <SpotsGrid
+                spots={generateSpotsData(product.cms, activePlaylistPages)}
+                totalSpots={product.cms.loops_per_day || 18}
+                occupiedCount={activePlaylistPages.length}
+                vacantCount={(product.cms.loops_per_day || 18) - activePlaylistPages.length}
+                productId={params.id}
+                currentDate={currentDate}
+                router={router}
+                bookingRequests={bookingRequests}
+                disableBookingActions={true}
+                disableEmptySpotClicks={true}
+              />
+            </div>
+          )}
+
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <div>
+              <TabsList className="flex flex-wrap justify-start bg-transparent border-none p-0 gap-0">
+                <TabsTrigger value="transactions" className="bg-white border-2 w-[127px] border-[#DFDFDF] text-[#DFDFDF] rounded-none h-auto min-h-9 px-2 py-2 whitespace-normal text-center data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:border-[#C4C4C4]">Transactions</TabsTrigger>
+                <TabsTrigger value="program-list" className="bg-white border-2 w-[140px] border-[#DFDFDF] text-[#DFDFDF] rounded-none h-auto min-h-9 px-2 py-2 whitespace-normal text-center data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:border-[#C4C4C4]">Program List</TabsTrigger>
+                <TabsTrigger value="proof-of-play" className="bg-white border-2 w-[140px] border-[#DFDFDF] text-[#DFDFDF] rounded-none h-auto min-h-9 px-2 py-2 whitespace-normal text-center data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:border-[#C4C4C4]">Proof of Play</TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent key={1} value="transactions">
+              <TransactionsTab
+                selectedYear={selectedYear}
+                setSelectedYear={setSelectedYear}
+                bookings={bookings}
+                bookingsLoading={bookingsLoading}
+                bookingsPage={bookingsPage}
+                setBookingsPage={setBookingsPage}
+                itemsPerPage={itemsPerPage}
+                setSelectedBooking={setSelectedBooking}
+                setBookingDialogOpen={setBookingDialogOpen}
+              />
+            </TabsContent>
+            <TabsContent key={2} value="program-list">
+              <ProgramListTab
+                selectedMonth={selectedMonth}
+                setSelectedMonth={setSelectedMonth}
+                selectedDay={selectedDay}
+                setSelectedDay={setSelectedDay}
+                selectedYear={selectedYear}
+                setSelectedYear={setSelectedYear}
+                activePlaylistPages={activePlaylistPages}
+                cms={product?.cms}
+                bookings={programListBookings}
+                loading={programListBookingsLoading}
+                retailSite={product.retail_spot.spot_number}
+              />
+            </TabsContent>
+            <TabsContent key={3} value="proof-of-play">
+              <ProofOfPlayTab />
+            </TabsContent>
+
+          </Tabs>
+        </section>
+      </main>
+
+      {/* Site Calendar Dialog */}
+      <Dialog open={calendarDialogOpen} onOpenChange={setCalendarDialogOpen}>
+        <DialogContent className="sm:max-w-4xl" aria-labelledby="calendar-dialog-title">
+          <DialogHeader>
+            <DialogTitle id="calendar-dialog-title">Site Calendar - {product?.name || "Product"}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {calendarLoading ? (
+              <div className="flex items-center text-center break-all min-w-0 py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                <span className="ml-2 text-gray-600">Loading calendar...</span>
+              </div>
+            ) : (
+              <CalendarView bookedDates={bookedDates} />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Gallery Dialog */}
+      <Dialog open={imageViewerOpen} onOpenChange={setImageViewerOpen}>
+        <DialogContent className="sm:max-w-4xl" aria-labelledby="image-gallery-dialog-title">
+          <DialogHeader>
+            <DialogTitle id="image-gallery-dialog-title">Image Gallery</DialogTitle>
+          </DialogHeader>
+
+          <div className="relative">
+            {product?.media && product.media.length > 0 ? (
+              <>
+                <div className="relative aspect-[4/3] w-full rounded-lg overflow-hidden bg-gray-100">
+                  <Image
+                    src={product.media[activeImageIndex]?.url || "/placeholder.svg"}
+                    alt={`Product image ${activeImageIndex + 1}`}
+                    fill
+                    className="object-contain"
+                    priority
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      target.src = "/building-billboard.png"
+                      target.className = "object-contain opacity-50"
+                    }}
+                  />
+                </div>
+
+                {/* Navigation buttons */}
+                {product.media.length > 1 && (
+                  <>
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="absolute left-2 top-1/2 transform -translate-y-1/2 h-10 w-10 bg-white/80 backdrop-blur-sm border border-gray-200 shadow-md rounded-full"
+                      onClick={() => setActiveImageIndex((prev) => (prev > 0 ? prev - 1 : product.media.length - 1))}
+                      aria-label="Previous image"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 bg-white/80 backdrop-blur-sm border border-gray-200 shadow-md rounded-full"
+                      onClick={() => setActiveImageIndex((prev) => (prev < product.media.length - 1 ? prev + 1 : 0))}
+                      aria-label="Next image"
+                    >
+                      <ArrowLeft className="h-4 w-4 rotate-180" />
+                    </Button>
+                  </>
+                )}
+
+                {/* Thumbnail strip */}
+                {product.media.length > 1 && (
+                  <div className="flex justify-center gap-2 mt-4 overflow-x-auto">
+                    {product.media.map((image, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setActiveImageIndex(index)}
+                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${index === activeImageIndex
+                          ? "border-blue-500 ring-2 ring-blue-200"
+                          : "border-gray-200 hover:border-gray-300"
+                          }`}
+                        aria-label={`View image ${index + 1}`}
+                      >
+                        <Image
+                          src={image.url || "/placeholder.svg"}
+                          alt={`Thumbnail ${index + 1}`}
+                          width={64}
+                          height={64}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.src = "/building-billboard.png"
+                            target.className = "object-cover opacity-50"
+                          }}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Image counter */}
+                <div className="text-center mt-2 text-sm text-gray-600">
+                  {activeImageIndex + 1} of {product.media.length}
+                </div>
+              </>
+            ) : (
+              <div className="aspect-[4/3] w-full rounded-lg bg-gray-100 flex items-center text-center break-all min-w-0">
+                <div className="text-center text-gray-500">
+                  <ImageIcon className="h-12 w-12 mx-auto mb-2" />
+                  <p>No images available</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={marketplaceDialogOpen} onOpenChange={setMarketplaceDialogOpen}>
+        <DialogContent className="sm:max-w-2xl" aria-labelledby="marketplace-dialog-title">
+          <DialogHeader>
+            <DialogTitle id="marketplace-dialog-title">Connect to a marketplace</DialogTitle>
+            <DialogDescription>Select a DSP:</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex justify-center items-center gap-8 py-6">
+            {[
+              { name: "OOH!Shop", logo: "/ooh-shop-logo.png" },
+              { name: "Vistar Media", logo: "/vistar-media-logo.png" },
+              { name: "Broadsign", logo: "/broadsign-logo.png" },
+              { name: "Moving Walls", logo: "/moving-walls-logo.png" },
+            ].map((marketplace) => (
+              <button
+                key={marketplace.name}
+                className="flex flex-col items-center p-4 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label={`Connect to ${marketplace.name}`}
+              >
+                <div className="w-24 h-24 rounded-xl flex items-center text-center break-all min-w-0 mb-2 bg-white">
+                  <Image
+                    src={marketplace.logo || "/placeholder.svg"}
+                    alt={`${marketplace.name} logo`}
+                    width={80}
+                    height={80}
+                    className="object-contain rounded-lg"
+                  />
+                </div>
+                <span className="text-xs sm:text-sm font-medium">{marketplace.name}</span>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <SpotSelectionDialog
+        open={isSpotSelectionDialogOpen}
+        onOpenChange={setIsSpotSelectionDialogOpen}
+        products={spotSelectionProducts}
+        currentDate={spotSelectionCurrentDate}
+        selectedDate={spotSelectionCurrentDate}
+        type={spotSelectionType}
+        nonDynamicSites={[]}
+      />
+      <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Booking Details</DialogTitle>
+          </DialogHeader>
+          {selectedBooking && (
+            <div className="space-y-4">
+              <div>
+                <label className="font-medium">Booking Code:</label>
+                <p>BK#{selectedBooking.reservation_id || selectedBooking.id.slice(-8)}</p>
+              </div>
+              <div>
+                <label className="font-medium">Dates:</label>
+                <p>{formatBookingDates(selectedBooking.start_date, selectedBooking.end_date)}</p>
+              </div>
+              <div>
+                <label className="font-medium">Price:</label>
+                <p>P{selectedBooking.total_cost}</p>
+              </div>
+              <div>
+                <label className="font-medium">Client:</label>
+                <p>{selectedBooking.client?.name || 'N/A'}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <OperatorProgramContentDialog
+        open={isOperatorDialogOpen}
+        onOpenChange={setIsOperatorDialogOpen}
+        spot={selectedOperatorSpot}
+        productId={productId}
+
+        playerOnline={operatorPlayerOnline ?? true}
+        disabled={true}
+      />
 
       {/* Edit Site Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>

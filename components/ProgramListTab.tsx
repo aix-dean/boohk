@@ -65,11 +65,15 @@ const ProgramListTab: React.FC<ProgramListTabProps> = ({
 
   // Filter active pages for selected date
   const selectedDate = new Date(selectedYear, selectedMonth - 1, selectedDay)
+  const selectedDateStr = selectedDate.toDateString()
+
   const filteredPages = activePlaylistPages.filter(page => {
     return page.schedules?.some((schedule: any) => {
       let startDate = schedule.startDate?.toDate ? schedule.startDate.toDate() : new Date(schedule.startDate)
       let endDate = schedule.endDate?.toDate ? schedule.endDate.toDate() : new Date(schedule.endDate)
-      return selectedDate >= startDate && selectedDate <= endDate
+      const startDateStr = startDate.toDateString()
+      const endDateStr = endDate.toDateString()
+      return selectedDateStr >= startDateStr && selectedDateStr <= endDateStr
     })
   })
 

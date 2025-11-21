@@ -59,36 +59,40 @@ interface Page {
 }
 
 interface SpotsGridProps {
-  spots: Spot[];
-  totalSpots: number;
-  occupiedCount: number;
-  vacantCount: number;
-  productId?: string;
-  currentDate: string;
-  router?: any;
-  selectedSpots?: number[];
-  onSpotToggle?: (spotNumber: number) => void;
-  showSummary?: boolean;
-  bg?: boolean;
-  bookingRequests?: Booking[];
-  onBookingAccepted?: () => void;
-}
+   spots: Spot[];
+   totalSpots: number;
+   occupiedCount: number;
+   vacantCount: number;
+   productId?: string;
+   currentDate: string;
+   router?: any;
+   selectedSpots?: number[];
+   onSpotToggle?: (spotNumber: number) => void;
+   showSummary?: boolean;
+   bg?: boolean;
+   bookingRequests?: Booking[];
+   onBookingAccepted?: () => void;
+   disableBookingActions?: boolean;
+   disableEmptySpotClicks?: boolean;
+ }
 
 export function SpotsGrid({
-  spots,
-  totalSpots,
-  occupiedCount,
-  vacantCount,
-  productId,
-  currentDate,
-  router,
-  selectedSpots,
-  onSpotToggle,
-  showSummary = true,
-  bg = true,
-  bookingRequests = [],
-  onBookingAccepted,
-}: SpotsGridProps) {
+   spots,
+   totalSpots,
+   occupiedCount,
+   vacantCount,
+   productId,
+   currentDate,
+   router,
+   selectedSpots,
+   onSpotToggle,
+   showSummary = true,
+   bg = true,
+   bookingRequests = [],
+   onBookingAccepted,
+   disableBookingActions = false,
+   disableEmptySpotClicks = false,
+ }: SpotsGridProps) {
   const { userData } = useAuth();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -576,9 +580,7 @@ export function SpotsGrid({
   const spotsContent = (
     <div className="flex gap-[13.758px] overflow-x-scroll pb-4 w-full pr-4">
       {localSpots.map((spot) => {
-        const isRetailNoContent =
-          retailSpotNumbers.includes(spot.number) && !spot.imageUrl;
-        const isClickable = !isRetailNoContent;
+        const isClickable = spot.imageUrl || !disableEmptySpotClicks;
         return (
           <div
             key={spot.id}
@@ -606,8 +608,8 @@ export function SpotsGrid({
                             setIsOperatorDialogOpen(true);
                             setIsCheckingOperatorPlayer(false);
                           });
-                      } else {
-                        // For creating new content, check player first
+                      } else if (!disableEmptySpotClicks) {
+                        // For creating new content, check player first (only if empty spots are clickable)
                         setIsCheckingOperatorPlayer(true);
                         checkPlayerOnlineStatus(playerIds)
                           .then((status) => {
@@ -870,24 +872,25 @@ export function SpotsGrid({
         </div>
 
         <NewBookingDialog
-          open={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          booking={selectedBooking}
-          playerOnline={playerOnline}
-          isAccepting={isAccepting}
-          onReject={() => {
-            setIsDialogOpen(false);
-            setIsDeclineConfirmDialogOpen(true);
-          }}
-          onAccept={() => {
-            setIsDialogOpen(false);
-            setIsConfirmDialogOpen(true);
-          }}
-          takenSpotNumbers={takenSpotNumbers}
-          retailSpotNumbers={retailSpotNumbers}
-          totalSpots={totalSpots}
-          activePages={activePages}
-        />
+           open={isDialogOpen}
+           onOpenChange={setIsDialogOpen}
+           booking={selectedBooking}
+           playerOnline={playerOnline}
+           isAccepting={isAccepting}
+           onReject={() => {
+             setIsDialogOpen(false);
+             setIsDeclineConfirmDialogOpen(true);
+           }}
+           onAccept={() => {
+             setIsDialogOpen(false);
+             setIsConfirmDialogOpen(true);
+           }}
+           takenSpotNumbers={takenSpotNumbers}
+           retailSpotNumbers={retailSpotNumbers}
+           totalSpots={totalSpots}
+           activePages={activePages}
+           disabled={disableBookingActions}
+         />
         <BookingSpotSelectionDialog
           open={isSpotSelectionOpen}
           onOpenChange={setIsSpotSelectionOpen}

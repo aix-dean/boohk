@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -56,24 +57,27 @@ interface Page {
 }
 
 interface OperatorProgramContentDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  spot: Spot | null;
-  productId?: string;
-  activePages: Page[];
-  playerOnline?: boolean;
-}
+   open: boolean;
+   onOpenChange: (open: boolean) => void;
+   spot: Spot | null;
+   productId?: string;
+   activePages: Page[];
+   playerOnline?: boolean;
+   disabled?: boolean;
+ }
 
 export function OperatorProgramContentDialog({
-  open,
-  onOpenChange,
-  spot,
-  productId,
-  activePages,
-  playerOnline = true,
-}: OperatorProgramContentDialogProps) {
+   open,
+   onOpenChange,
+   spot,
+   productId,
+   activePages,
+   playerOnline = true,
+   disabled = false,
+ }: OperatorProgramContentDialogProps) {
   const { userData } = useAuth();
   const { toast } = useToast();
+  const pathname = usePathname();
   const [scaledWidth, setScaledWidth] = useState<number | undefined>(undefined);
   const [scaledHeight, setScaledHeight] = useState<number | undefined>(
     undefined
@@ -635,8 +639,8 @@ export function OperatorProgramContentDialog({
           ) : (
             <button
               onClick={handleEdit}
-              className={`w-[90px] text-sm font-semibold h-[24px] rounded-[6px] border border-gray-400 `}
-              disabled={!playerOnline}
+              className={`w-[90px] text-sm font-semibold h-[24px] rounded-[6px] border border-gray-400 ${!playerOnline || disabled || pathname.includes('/business/inventory/') ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
+              disabled={!playerOnline || disabled || pathname.includes('/business/inventory/')}
             >
               Edit
             </button>

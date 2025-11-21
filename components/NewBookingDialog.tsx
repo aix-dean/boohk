@@ -5,32 +5,34 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogFo
 import type { Booking } from "@/lib/booking-service"
 
 interface NewBookingDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  booking: Booking | null
-  playerOnline: boolean | null
-  isAccepting: boolean
-  onReject: () => void
-  onAccept: () => void
-  retailSpotNumbers: number[]
-  takenSpotNumbers: number[]
-  totalSpots: number
-  activePages: any[]
-}
+   open: boolean
+   onOpenChange: (open: boolean) => void
+   booking: Booking | null
+   playerOnline: boolean | null
+   isAccepting: boolean
+   onReject: () => void
+   onAccept: () => void
+   retailSpotNumbers: number[]
+   takenSpotNumbers: number[]
+   totalSpots: number
+   activePages: any[]
+   disabled?: boolean
+ }
 
 export function NewBookingDialog({
-  open,
-  onOpenChange,
-  booking,
-  playerOnline,
-  isAccepting,
-  onReject,
-  onAccept,
-  takenSpotNumbers,
-  retailSpotNumbers,
-  totalSpots,
-  activePages
-}: NewBookingDialogProps) {
+   open,
+   onOpenChange,
+   booking,
+   playerOnline,
+   isAccepting,
+   onReject,
+   onAccept,
+   takenSpotNumbers,
+   retailSpotNumbers,
+   totalSpots,
+   activePages,
+   disabled = false
+ }: NewBookingDialogProps) {
   // Local function to format booking dates
   const formatBookingDates = (startDate: any, endDate: any): string => {
     if (!startDate || !endDate) return "N/A"
@@ -146,10 +148,10 @@ export function NewBookingDialog({
           </div>
         )}
         <DialogFooter>
-          <Button variant="outline" onClick={onReject} className="w-[90px] h-[24px] px-[29px] rounded-[6px] border-[1.5px] border-[#C4C4C4] bg-white">Decline</Button>
-          <Button onClick={onAccept} disabled={!playerOnline} className="w-[120px] h-[24px] rounded-[6.024px] bg-[#30C71D]">
-            {isAccepting ? <><Loader2 className="animate-spin mr-1 h-4 w-4" /></> : "Accept"}
-          </Button>
+           <Button variant="outline" onClick={onReject} disabled={disabled} className="w-[90px] h-[24px] px-[29px] rounded-[6px] border-[1.5px] border-[#C4C4C4] bg-white">Decline</Button>
+           <Button onClick={onAccept} disabled={!playerOnline || disabled} className="w-[120px] h-[24px] rounded-[6.024px] bg-[#30C71D]">
+             {isAccepting ? <><Loader2 className="animate-spin mr-1 h-4 w-4" /></> : "Accept"}
+           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
