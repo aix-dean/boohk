@@ -82,28 +82,51 @@ export default function InventoryContent({
 
   return (
     <div className="mb-6">
-      <h1 className="text-2xl font-semibold text-[#333333] mb-4">{title}</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold text-[#333333]">{title}</h1>
+        <Button
+          className="bg-white border border-[#c4c4c4] text-[#333333] hover:bg-gray-50"
+          style={{
+            height: '29.37px',
+            width: '117.46px',
+            borderRadius: '7.53px',
+            borderWidth: '1.205px',
+            fontSize: '12px',
+            fontWeight: '500'
+          }}
+          onClick={handleAddClick}
+        >
+          +Add Site
+        </Button>
+      </div>
 
       <div className="flex items-center justify-between mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#a1a1a1] w-4 h-4" />
-          <Input
-            placeholder="Search products..."
-            className="pl-10 pr-10 w-80 bg-white border-[#d9d9d9]"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          {searchQuery && !isSearching && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#a1a1a1] hover:text-gray-700"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-          {isSearching && (
-            <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#a1a1a1] w-4 h-4 animate-spin" />
-          )}
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">Search: </span>
+          <div className="relative">
+            <Input
+              placeholder="Search"
+              className="pl-3 pr-10 w-80"
+              style={{
+                borderRadius: '6.002px',
+                border: '1.2px solid #C4C4C4',
+                background: '#FFF'
+              }}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && !isSearching && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#a1a1a1] hover:text-gray-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+            {isSearching && (
+              <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#a1a1a1] w-4 h-4 animate-spin" />
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -119,31 +142,28 @@ export default function InventoryContent({
       {/* Inventory Display - Grid or List View */}
       {viewMode === "grid" ? (
         /* Grid View */
-        <div ref={cardsRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div ref={cardsRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {loading && allProducts.length === 0
-            ? Array.from({ length: 8 }).map((_, index) => (
-                <Card key={`shimmer-${index}`} className="overflow-hidden border border-gray-200 shadow-md rounded-xl">
-                  <div className="h-48 bg-gray-200 animate-pulse" />
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
-                      <div className="h-4 bg-gray-200 rounded animate-pulse" />
-                      <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse" />
-                      <div className="flex items-center space-x-2">
-                        <div className="h-3 w-3 bg-gray-200 rounded animate-pulse" />
-                        <div className="h-3 bg-gray-200 rounded w-3/4 animate-pulse" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+           ? Array.from({ length: 8 }).map((_, index) => (
+               <Card key={`shimmer-${index}`} className="overflow-hidden border border-gray-200 shadow-lg rounded-xl">
+                 <div className="h-36 bg-gray-200 animate-pulse rounded-t-xl" />
+                 <CardContent className="p-3">
+                   <div className="space-y-1">
+                     <div className="h-3 bg-gray-200 rounded animate-pulse" />
+                     <div className="h-3 bg-gray-200 rounded animate-pulse" />
+                     <div className="h-3 bg-gray-200 rounded w-3/4 animate-pulse" />
+                   </div>
+                 </CardContent>
+               </Card>
+             ))
             : displayedProducts.map((product, index) => (
                 <Card
                   key={product.id}
                   ref={setCardRef(index)}
-                  className="bg-white border-[#d9d9d9] hover:shadow-md transition-shadow cursor-pointer"
+                  className="bg-white border-[#d9d9d9] shadow-lg hover:shadow-xl transition-shadow cursor-pointer rounded-xl"
                   onClick={() => product.id && handleViewDetails(product.id)}
                 >
-                  <div className="h-48 bg-gray-200 relative">
+                  <div className="h-48 bg-gray-200 relative rounded-t-xl overflow-hidden">
                     <Image
                       src={
                         product.media && product.media.length > 0
@@ -152,7 +172,7 @@ export default function InventoryContent({
                       }
                       alt={product.name || "Product image"}
                       fill
-                      className="object-cover"
+                      className="object-cover rounded-lg"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement
                         target.src = "/abstract-geometric-sculpture.png"
@@ -161,21 +181,11 @@ export default function InventoryContent({
                     />
                   </div>
 
-                  <CardContent className="p-4">
-                    <div className="flex flex-col">
-                      <h3 className="font-semibold line-clamp-1">{product.name}</h3>
-                      <div className="mt-2 text-sm font-medium text-green-700">
-                        ₱{Number(product.price).toLocaleString()}
-                      </div>
-                      <div className="mt-1 text-xs text-gray-500 flex items-center">
-                        <MapPin size={12} className="mr-1 flex-shrink-0" />
-                        <span className="truncate">{product.specs_rental?.location || "Unknown location"}</span>
-                      </div>
-                       {product.specs_rental?.location_visibility && (
-                         <div className="mt-1 text-xs text-gray-400">
-                           Visibility: {Number(product.specs_rental.location_visibility).toLocaleString()} {product.specs_rental.location_visibility_unit || 'ft'}
-                         </div>
-                       )}
+                  <CardContent className="p-3">
+                    <div className="flex flex-col space-y-1">
+                      <p className="font-semibold text-xs text-black line-clamp-1 leading-tight">{product.name}</p>
+                      <p className="font-semibold text-xs text-black leading-tight">{product.specs_rental?.location_label || product.specs_rental?.location || "Location"}</p>
+                      <p className="font-semibold text-xs text-black leading-tight">P{Number(product.price).toLocaleString()}/ day</p>
                     </div>
                   </CardContent>
                 </Card>

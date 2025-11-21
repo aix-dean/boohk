@@ -39,11 +39,12 @@ import { subscriptionService } from "@/lib/subscription-service"
 import { RouteProtection } from "@/components/route-protection"
 import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete"
 import InventoryContent from "@/components/InventoryContent"
+import AddSiteDialog from "@/components/AddSiteDialog"
 import { AddEditSiteDialog } from "@/components/AddEditSiteDialog"
 import { GeoPoint } from "firebase/firestore"
 
 // Number of items to display per page
-const ITEMS_PER_PAGE = 12
+const ITEMS_PER_PAGE = 15
 
 // Category options based on site type
 const STATIC_CATEGORIES = [
@@ -65,6 +66,7 @@ const DIGITAL_CATEGORIES = [
   "LED Poster",
   "Digital Transit Ads"
 ]
+
 // Price validation functions
 const validatePriceInput = (value: string): boolean => {
   // Allow empty string, numbers, and decimal point
@@ -249,6 +251,7 @@ const validateDynamicContent = (cms: CmsData, siteType: string, setValidationErr
   }
 }
 
+
 export default function BusinessInventoryPage() {
   const router = useRouter()
   const { user, userData, subscriptionData, refreshUserData } = useAuth()
@@ -289,14 +292,12 @@ export default function BusinessInventoryPage() {
 
   // Add site dialog state
   const [showAddSiteDialog, setShowAddSiteDialog] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [validationErrors, setValidationErrors] = useState<string[]>([])
 
   // Edit site dialog state
   const [showEditSiteDialog, setShowEditSiteDialog] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
-  // Form state
+  // Form state for edit dialog
   const [siteType, setSiteType] = useState<"static" | "digital">("digital")
   const [cms, setCms] = useState<CmsData>({
     start_time: "06:00",
@@ -304,7 +305,9 @@ export default function BusinessInventoryPage() {
     spot_duration: "",
     loops_per_day: ""
   })
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [category, setCategory] = useState(DIGITAL_CATEGORIES[0])
   const [siteName, setSiteName] = useState("")
   const [location, setLocation] = useState("")
@@ -591,59 +594,6 @@ export default function BusinessInventoryPage() {
     )
   }
 
-  // Update price unit based on site type
-  useEffect(() => {
-    if (siteType === "static") {
-      setPriceUnit("per month")
-    } else if (siteType === "digital") {
-      setPriceUnit("per spot")
-    }
-  }, [siteType])
-
-  // Update category based on site type
-  useEffect(() => {
-    if (siteType === "static") {
-      setCategory(STATIC_CATEGORIES[0])
-    } else if (siteType === "digital") {
-      setCategory(DIGITAL_CATEGORIES[0])
-    }
-  }, [siteType])
-
-  // Set default values when site type changes to digital
-  useEffect(() => {
-    if (siteType === "digital") {
-      setCms({
-        start_time: "06:00",
-        end_time: "22:00",
-        spot_duration: "10",
-        loops_per_day: "",
-      })
-    }
-  }, [siteType])
-
-  // Validate dynamic content when fields change
-  useEffect(() => {
-    if (siteType === "digital") {
-      validateDynamicContent(cms, siteType, setValidationError)
-    } else {
-      setValidationError(null)
-    }
-  }, [cms.start_time, cms.end_time, cms.spot_duration, cms.loops_per_day, siteType])
-
-  // Update spot inputs when loops_per_day changes for digital sites
-  useEffect(() => {
-    if (siteType === "digital") {
-      const spots = parseInt(cms.loops_per_day) || 0
-      setSpotInputs(prev => {
-        if (prev.length !== spots) {
-          return new Array(spots).fill("")
-        }
-        return prev
-      })
-    } else {
-      setSpotInputs([])
-    }
-  }, [siteType, cms.loops_per_day])
 
   // Pagination handlers
   const goToPage = (page: number) => {
@@ -1537,7 +1487,7 @@ export default function BusinessInventoryPage() {
   return (
     <RouteProtection requiredRoles="business">
       <InventoryContent
-        title="Inventory"
+        title="Enrolled Sites"
         allProducts={allProducts}
         filteredProducts={filteredProducts}
         displayedProducts={displayedProducts}
@@ -1569,14 +1519,6 @@ export default function BusinessInventoryPage() {
         emptyStateDescription="Click the Add Site button below to create your first site."
         addButtonText="Add Site"
       />
-      {/* Floating Action Button */}
-      <Button
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[#4169e1] hover:bg-[#1d0beb] shadow-lg"
-        size="icon"
-        onClick={handleAddSiteClick}
-      >
-        <Plus className="w-6 h-6" />
-      </Button>
 
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmationDialog

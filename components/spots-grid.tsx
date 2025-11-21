@@ -540,7 +540,7 @@ export function SpotsGrid({ spots, totalSpots, occupiedCount, vacantCount, produ
                         <div className="flex flex-col">
                           <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{booking.reservation_id || booking.id.slice(-8)}</div>
                           <div style={{ fontSize: '12px', fontWeight: 400, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{formatBookingDates(booking.start_date, booking.end_date)}</div>
-                          <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{booking.transaction?.total.toLocaleString("en-PH", {
+                          <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: '132%', color: '#333', fontFamily: 'Inter' }}>{booking.transaction?.amount.toLocaleString("en-PH", {
                             style: "currency",
                             currency: "PHP"
                           }) || booking.cost?.toLocaleString("en-PH", {
