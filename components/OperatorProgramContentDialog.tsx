@@ -86,6 +86,7 @@ export function OperatorProgramContentDialog({
   const [isUploading, setIsUploading] = useState(false);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const fetchProductSpecs = async () => {
@@ -156,6 +157,7 @@ export function OperatorProgramContentDialog({
       return;
     }
 
+    setIsSaving(true);
     try {
       // Get product data for player IDs
       const productRef = doc(db, "products", productId);
@@ -411,6 +413,8 @@ export function OperatorProgramContentDialog({
         description: "Failed to create operator program. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -531,10 +535,29 @@ export function OperatorProgramContentDialog({
                   : {}
               }
             >
-              {spot.imageUrl && !isEditMode ? (
+              {isUploading ? (
+                <div className="flex flex-col items-center py-4">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
+                  <div className="text-sm text-gray-600">
+                    Uploading file...
+                  </div>
+                </div>
+              ) : (videoFile || selectedMedia) || (spot.imageUrl && !isEditMode) ? (
                 <video
-                  key={spot.imageUrl}
-                  src={spot.imageUrl}
+                  key={
+                    selectedMedia
+                      ? selectedMedia.url
+                      : videoFile
+                        ? videoPreviewUrl
+                        : spot.imageUrl
+                  }
+                  src={
+                    selectedMedia
+                      ? selectedMedia.url
+                      : videoFile
+                        ? videoPreviewUrl!
+                        : spot.imageUrl
+                  }
                   width={scaledWidth}
                   height={scaledHeight}
                   className="object-fill h-full w-full"
@@ -542,113 +565,45 @@ export function OperatorProgramContentDialog({
                   autoPlay
                   muted
                 />
-              ) : spot.imageUrl && isEditMode ? (
-                <>
-                  <video
-                    key={
-                      selectedMedia
-                        ? selectedMedia.url
-                        : videoFile
-                          ? videoPreviewUrl
-                          : spot.imageUrl
-                    }
-                    src={
-                      selectedMedia
-                        ? selectedMedia.url
-                        : videoFile
-                          ? videoPreviewUrl!
-                          : spot.imageUrl
-                    }
-                    width={scaledWidth}
-                    height={scaledHeight}
-                    className="object-fill h-full w-full"
-                    controls
-                    autoPlay
-                    muted
-                  />
-                  {/* Overlay buttons */}
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 inset-0 flex items-center justify-center h-[210px] w-[139px] rounded-md bg-black bg-opacity-50">
-                    <div className="flex flex-col gap-2">
-                      <label className="cursor-pointer">
-                        <div className="rounded-[7.5px] bg-white border-gray-400 border-2 border-solid flex items-center justify-center py-2 px-8 mb-2">
-                          <div className="px-2 border-gray-500">
-                            <ArrowUpFromLine className="font-bold" />
-                          </div>
+              ) : isEditMode ? (
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 inset-0 flex items-center justify-center h-[210px] w-[139px] rounded-md bg-black bg-opacity-50">
+                  <div className="flex flex-col gap-2">
+                    <label className="cursor-pointer">
+                      <div className="rounded-[7.5px] bg-white border-gray-400 border-2 border-solid flex items-center justify-center py-2 px-8 mb-2">
+                        <div className="px-2 border-gray-500">
+                          <ArrowUpFromLine className="font-bold" />
                         </div>
-                        <div className="text-center text-white text-xs">
-                          Upload video
-                        </div>
-                        <input
-                          type="file"
-                          accept="video/*"
-                          onChange={(e) => {
-                            setVideoFile(e.target.files?.[0] || null);
-                            setSelectedMedia(null);
-                          }}
-                          className="hidden"
-                        />
-                      </label>
-                      <div className="text-center text-xs mt-2 text-white">
-                        OR
                       </div>
-                      <div className="flex flex-col items-center">
-                        <button
-                          className="rounded-[6px] bg-white text-gray-700 w-[94px] h-[24px] text-xs font-medium mb-2"
-                          onClick={handleBrowseMedia}
-                        >
-                          Browse
-                        </button>
-                        <div className="text-center text-xs text-white">
-                          from Media Library
-                        </div>
+                      <div className="text-center text-white text-xs">
+                        Upload video
+                      </div>
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={(e) => {
+                          setVideoFile(e.target.files?.[0] || null);
+                          setSelectedMedia(null);
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                    <div className="text-center text-xs mt-2 text-white">
+                      OR
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <button
+                        className="rounded-[6px] bg-white text-gray-700 w-[94px] h-[24px] text-xs font-medium mb-2"
+                        onClick={handleBrowseMedia}
+                      >
+                        Browse
+                      </button>
+                      <div className="text-center text-xs text-white">
+                        from Media Library
                       </div>
                     </div>
                   </div>
-                </>
-              ) : (
-                <>
-                  {isUploading ? (
-                    <div className="flex flex-col items-center py-4">
-                      <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
-                      <div className="text-sm text-gray-600">
-                        Uploading file...
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      <label className="cursor-pointer">
-                        <div className="rounded-[7.5px] bg-white border-gray-400 border-2 border-solid flex items-center justify-center py-2 px-8 mb-2">
-                          <div className="px-2 border-gray-500">
-                            <ArrowUpFromLine className="font-bold" />
-                          </div>
-                        </div>
-                        <div className="text-centertext-xs">Upload video</div>
-                        <input
-                          type="file"
-                          accept="video/*"
-                          onChange={(e) => {
-                            setVideoFile(e.target.files?.[0] || null);
-                            setSelectedMedia(null);
-                          }}
-                          className="hidden"
-                        />
-                      </label>
-                      <div className="text-center text-xs mt-2">OR</div>
-                      <div className="flex flex-col items-center">
-                        <button
-                          className="rounded-[6px] bg-white text-gray-700 w-[94px] h-[24px] text-xs font-medium mb-2"
-                          onClick={handleBrowseMedia}
-                        >
-                          Browse
-                        </button>
-                        <div className="text-center text-xs">
-                          from Media Library
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -665,9 +620,16 @@ export function OperatorProgramContentDialog({
               <Button
                 className="w-[90px] h-6 rounded-[6px] bg-green-700 text-xs font-bold"
                 onClick={handleSave}
-                disabled={!isFormValid}
+                disabled={isSaving || !isFormValid}
               >
-                Save
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                    Saving
+                  </>
+                ) : (
+                  "Save"
+                )}
               </Button>
             </>
           ) : (

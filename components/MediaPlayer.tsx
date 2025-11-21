@@ -24,6 +24,13 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ url, className = "w-full h-fu
     }
   }, [playing])
 
+  // Reload video when URL changes
+  useEffect(() => {
+    if (videoRef.current && url && mimeType?.startsWith('video/')) {
+      videoRef.current.load()
+    }
+  }, [url])
+
   // URL validation function
   const isValidUrl = (url: string): boolean => {
     try {

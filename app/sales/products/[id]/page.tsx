@@ -779,6 +779,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     )
 
     const unsubscribe = onSnapshot(playlistQuery, (playlistSnap) => {
+      const changes = playlistSnap.docChanges()
+      const hasRelevantChange = changes.some(change => change.type === 'added' || change.type === 'modified')
+
+      if (!hasRelevantChange) return
+
       if (!playlistSnap.empty) {
         const latestPlaylist = playlistSnap.docs[0].data()
         const existingPages = latestPlaylist.pages || []
