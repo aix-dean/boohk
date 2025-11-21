@@ -46,13 +46,15 @@ export function GooglePlacesAutocomplete({
   const [placesService, setPlacesService] = useState<any>(null)
   const [map, setMap] = useState<any>(null)
   const [marker, setMarker] = useState<any>(null)
+  const [mapsConfig, setMapsConfig] = useState<{ apiKey: string; mapId?: string } | null>(null)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
   // Load Google Maps
   useEffect(() => {
     if (enableMap) {
       loadGoogleMaps()
-        .then(() => {
+        .then((config) => {
+          setMapsConfig(config)
           setGoogleMapsLoaded(true)
           if (window.google && window.google.maps) {
             const autoCompleteService = new window.google.maps.places.AutocompleteService()
@@ -69,14 +71,19 @@ export function GooglePlacesAutocomplete({
 
   // Initialize map when enabled
   useEffect(() => {
-    if (enableMap && googleMapsLoaded && mapRef.current && window.google) {
-      const mapOptions = {
+    if (enableMap && googleMapsLoaded && mapsConfig && mapRef.current && window.google) {
+      const mapOptions: google.maps.MapOptions = {
         center: { lat: 14.5995, lng: 120.9842 }, // Manila coordinates
         zoom: 12,
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
       }
+
+      if (mapsConfig.mapId) {
+        mapOptions.mapId = mapsConfig.mapId
+      }
+
       const newMap = new window.google.maps.Map(mapRef.current, mapOptions)
       setMap(newMap)
 
@@ -104,7 +111,7 @@ export function GooglePlacesAutocomplete({
         })
       })
     }
-  }, [enableMap, googleMapsLoaded, onChange, onGeopointChange])
+  }, [enableMap, googleMapsLoaded, mapsConfig, onChange, onGeopointChange])
 
   const fetchSuggestions = useCallback(async (query: string) => {
     if (!query.trim() || !autocompleteService) {
