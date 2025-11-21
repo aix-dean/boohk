@@ -417,9 +417,8 @@ export function SpotsGrid({
         const newBookingPages = pages.map((page, index) => ({
           ...page,
           schedules: [schedules],
-          client_id: selectedBooking.client.id,
-          client_name:
-            selectedBooking.client.name || selectedBooking.client?.name,
+          client_id: selectedBooking.client?.id || '',
+          client_name: selectedBooking.client?.name || 'Unknown Client',
           acceptByUid: userData?.uid,
           acceptBy: `${userData?.first_name || ""} ${userData?.last_name || ""}`,
           booking_id: selectedBooking.id,
@@ -552,8 +551,8 @@ export function SpotsGrid({
         selectedReasons,
         otherReason,
         declinedAt: serverTimestamp(),
-        clientId: selectedBooking.client?.id,
-        clientName: selectedBooking.client?.name,
+        clientId: selectedBooking.client?.id || '',
+        clientName: selectedBooking.client?.name || 'Unknown Client',
         startDate: selectedBooking.start_date,
         endDate: selectedBooking.end_date,
         totalCost: selectedBooking.total_cost || selectedBooking.cost,

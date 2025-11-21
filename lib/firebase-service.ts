@@ -106,129 +106,13 @@ async function removeServiceAssignmentFromIndex(serviceAssignmentId: string) {
 }
 import type { QuotationProduct, ProjectCompliance, ClientCompliance } from "@/lib/types/quotation"
 import type { Media } from "oh-db-models"
+import type { Product } from "oh-db-models/dist/products/types"
+
+// Re-export the Product type from oh-db-models
+export type { Product }
 
 // Initialize Firebase Storage
 const storage = getStorage()
-
-// Product interface
-export interface Product {
-  id?: string
-  name: string
-  description: string
-  price: number
-  imageUrl?: string
-  active: boolean
-  deleted: boolean
-  created?: any
-  updated?: any
-  seller_id: string
-  seller_name: string
-  company_id?: string | null
-  position: number
-  media?: Array<{
-    url: string
-    distance: string
-    type: string
-    isVideo: boolean
-  }>
-  playerIds?: string[]
-  spotUrls?: string[]
-  retailSpot?: Array<{ spotNumber: number }>
-  retail_spot?: {
-    spot_number?: number[]
-  }
-  categories?: string[]
-  category_names?: string[]
-  content_type?: string
-  cms?: {
-    start_time?: string
-    end_time?: string
-    spot_duration?: number
-    loops_per_day?: number
-    spots_per_loop?: number
-  } | null
-  pages?: any[] | null
-  specs_rental?: {
-    audience_types?: string[]
-    geopoint?: GeoPoint
-    location?: string
-    location_label?: string
-    land_owner?: string
-    partner?: string
-    orientation?: string
-    traffic_count?: number | null
-    traffic_unit?: "monthly" | "daily" | "weekly"
-    elevation?: number | null
-    height?: number | null
-    width?: number | null
-    site_orientation?: string | null
-    caretaker?: string | null
-    size?: string
-    material?: string
-    panels?: string
-    gondola?: boolean
-    technology?: string
-    site_code?: string
-    location_visibility?: number | null
-    location_visibility_unit?: string
-    dimension_unit?: "ft" | "m"
-    elevation_unit?: "ft" | "m"
-    structure:{
-      color?: string | null
-      condition?: string | null
-      contractor?: string | null
-      last_maintenance?: Date | null
-    }
-    illumination: string | {
-      bottom_count?: number | null
-      bottom_lighting_specs?: string | null
-      left_count?: number | null
-      left_lighting_specs?: string | null
-      right_count?: number | null
-      right_lighting_specs?: string | null
-      upper_count?: number | null
-      upper_lighting_specs?: string | null
-      power_consumption_monthly?: number | null
-    }
-  }
-  type?: string
-  status?: string
-  health_percentage?: number
-  location?: string
-  address?: string
-  site_code?: string
-  light?: {
-    illumination_status?: string
-    location?: string
-    size?: string
-  }
-  blueprints?: Array<{
-    blueprint: string
-    uploaded_by: string
-    created: any
-  }>
-  compliance?: Array<{
-    name: string
-    doc_url: string
-    created: any
-    created_by: string
-  }>
-  structure?: {
-    color?: string
-    contractor?: string
-    condition?: string
-    last_maintenance?: any
-  }
-  personnel?: Array<{
-    status: boolean
-    name: string
-    position: string
-    contact: string
-    start_date: any
-    created: any
-    created_by: string
-  }>
-}
 
 // ServiceAssignment interface
 export interface ServiceAssignment {
@@ -1658,7 +1542,6 @@ export async function getProductsByContentTypeAndCompany(
         // Check search term match
         return (
           product.name?.toLowerCase().includes(searchLower) ||
-          product.light?.location?.toLowerCase().includes(searchLower) ||
           product.specs_rental?.location?.toLowerCase().includes(searchLower) ||
           product.description?.toLowerCase().includes(searchLower)
         )
@@ -1741,7 +1624,6 @@ export async function getProductsCountByContentTypeAndCompany(contentType: strin
         if (productContentType === contentTypeLower && product.company_id) {
           if (
             product.name?.toLowerCase().includes(searchLower) ||
-            product.light?.location?.toLowerCase().includes(searchLower) ||
             product.specs_rental?.location?.toLowerCase().includes(searchLower) ||
             product.description?.toLowerCase().includes(searchLower)
           ) {

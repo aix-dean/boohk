@@ -33,7 +33,7 @@ interface BookingCongratulationsDialogProps {
 export function BookingCongratulationsDialog({ open, onOpenChange, booking }: BookingCongratulationsDialogProps) {
   const ticketCode = booking.airing_code || "BH" + Date.now()
   const dateAccepted = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  const company = booking.client.company_name || booking.client.name
+  const company = booking.client?.company_name || booking.client?.name || 'Unknown Client'
   const dates = formatBookingDates(booking.start_date, booking.end_date)
   const formatSchedule = (startDate: any, endDate: any): string => {
     if (!startDate || !endDate) return ""
