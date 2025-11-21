@@ -2360,7 +2360,7 @@ export async function softDeleteMediaLibrary(mediaId: string): Promise<void> {
 export async function uploadMediaFile(file: File, companyId: string): Promise<string> {
   try {
     const timestamp = Date.now()
-    const fileName = `media/${companyId}/${timestamp}_${file.name}`
+    const fileName = `${timestamp}_${file.name}`
     const storageRef = ref(storage, fileName)
     const snapshot = await uploadBytes(storageRef, file)
     const downloadURL = await getDownloadURL(snapshot.ref)

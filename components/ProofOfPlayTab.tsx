@@ -13,7 +13,7 @@ const ProofOfPlayTab: React.FC<ProofOfPlayTabProps> = ({
 }) => {
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: currentYear - 2020 + 1 }, (_, i) => 2020 + i)
-
+  const data : any = []
   return (
     <Card className="rounded-xl shadow-sm border-none p-4">
       <CardContent className="pb-4 overflow-x-auto">
@@ -30,22 +30,22 @@ const ProofOfPlayTab: React.FC<ProofOfPlayTabProps> = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            <TableRow className="border-t h-[64px]">
-              <TableCell>Sample Ad 1</TableCell>
-              <TableCell>T001</TableCell>
-              <TableCell>2023-01-01</TableCell>
-              <TableCell>2023-01-31</TableCell>
-              <TableCell>Played</TableCell>
-              <TableCell>Report 1</TableCell>
+            {data && data.length > 0 ? (
+              <TableRow className="border-t h-[64px]">
+              <TableCell></TableCell>
+              <TableCell></TableCell>
+              <TableCell></TableCell>
+              <TableCell></TableCell>
+              <TableCell></TableCell>
+              <TableCell></TableCell>
             </TableRow>
-            <TableRow className="border-t">
-              <TableCell>Sample Ad 2</TableCell>
-              <TableCell>T002</TableCell>
-              <TableCell>2023-02-01</TableCell>
-              <TableCell>2023-02-28</TableCell>
-              <TableCell>Pending</TableCell>
-              <TableCell>Report 2</TableCell>
-            </TableRow>
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-4">
+                  No proof of play data available.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent>
