@@ -19,7 +19,6 @@ import type { Product } from "@/lib/firebase-service"
 import { Skeleton } from "@/components/ui/skeleton"
 import { softDeleteProduct } from "@/lib/firebase-service"
 import { useToast } from "@/hooks/use-toast"
-import { useAuth } from "@/contexts/auth-context"
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
 import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete"
 import SiteInformation from "@/components/SiteInformation"
@@ -144,8 +143,6 @@ export default function BusinessProductDetailPage() {
     return totalSpots - calculateOccupiedSpots(cms)
   }
 
-  const [product, setProduct] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
