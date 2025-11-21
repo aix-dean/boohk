@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/use-toast"
 import { useAuth } from "@/contexts/auth-context"
 import { collection, addDoc, serverTimestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -37,7 +37,10 @@ interface AddUserDialogProps {
 export function AddUserDialog({ open, onOpenChange, onSuccess, initialRole, remainingSlots, departmentName }: AddUserDialogProps) {
   const { userData, projectData } = useAuth()
   const [loading, setLoading] = useState(false)
-  const [roles] = useState<HardcodedRole[]>(getAllRoles().filter(role => !['accounting', 'finance'].includes(role.id)))
+  const [roles] = useState<HardcodedRole[]>(getAllRoles())
+
+  // Disabled roles in the add user dialog
+  const disabledRoles: string[] = ['admin', 'logistics', 'cms', 'treasury', 'finance']
 
   // Department color mapping for bullet points
   const departmentColors: Record<string, string> = {
@@ -85,12 +88,20 @@ export function AddUserDialog({ open, onOpenChange, onSuccess, initialRole, rema
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!userData?.company_id) {
-      toast.error("Company information not found")
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Company information not found",
+      })
       return
     }
 
     if (!formData.recipientEmail) {
-      toast.error("Please enter an email address")
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please enter an email address",
+      })
       return
     }
 
@@ -144,10 +155,20 @@ export function AddUserDialog({ open, onOpenChange, onSuccess, initialRole, rema
       })
 
       if (!response.ok) {
-        throw new Error("Failed to send email")
+        let errorMessage = "Failed to send email"
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch {
+          // If response isn't JSON, use default message
+        }
+        throw new Error(errorMessage)
       }
 
-      toast.success(`Invitation sent successfully to ${formData.recipientEmail}`)
+      toast({
+        title: "Success",
+        description: `Invitation sent successfully to ${formData.recipientEmail}`,
+      })
 
       // Reset form
       setFormData({
@@ -168,7 +189,11 @@ export function AddUserDialog({ open, onOpenChange, onSuccess, initialRole, rema
       onOpenChange(false)
     } catch (error) {
       console.error("Error sending invitation:", error)
-      toast.error("Failed to send invitation. Please try again.")
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send invitation. Please try again.",
+      })
     } finally {
       setLoading(false)
     }
@@ -225,7 +250,7 @@ export function AddUserDialog({ open, onOpenChange, onSuccess, initialRole, rema
                   </SelectTrigger>
                   <SelectContent>
                     {roles.map((role) => (
-                      <SelectItem key={role.id} value={role.id}>
+                      <SelectItem key={role.id} value={role.id} disabled={disabledRoles.includes(role.id)} className={disabledRoles.includes(role.id) ? 'opacity-50' : ''}>
                         {role.name}
                       </SelectItem>
                     ))}

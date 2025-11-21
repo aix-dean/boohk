@@ -16,10 +16,17 @@ export default function IntegrationPage() {
           </button>
         </div>
         <p>Connect your system with the tools and platforms you already use.</p>
-        <div className="flex justify-around mt-12">
+        <div className="flex justify-start mt-12">
           <img src="/integration-1.png" className="h-[93px]" alt="Integration 1" />
-          <img src="/integration-2.png" className="h-[94px]" alt="Integration 2" />
-          <img src="/integration-3.png" className="h-[55px]" alt="Integration 3" />
+          <img src="/integration-2.png" className="h-[94px] pl-[45px]" alt="Integration 2" />
+          <img src="/integration-3.png" className="h-[55px] pl-[45px]" alt="Integration 3" />
+        </div>
+        <div className="flex justify-start mt-12">
+          <div style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '16px', fontStyle: 'normal', fontWeight: '700', lineHeight: '100%' }}>Ongoing</div>
+        </div>
+        <div className="flex justify-start items-center mt-3">
+           <img src="/integration-4.png" className="h-[69px] ps-10 pl-[15px]" alt="Integration 4" />
+           <img src="/integration-5.png" className="h-[105px] pl-[45px]" alt="Integration 5" />
         </div>
       </div>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -36,7 +43,7 @@ export default function IntegrationPage() {
           </div>
           <div className="flex items-center mt-2">
             <img src="/contact-email.png" alt="Email" className="w-6 h-6 mr-2" />
-            <div style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '12px', fontStyle: 'normal', fontWeight: '600', lineHeight: '250%' }}>boohk.oohpartners@</div>
+            <div style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '12px', fontStyle: 'normal', fontWeight: '600', lineHeight: '250%' }}>boohk.oohpartners@aix.ph</div>
           </div>
           <div className="flex items-center mt-2">
             <img src="/contact-fb.png" alt="Facebook" className="w-6 h-6 mr-2" />

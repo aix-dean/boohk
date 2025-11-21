@@ -1,10 +1,32 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Pencil } from "lucide-react"
+import { ComingSoonModal } from "@/components/coming-soon-dialog"
 
 export default function PayoutsPage() {
+  const router = useRouter()
+  const [showModal, setShowModal] = useState(false)
+
+  useEffect(() => {
+    setShowModal(true)
+  }, [])
+
+  const handleClose = () => {
+    setShowModal(false)
+    router.back()
+  }
+
+  const handleNotify = () => {
+    setShowModal(false)
+    router.back()
+  }
+
   return (
+    <>
+      {showModal && <ComingSoonModal onClose={handleClose} onNotify={handleNotify} />}
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-[1400px] mx-auto">
         {/* Header */}
@@ -27,19 +49,19 @@ export default function PayoutsPage() {
           {/* Total Payouts Received */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="text-sm text-gray-600 mb-2">Total Payouts Received</div>
-            <div className="text-2xl font-semibold text-green-600">₱2,340,500.00</div>
+            <div className="text-2xl font-semibold text-green-600">₱0.0</div>
           </div>
 
           {/* Pending Payout Amount */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="text-sm text-gray-600 mb-2">Pending Payout Amount</div>
-            <div className="text-2xl font-semibold text-gray-900">₱45,000.00</div>
+            <div className="text-2xl font-semibold text-gray-900">₱0.0</div>
           </div>
 
           {/* Last Payout Date */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="text-sm text-gray-600 mb-2">Last Payout Date</div>
-            <div className="text-2xl font-semibold text-gray-900">Oct 11, 2025</div>
+            <div className="text-2xl font-semibold text-gray-900">-</div>
           </div>
 
           {/* Min. Payout Amount */}
@@ -63,16 +85,17 @@ export default function PayoutsPage() {
             </div>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-xs">BPI</span>
+                <span className="text-white font-bold text-xs">-</span>
               </div>
               <div className="text-sm text-gray-900">
-                <span className="font-medium">BPI Bank</span>
-                <span className="text-gray-500"> (••••0421)</span>
+                <span className="font-medium">Bank</span>
+                <span className="text-gray-500"> (••••)</span>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+    </>
   )
 }

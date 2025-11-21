@@ -61,12 +61,21 @@ const TransactionsIcon = ({ className, color = "white" }: { className?: string; 
   <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
     <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM15 6.5V9H11V11H15V13.5L18.5 10L15 6.5ZM9 10.5L5.5 14L9 17.5V15H13V13H9V10.5Z" fill={color}/>
   </svg>
-)
+);
 
 const PayoutsIcon = ({ className, color = "white" }: { className?: string; color?: string }) => (
   <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
     <path d="M19 14V6C19 4.9 18.1 4 17 4H3C1.9 4 1 4.9 1 6V14C1 15.1 1.9 16 3 16H17C18.1 16 19 15.1 19 14ZM17 14H3V6H17V14ZM10 7C8.34 7 7 8.34 7 10C7 11.66 8.34 13 10 13C11.66 13 13 11.66 13 10C13 8.34 11.66 7 10 7ZM23 7V18C23 19.1 22.1 20 21 20H4V18H21V7H23Z" fill={color}/>
   </svg>
+)
+
+const MediaLibraryIcon = ({ className, color = "white" }: { className?: string; color?: string }) => (
+  <img
+    src="/media_library.png"
+    alt="Media Library"
+    className={className}
+    style={{ filter: color === "white" ? "brightness(0) invert(1)" : "none" }}
+  />
 )
 
 // Navigation data structure with icons
@@ -99,6 +108,7 @@ const navigationItems = [
       { title: "Billings", href: "/sales/billings", icon: FileText },
       { title: "Planner", href: "/sales/planner", icon: Calendar },
       { title: "Customer Chat", href: "/sales/chat", icon: MessageCircle },
+      { title: "Media Library", href: "/sales/media-library", icon: MediaLibraryIcon },
     ],
   },
   {
@@ -375,7 +385,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -415,7 +425,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -654,13 +664,13 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
                 })}
                 {currentSection === "it" && [
-                  { title: "Teams", href: "/it/teams", icon: TeamsIcon },
+                  { title: "Teams", href: "/it/user-management", icon: TeamsIcon },
                   { title: "Integration", href: "/it/integration", icon: IntegrationIcon },
                 ].map((item) => {
                   const Icon = item.icon
@@ -701,7 +711,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -722,7 +732,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -747,7 +757,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -945,7 +955,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -977,7 +987,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1054,7 +1064,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1095,7 +1105,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1114,7 +1124,8 @@ export function SideNavigation() {
                   {[
                     { title: "Enrolled Sites", href: "/sales/dashboard", icon: LayoutDashboard },
                     { title: "Price Listing", href: "/sales/price-listing", icon: DollarSign },
-                    { title: "Transactions", href: "/sales/reservation", icon: CalendarCheck },
+                    { title: "Transactions", href: "/sales/transactions", icon: CalendarCheck },
+                    { title: "Media Library", href: "/sales/media-library", icon: MediaLibraryIcon },
                   ].map((item) => {
                     const Icon = item.icon
                     const active = isActive(pathname, item.href)
@@ -1128,7 +1139,7 @@ export function SideNavigation() {
                           active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                         )}
                       >
-                        <Icon className="h-4 w-4" />
+                        <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                         <span className="flex-1">{item.title}</span>
                       </Link>
                     )
@@ -1165,7 +1176,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1195,7 +1206,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1226,7 +1237,7 @@ export function SideNavigation() {
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                       <span className="flex-1">{item.title}</span>
                     </Link>
                   )
@@ -1253,7 +1264,7 @@ export function SideNavigation() {
                       active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                     )}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-4 w-4" color={active ? "#333333" : "white"} />
                     <span className="flex-1">{item.title}</span>
                   </Link>
                 )

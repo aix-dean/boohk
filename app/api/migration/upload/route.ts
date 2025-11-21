@@ -813,7 +813,7 @@ async function processUsers(data: any[], userId: string, companyId: string) {
         onboarding: row.onboarding === 'true'
       }
 
-      await addDoc(collection(db, 'iboard_users'), cleanForFirestore(userData))
+      await addDoc(collection(db, 'boohk_users'), cleanForFirestore(userData))
       processedCount++
     } catch (error) {
       errors.push(`Row ${i + 1}: Failed to save user data - ${error instanceof Error ? error.message : 'Unknown error'}`)

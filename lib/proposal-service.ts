@@ -116,7 +116,7 @@ export async function createProposal(
 
     // Try to fetch user data to populate contact info
     try {
-      const userDocRef = doc(db, "iboard_users", userId)
+      const userDocRef = doc(db, "boohk_users", userId)
       const userDocSnap = await getDoc(userDocRef)
       if (userDocSnap.exists()) {
         const userData = userDocSnap.data()

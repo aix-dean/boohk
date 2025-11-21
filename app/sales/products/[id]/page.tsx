@@ -14,24 +14,20 @@ import {
   Check,
   X,
   Calendar,
-  FileText,
-  Mail,
-  Eye,
-  AlertCircle,
   Loader2,
   ImageIcon,
+  MoreVertical,
 } from "lucide-react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { doc, getDoc, getDocs } from "firebase/firestore"
-import { db } from "@/lib/firebase"
+import { db, dbase } from "@/lib/firebase"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { getQuotationRequestsByProductId, type QuotationRequest } from "@/lib/firebase-service"
-import { getReportsByProductId, getLatestReportsByBookingIds, type ReportData } from "@/lib/report-service"
 import type { Booking } from "@/lib/booking-service"
 import { formatBookingDates } from "@/lib/booking-service"
 import { useToast } from "@/hooks/use-toast"
@@ -39,9 +35,12 @@ import { useAuth } from "@/contexts/auth-context"
 import { loadGoogleMaps } from "@/lib/google-maps-loader"
 import { collection, query, where, orderBy, onSnapshot, limit } from "firebase/firestore"
 import { SpotsGrid } from "@/components/spots-grid"
-import { GoogleMap } from "@/components/GoogleMap"
 import SiteInformation from "@/components/SiteInformation"
 import { SpotSelectionDialog } from "@/components/spot-selection-dialog"
+import TransactionsTab from "@/components/TransactionsTab"
+import ProgramListTab from "@/components/ProgramListTab"
+import ProofOfPlayTab from "@/components/ProofOfPlayTab"
+
 
 const CalendarView: React.FC<{ bookedDates: Date[] }> = ({ bookedDates }) => {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -53,6 +52,8 @@ const CalendarView: React.FC<{ bookedDates: Date[] }> = ({ bookedDates }) => {
       bookedDate.getFullYear() === date.getFullYear()
     )
   }
+
+
 
   const generateCalendarMonths = () => {
     const months = []
@@ -182,6 +183,7 @@ const GoogleMap = React.memo(({ location, className }: { location: string; class
 
   useEffect(() => {
     const initializeMaps = async () => {
+
       try {
         await loadGoogleMaps()
         await initializeMap()
@@ -221,21 +223,20 @@ const GoogleMap = React.memo(({ location, className }: { location: string; class
             })
 
             // Add marker
-            new window.google.maps.Marker({
-              position: results[0].geometry.location,
+            const markerElement = document.createElement('img');
+            markerElement.src = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#ef4444"/>
+              </svg>
+            `);
+            markerElement.style.width = '32px';
+            markerElement.style.height = '32px';
+
+            new window.google.maps.marker.AdvancedMarkerElement({
               map: map,
+              position: results[0].geometry.location,
               title: location,
-              icon: {
-                url:
-                  "data:image/svg+xml;charset=UTF-8," +
-                  encodeURIComponent(`
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#ef4444"/>
-                  </svg>
-                `),
-                scaledSize: new window.google.maps.Size(32, 32),
-                anchor: new window.google.maps.Point(16, 32),
-              },
+              content: markerElement,
             })
 
             setMapLoaded(true)
@@ -367,11 +368,10 @@ function CustomNotification({
       aria-live="polite"
     >
       <div
-        className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border backdrop-blur-sm ${
-          type === "success"
-            ? "bg-green-50/95 border-green-200 text-green-800"
-            : "bg-red-50/95 border-red-200 text-red-800"
-        }`}
+        className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border backdrop-blur-sm ${type === "success"
+          ? "bg-green-50/95 border-green-200 text-green-800"
+          : "bg-red-50/95 border-red-200 text-red-800"
+          }`}
       >
         <div className="flex-shrink-0">
           {type === "success" ? (
@@ -398,19 +398,16 @@ function CustomNotification({
     </div>
   )
 }
-export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
-   const router = useRouter()
-   const { userData } = useAuth()
-   const { toast } = useToast()
 
-   // Diagnostic log for params
-   console.log('🔍 DEBUG: params type:', typeof params, 'params value:', params)
-   const paramsData = React.use(params)
-   const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
+export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const router = useRouter()
+  const { userData } = useAuth()
+  const { toast } = useToast()
+  const paramsData = React.use(params)
+  const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
 
   // Helper functions for spots data
   const generateSpotsData = (cms: any, activePlaylistPages: any[]) => {
-    console.log(`activePlaylistPages for spots data:`, activePlaylistPages)
     const totalSpots = cms.loops_per_day || 18
     const spots = []
     for (let i = 1; i <= totalSpots; i++) {
@@ -420,13 +417,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
       // Get image URL from playlist page widget with matching spot_number
       let imageUrl: string | undefined
-      let endDate: string | undefined
-      if(page && page.widgets) {
-      const widget = activePlaylistPages.find((w: any) => w.spot_number === i)
-      console.log(`Widget for spot ${i}:`, widget)
+      let endDate: Date | undefined
+      if (page && page.widgets) {
+        const widget = activePlaylistPages.find((w: any) => w.spot_number === i)
         if (widget) {
           imageUrl = widget.widgets[0].url
-          endDate = widget.schedules[0]?.endDate
+          const scheduleEndDate = widget.schedules[0]?.endDate
+          endDate = scheduleEndDate?.toDate ? scheduleEndDate.toDate() : new Date(scheduleEndDate)
         }
       }
 
@@ -436,6 +433,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         status: (isOccupied ? "occupied" : "vacant") as "occupied" | "vacant",
         endDate,
         imageUrl,
+        booking_id: page?.booking_id,
       })
     }
 
@@ -443,30 +441,24 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const calculateOccupiedSpots = (cms: any) => {
-    console.log("🔍 DEBUG: calculateOccupiedSpots called with cms:", cms)
-    console.log("🔍 DEBUG: currentDayBookings:", currentDayBookings)
-    console.log("🔍 DEBUG: currentDayBookingsLoading:", currentDayBookingsLoading)
+
 
     if (currentDayBookingsLoading) {
-      console.log("🔍 DEBUG: Still loading current day bookings, returning 0")
       return 0
     }
 
     // Count unique spot numbers from current day's bookings
     const occupiedSpots = new Set()
     currentDayBookings.forEach(booking => {
-      if (booking.spot_numbers && Array.isArray(booking.spot_numbers)) {
-        booking.spot_numbers.forEach(spotNumber => {
-          occupiedSpots.add(spotNumber)
-          console.log("🔍 DEBUG: Adding spot number to occupied:", spotNumber, "from booking:", booking.id)
-        })
+      if (booking.spot_number) {
+        occupiedSpots.add(booking.spot_number)
       } else {
-        console.log("🔍 DEBUG: Booking has no spot_numbers or invalid format:", booking.id, booking.spot_numbers)
+        console.log("🔍 DEBUG: Booking has no spot_number:", booking.id, booking.spot_number)
       }
     })
 
     const occupiedCount = occupiedSpots.size
-    console.log("🔍 DEBUG: Total occupied spots calculated:", occupiedCount, "from", currentDayBookings.length, "bookings")
+
 
     return occupiedCount
   }
@@ -483,22 +475,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [imageViewerOpen, setImageViewerOpen] = useState(false)
   const [bookings, setBookings] = useState<Booking[]>([])
   const [bookingsLoading, setBookingsLoading] = useState(true)
-  const [reports, setReports] = useState<ReportData[]>([])
-  const [reportsLoading, setReportsLoading] = useState(true)
-  const [reportsTotal, setReportsTotal] = useState(0)
-  const [reportsPage, setReportsPage] = useState(1)
   const [bookingsTotal, setBookingsTotal] = useState(0)
   const [bookingsPage, setBookingsPage] = useState(1)
   const itemsPerPage = 10
   const [marketplaceDialogOpen, setMarketplaceDialogOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState("booking-summary")
+  const [activeTab, setActiveTab] = useState("transactions")
   const [calendarDialogOpen, setCalendarDialogOpen] = useState(false)
   const [bookedDates, setBookedDates] = useState<Date[]>([])
   const [calendarLoading, setCalendarLoading] = useState(false)
   const [screenSchedules, setScreenSchedules] = useState<any[]>([])
   const [currentDayBookings, setCurrentDayBookings] = useState<Booking[]>([])
   const [currentDayBookingsLoading, setCurrentDayBookingsLoading] = useState(false)
-  const [reportsData, setReportsData] = useState<{ [bookingId: string]: ReportData | null }>({})
   const [companyName, setCompanyName] = useState<string>("")
   const [companyLoading, setCompanyLoading] = useState(false)
   const [isSpotSelectionDialogOpen, setIsSpotSelectionDialogOpen] = useState(false)
@@ -511,6 +498,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [bookingRequests, setBookingRequests] = useState<Booking[]>([])
   const [bookingRequestsLoading, setBookingRequestsLoading] = useState(false)
   const [activePlaylistPages, setActivePlaylistPages] = useState<any[]>([])
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
+  const [selectedDay, setSelectedDay] = useState(new Date().getDate())
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const currentYear = new Date().getFullYear()
+  const years = Array.from({ length: currentYear - 2020 + 1 }, (_, i) => 2020 + i)
+  const [selectedContent, setSelectedContent] = useState<any | null>(null)
+  const [contentDialogOpen, setContentDialogOpen] = useState(false)
+  const [programListBookings, setProgramListBookings] = useState<Booking[]>([])
+  const [programListBookingsLoading, setProgramListBookingsLoading] = useState(false)
 
   const currentDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
@@ -573,49 +569,38 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   // Fetch bookings for this product
   useEffect(() => {
-    const fetchBookings = async () => {
-      if (!paramsData.id || activeTab !== "booking-summary") return
+    if (!paramsData.id || activeTab !== "transactions") return
 
-      setBookingsLoading(true)
-      setBookings([])
-      try {
-        const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
-        console.log('🔍 DEBUG fetchBookings: userData?.uid:', userData?.uid, 'productId:', productId)
-        const bookingsQuery = query(
-          collection(db, "booking"),
-          where("for_censorship", "==", 1),
-          where("product_id", "==", productId),
-          orderBy("created", "desc")
-        )
-        console.log('🔍 DEBUG fetchBookings: Executing query with filters - seller_id:', userData?.uid, 'for_censorship: 2, product_id:', productId)
-        const bookingsSnapshot = await getDocs(bookingsQuery)
-        console.log('🔍 DEBUG fetchBookings: Query returned', bookingsSnapshot.size, 'documents')
-        const allBookings: Booking[] = []
+    setBookingsLoading(true)
+    const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
+    const bookingsQuery = query(
+      collection(db, "booking"),
+      where("for_censorship", "==", 1),
+      where("product_id", "==", productId),
+      orderBy("created", "desc")
+    )
 
-        bookingsSnapshot.forEach((doc) => {
-          const bookingData = doc.data() as any
-          console.log('🔍 DEBUG fetchBookings: Booking id:', doc.id, 'reservation_id:', bookingData.reservation_id, 'seller_id:', bookingData.seller_id, 'for_censorship:', bookingData.for_censorship, 'product_id:', bookingData.product_id)
-          allBookings.push({
-            id: doc.id,
-            ...bookingData,
-          } as Booking)
-        })
+    const unsubscribe = onSnapshot(bookingsQuery, (snapshot) => {
+      const allBookings: Booking[] = []
 
-        console.log('🔍 DEBUG fetchBookings: Total allBookings after processing:', allBookings.length)
-        setBookingsTotal(allBookings.length)
-        const offset = (bookingsPage - 1) * itemsPerPage
-        const paginatedBookings = allBookings.slice(offset, offset + itemsPerPage)
-        setBookings(paginatedBookings)
-        console.log('🔍 DEBUG fetchBookings: Paginated bookings for page', bookingsPage, ':', paginatedBookings.map(b => ({ id: b.id, reservation_id: b.reservation_id })))
-      } catch (error) {
-        console.error("Error fetching bookings:", error)
-      } finally {
-        setBookingsLoading(false)
-      }
-    }
+      snapshot.forEach((doc) => {
+        const bookingData = doc.data() as any
+        allBookings.push({
+          id: doc.id,
+          ...bookingData,
+        } as Booking)
+      })
 
-    fetchBookings()
-  }, [paramsData.id, bookingsPage, activeTab])
+      setBookings(allBookings)
+      setBookingsTotal(allBookings.length)
+      setBookingsLoading(false)
+    }, (error) => {
+      console.error("Error fetching bookings:", error)
+      setBookingsLoading(false)
+    })
+
+    return unsubscribe
+  }, [paramsData.id, activeTab])
 
 
 
@@ -625,33 +610,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     if (activeTab !== "booking-summary") {
       setBookingsPage(1)
     }
-    if (activeTab !== "reports") {
-      setReportsPage(1)
-    }
   }, [activeTab])
-
-  useEffect(() => {
-    const fetchReports = async () => {
-      if (!paramsData.id || paramsData.id === "new" || activeTab !== "reports") {
-        setReportsLoading(false)
-        return
-      }
-
-      setReportsLoading(true)
-      try {
-        const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
-        const { reports: reportsData, total } = await getReportsByProductId(productId, reportsPage, itemsPerPage)
-        setReports(reportsData)
-        setReportsTotal(total)
-      } catch (error) {
-        console.error("Error fetching reports:", error)
-      } finally {
-        setReportsLoading(false)
-      }
-    }
-
-    fetchReports()
-  }, [paramsData.id, reportsPage, activeTab])
 
   // Fetch screen schedules for spots content status
   useEffect(() => {
@@ -707,8 +666,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
           // Check if booking covers today
           if (booking.start_date && booking.end_date) {
-            const startDate = booking.start_date.toDate ? booking.start_date.toDate() : new Date(booking.start_date)
-            const endDate = booking.end_date.toDate ? booking.end_date.toDate() : new Date(booking.end_date)
+            const startDate = booking.start_date.toDate ? booking.start_date.toDate() : new Date(booking.start_date as any)
+            const endDate = booking.end_date.toDate ? booking.end_date.toDate() : new Date(booking.end_date as any)
 
             if (startDate <= endOfDay && endDate >= startOfDay) {
               currentDayBookingsData.push(booking)
@@ -727,6 +686,48 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
     fetchCurrentDayBookings()
   }, [paramsData.id])
+
+  // Fetch bookings for selected date in program list (realtime)
+  useEffect(() => {
+    if (!paramsData.id || paramsData.id === "new") return
+
+    setProgramListBookingsLoading(true)
+    const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
+    const selectedDate = new Date(selectedYear, selectedMonth - 1, selectedDay)
+    const startOfDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate())
+    const endOfDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59)
+
+    const bookingsQuery = query(
+      collection(db, "booking"),
+      where("product_id", "==", productId)
+    )
+
+    const unsubscribe = onSnapshot(bookingsQuery, (snapshot) => {
+      const programListBookingsData: Booking[] = []
+
+      snapshot.forEach((doc) => {
+        const booking = { id: doc.id, ...doc.data() } as Booking
+
+        // Check if booking covers selected date
+        if (booking.start_date && booking.end_date) {
+          const startDate = booking.start_date.toDate ? booking.start_date.toDate() : new Date(booking.start_date as any)
+          const endDate = booking.end_date.toDate ? booking.end_date.toDate() : new Date(booking.end_date as any)
+
+          if (startDate <= endOfDay && endDate >= startOfDay) {
+            programListBookingsData.push(booking)
+          }
+        }
+      })
+
+      setProgramListBookings(programListBookingsData)
+      setProgramListBookingsLoading(false)
+    }, (error) => {
+      console.error("Error fetching program list bookings:", error)
+      setProgramListBookingsLoading(false)
+    })
+
+    return unsubscribe
+  }, [paramsData.id, selectedYear, selectedMonth, selectedDay])
 
   // Fetch booking requests (pending bookings) for this product
   useEffect(() => {
@@ -767,71 +768,53 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   // Fetch latest playlist and filter active pages
   useEffect(() => {
-    const fetchPlaylist = async () => {
-      if (!paramsData.id || paramsData.id === "new") return
+    if (!paramsData.id || paramsData.id === "new") return
 
-      try {
-        const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
-        const playlistQuery = query(
-          collection(db, "playlist"),
-          where("product_id", "==", productId),
-          orderBy("created", "desc"),
-          limit(1)
+    const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
+    const playlistQuery = query(
+      collection(db, "playlist"),
+      where("product_id", "==", productId),
+      orderBy("created", "desc"),
+      limit(1)
+    )
+
+    const unsubscribe = onSnapshot(playlistQuery, (playlistSnap) => {
+      if (!playlistSnap.empty) {
+        const latestPlaylist = playlistSnap.docs[0].data()
+        const existingPages = latestPlaylist.pages || []
+
+        // Filter out expired pages (where any schedule has endDate in the past)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0) // Set to start of today
+        const activePages = existingPages.filter((page: any) =>
+          page.schedules?.every((schedule: any) => {
+            let scheduleEndDate = schedule.endDate?.toDate
+              ? schedule.endDate.toDate()
+              : new Date(schedule.endDate)
+            scheduleEndDate.setHours(0, 0, 0, 0) // Set to start of that day
+            return scheduleEndDate >= today
+          })
         )
-        const playlistSnap = await getDocs(playlistQuery)
-        if (!playlistSnap.empty) {
-          const latestPlaylist = playlistSnap.docs[0].data()
-          const existingPages = latestPlaylist.pages || []
-
-          // Filter out expired pages (where any schedule has endDate in the past)
-          const today = new Date()
-          today.setHours(0, 0, 0, 0) // Set to start of today
-          const activePages = existingPages.filter((page: any) =>
-            page.schedules?.every((schedule: any) => {
-              let scheduleEndDate = schedule.endDate?.toDate
-                ? schedule.endDate.toDate()
-                : new Date(schedule.endDate)
-              scheduleEndDate.setHours(0, 0, 0, 0) // Set to start of that day
-              return scheduleEndDate >= today
-            })
-          )
-          setActivePlaylistPages(activePages)
-        } else {
-          setActivePlaylistPages([])
-        }
-      } catch (error) {
-        console.error("Error fetching playlist:", error)
+        setActivePlaylistPages(activePages)
+      } else {
         setActivePlaylistPages([])
       }
-    }
+    }, (error) => {
+      console.error("Error fetching playlist:", error)
+      setActivePlaylistPages([])
+    })
 
-    fetchPlaylist()
-   
+    return unsubscribe
   }, [paramsData.id])
 
-  // Fetch latest reports for current day bookings
+
   useEffect(() => {
-    const fetchReportsForBookings = async () => {
-      if (!currentDayBookings || currentDayBookings.length === 0) {
-        console.log("No current day bookings, setting empty reportsData")
-        setReportsData({})
-        return
-      }
+    setBookingsPage(1)
+  }, [selectedYear])
+  // Fetch content history for this product
 
-      try {
-        const bookingIds = currentDayBookings.map(booking => booking.id)
-        console.log("Fetching reports for booking IDs:", bookingIds)
-        const reportsMap = await getLatestReportsByBookingIds(bookingIds)
-        console.log("Fetched reports map:", reportsMap)
-        setReportsData(reportsMap)
-      } catch (error) {
-        console.error("Error fetching reports for bookings:", error)
-        setReportsData({})
-      }
-    }
 
-    fetchReportsForBookings()
-  }, [currentDayBookings])
+
   useEffect(() => {
     const fetchCompanyName = async () => {
       if (!product?.company_id) {
@@ -1011,176 +994,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     return null
   }
 
-  const getCostEstimateStatusConfig = (status: CostEstimate["status"]) => {
-    switch (status?.toLowerCase()) {
-      case "draft":
-        return {
-          color: "bg-gray-100 text-gray-800 border-gray-200",
-          icon: <FileText className="h-3.5 w-3.5" />,
-          label: "Draft",
-        }
-      case "sent":
-        return {
-          color: "bg-blue-100 text-blue-800 border-blue-200",
-          icon: <Mail className="h-3.5 w-3.5" />,
-          label: "Sent",
-        }
-      case "viewed":
-        return {
-          color: "bg-yellow-100 text-yellow-800 border-yellow-200",
-          icon: <Eye className="h-3.5 w-3.5" />,
-          label: "Viewed",
-        }
-      case "approved":
-        return {
-          color: "bg-green-100 text-green-800 border-green-200",
-          icon: <CheckCircle className="h-3.5 w-3.5" />,
-          label: "Approved",
-        }
-      case "rejected":
-        return {
-          color: "bg-red-100 text-red-800 border-red-200",
-          icon: <XCircle className="h-3.5 w-3.5" />,
-          label: "Rejected",
-        }
-      default:
-        return {
-          color: "bg-gray-100 text-gray-800 border-gray-200",
-          icon: <Clock3 className="h-3.5 w-3.5" />,
-          label: "Not Set",
-        }
-    }
-  }
-
-  const getQuotationStatusConfig = (status: Quotation["status"]) => {
-    switch (status?.toLowerCase()) {
-      case "draft":
-        return {
-          color: "bg-gray-100 text-gray-800 border-gray-200",
-          icon: <FileText className="h-3.5 w-3.5" />,
-          label: "Draft",
-        }
-      case "sent":
-        return {
-          color: "bg-blue-100 text-blue-800 border-blue-200",
-          icon: <Mail className="h-3.5 w-3.5" />,
-          label: "Sent",
-        }
-      case "viewed":
-        return {
-          color: "bg-yellow-100 text-yellow-800 border-yellow-200",
-          icon: <Eye className="h-3.5 w-3.5" />,
-          label: "Viewed",
-        }
-      case "accepted":
-        return {
-          color: "bg-green-100 text-green-800 border-green-200",
-          icon: <CheckCircle className="h-3.5 w-3.5" />,
-          label: "Accepted",
-        }
-      case "rejected":
-        return {
-          color: "bg-red-100 text-red-800 border-red-200",
-          icon: <XCircle className="h-3.5 w-3.5" />,
-          label: "Rejected",
-        }
-      case "expired":
-        return {
-          color: "bg-orange-100 text-orange-800 border-orange-200",
-          icon: <AlertCircle className="h-3.5 w-3.5" />,
-          label: "Expired",
-        }
-      default:
-        return {
-          color: "bg-gray-100 text-gray-800 border-gray-200",
-          icon: <Clock3 className="h-3.5 w-3.5" />,
-          label: "Not Set",
-        }
-    }
-  }
-
-  const getJobOrderStatusConfig = (status: JobOrder["status"]) => {
-    switch (status?.toLowerCase()) {
-      case "draft":
-        return {
-          color: "bg-gray-100 text-gray-800 border-gray-200",
-          icon: <FileText className="h-3.5 w-3.5" />,
-          label: "Draft",
-        }
-      case "pending":
-        return {
-          color: "bg-yellow-100 text-yellow-800 border-yellow-200",
-          icon: <Clock3 className="h-3.5 w-3.5" />,
-          label: "Pending",
-        }
-      case "approved":
-        return {
-          color: "bg-blue-100 text-blue-800 border-blue-200",
-          icon: <CheckCircle className="h-3.5 w-3.5" />,
-          label: "Approved",
-        }
-      case "completed":
-        return {
-          color: "bg-green-100 text-green-800 border-green-200",
-          icon: <CheckCircle className="h-3.5 w-3.5" />,
-          label: "Completed",
-        }
-      case "cancelled":
-        return {
-          color: "bg-red-100 text-red-800 border-red-200",
-          icon: <XCircle className="h-3.5 w-3.5" />,
-          label: "Cancelled",
-        }
-      default:
-        return {
-          color: "bg-gray-100 text-gray-800 border-gray-200",
-          icon: <Clock3 className="h-3.5 w-3.5" />,
-          label: "Not Set",
-        }
-    }
-  }
-
-  const getJobOrderPriorityConfig = (priority: JobOrder["priority"]) => {
-    switch (priority?.toLowerCase()) {
-      case "high":
-        return {
-          color: "bg-red-100 text-red-800 border-red-200",
-          label: "High",
-        }
-      case "medium":
-        return {
-          color: "bg-yellow-100 text-yellow-800 border-yellow-200",
-          label: "Medium",
-        }
-      case "low":
-        return {
-          color: "bg-green-100 text-green-800 border-green-200",
-          label: "Low",
-        }
-      default:
-        return {
-          color: "bg-gray-100 text-gray-800 border-gray-200",
-          label: "Normal",
-        }
-    }
-  }
-
-  const getTabCount = (tab: string) => {
-    switch (tab) {
-      case "booking-summary":
-        return bookingsTotal
-      case "ce":
-        return costEstimatesTotal
-      case "quote":
-        return quotationsTotal
-      case "job-order":
-        return jobOrdersTotal
-      case "reports":
-        return reportsTotal
-      default:
-        return 0
-    }
-  }
 
   const fetchBookedDates = async () => {
     if (!paramsData.id) return
@@ -1328,7 +1141,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           companyName={companyName}
         />
 
-                {/* Right Content - Tabbed Interface */}
+        {/* Right Content - Tabbed Interface */}
         <section className="lg:col-span-2">
           {/* Spots Section - Only show for digital sites */}
           {product && product.content_type?.toLowerCase() === "digital" && product.cms && (
@@ -1345,155 +1158,53 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               />
             </div>
           )}
-            
-            
 
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <div>
-                <TabsList className="flex flex-wrap justify-start bg-transparent border-none p-0 gap-0">
-                <TabsTrigger value="booking-summary" className="bg-white border-2 border-[#DFDFDF] text-[#DFDFDF] rounded-none h-auto min-h-9 px-2 py-2 whitespace-normal text-center data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:border-[#C4C4C4]">Booking Summary</TabsTrigger>
-                <TabsTrigger value="ce" className="bg-white border-2 border-[#DFDFDF] text-[#DFDFDF] rounded-none h-auto min-h-9 px-2 py-2 whitespace-normal text-center data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:border-[#C4C4C4]">Content History</TabsTrigger>
-                <TabsTrigger value="quote" className="bg-white border-2 border-[#DFDFDF] text-[#DFDFDF] rounded-none h-auto min-h-9 px-2 py-2 whitespace-normal text-center data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:border-[#C4C4C4]">Proof of Play</TabsTrigger>
+
+
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <div>
+              <TabsList className="flex flex-wrap justify-start bg-transparent border-none p-0 gap-0">
+                <TabsTrigger value="transactions" className="bg-white border-2 w-[127px] border-[#DFDFDF] text-[#DFDFDF] rounded-none h-auto min-h-9 px-2 py-2 whitespace-normal text-center data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:border-[#C4C4C4]">Transactions</TabsTrigger>
+                <TabsTrigger value="program-list" className="bg-white border-2 w-[140px] border-[#DFDFDF] text-[#DFDFDF] rounded-none h-auto min-h-9 px-2 py-2 whitespace-normal text-center data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:border-[#C4C4C4]">Program List</TabsTrigger>
+                <TabsTrigger value="proof-of-play" className="bg-white border-2 w-[140px] border-[#DFDFDF] text-[#DFDFDF] rounded-none h-auto min-h-9 px-2 py-2 whitespace-normal text-center data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:border-[#C4C4C4]">Proof of Play</TabsTrigger>
               </TabsList>
             </div>
 
-            <TabsContent key={productId} value="booking-summary" className="mt-0">
-              {(() => { console.log('Current bookings state in render:', bookings); return null; })()}
-              <Card className="rounded-xl shadow-sm border-none px-4">
-                <CardContent className="pb-4 overflow-x-auto">
-                  {bookingsLoading ? (
-                    <div className="p-8 text-center">
-                      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-                      <p className="text-gray-500">Loading bookings...</p>
-                    </div>
-                  ) : bookings.length > 0 ? (
-                    <>
-                      <div className="space-y-4 p-4">
-                        {bookings.map((booking) => (
-                          <Card key={booking.id} className="cursor-pointer" onClick={() => { setSelectedBooking(booking); setBookingDialogOpen(true); }}>
-                            <CardContent className="p-4">
-                              <div className="flex justify-between items-center">
-                                <div className="font-medium text-gray-900">BK#{booking.reservation_id || booking.id.slice(-8)}</div>
-                                <div className="text-gray-600">{formatBookingDates(booking.start_date, booking.end_date)}</div>
-                                <div className="font-semibold text-gray-900">P{booking.total_cost}</div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                  
-                      {bookingsTotal > itemsPerPage && (
-                        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-                          <div className="text-sm text-gray-700">
-                            Showing {((bookingsPage - 1) * itemsPerPage) + 1} to {Math.min(bookingsPage * itemsPerPage, bookingsTotal)} of {bookingsTotal} bookings
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setBookingsPage(prev => Math.max(1, prev - 1))}
-                              disabled={bookingsPage === 1}
-                            >
-                              Previous
-                            </Button>
-                            <span className="text-sm text-gray-600">
-                              Page {bookingsPage} of {Math.ceil(bookingsTotal / itemsPerPage)}
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setBookingsPage(prev => Math.min(Math.ceil(bookingsTotal / itemsPerPage), prev + 1))}
-                              disabled={bookingsPage === Math.ceil(bookingsTotal / itemsPerPage)}
-                            >
-                              Next
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  ) : null}
-                </CardContent>
-                </Card>
+            <TabsContent key={1} value="transactions">
+              <TransactionsTab
+                selectedYear={selectedYear}
+                setSelectedYear={setSelectedYear}
+                bookings={bookings}
+                bookingsLoading={bookingsLoading}
+                bookingsPage={bookingsPage}
+                setBookingsPage={setBookingsPage}
+                itemsPerPage={itemsPerPage}
+                setSelectedBooking={setSelectedBooking}
+                setBookingDialogOpen={setBookingDialogOpen}
+              />
+            </TabsContent>
+            <TabsContent key={2} value="program-list">
+              <ProgramListTab
+                selectedMonth={selectedMonth}
+                setSelectedMonth={setSelectedMonth}
+                selectedDay={selectedDay}
+                setSelectedDay={setSelectedDay}
+                selectedYear={selectedYear}
+                setSelectedYear={setSelectedYear}
+                activePlaylistPages={activePlaylistPages}
+                cms={product?.cms}
+                bookings={programListBookings}
+                loading={programListBookingsLoading}
+                retailSite={product.retail_spot.spot_number}
+              />
+            </TabsContent>
+            <TabsContent key={3} value="proof-of-play">
+              <ProofOfPlayTab
+                selectedYear={selectedYear}
+                setSelectedYear={setSelectedYear}
+              />
             </TabsContent>
 
-            {/* Reports Tab */}
-            <TabsContent value="reports" className="space-y-4">
-              <div className="bg-white rounded-lg pb-4 px-4 overflow-x-auto">
-                {reportsLoading ? (
-                  <div className="p-8 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-2 text-gray-500">Loading reports...</p>
-                  </div>
-                ) : reports.length === 0 ? (
-                  <div className="p-8 text-center text-gray-500">
-                    <p>No reports found for this product.</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-5 gap-4 p-4 bg-white border-b border-gray-200 text-xs sm:text-sm font-medium text-gray-700">
-                      <div className="flex items-center text-center break-all min-w-0">Date</div>
-                      <div className="flex items-center text-center break-all min-w-0">Report ID</div>
-                      <div className="flex items-center text-center break-all min-w-0">Type</div>
-                      <div className="flex items-center text-center break-all min-w-0">Client</div>
-                      <div className="flex items-center text-center break-all min-w-0">Status</div>
-                    </div>
-                    <div className="space-y-2 pb-4 overflow-x-auto">
-                      {reports.map((report, index) => (
-                        <div
-                          key={report.id}
-                          className={`grid grid-cols-5 gap-4 p-4 text-xs sm:text-sm bg-[#F6F9FF] border-2 border-[#B8D9FF] rounded-[10px] hover:bg-gray-50 cursor-pointer transition-colors ${index === 0 ? 'mt-4' : ''}`}
-                          onClick={() => router.push(`/sales/reports/${report.id}`)}
-                        >
-                          <div className="flex items-center text-center break-all min-w-0 text-gray-600">{report.created ? formatFirebaseDate(report.created) : "N/A"}</div>
-                          <div className="flex items-center text-center break-all min-w-0 text-gray-900">
-                            {report.report_id || report.id?.slice(-8) || "N/A"}
-                          </div>
-                          <div className="flex items-center text-center break-all min-w-0 text-gray-600">{report.reportType || "Not Set"}</div>
-                          <div className="flex items-center text-center break-all min-w-0 text-gray-900">
-                            {report.client || "Not Set Client"}
-                          </div>
-                          <div className="flex items-center text-center break-all min-w-0">
-                            <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
-                              {report.status || "Draft"}
-                            </Badge>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Pagination */}
-                    {reportsTotal > itemsPerPage && (
-                      <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-                        <div className="text-sm text-gray-700">
-                          Showing {((reportsPage - 1) * itemsPerPage) + 1} to {Math.min(reportsPage * itemsPerPage, reportsTotal)} of {reportsTotal} reports
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setReportsPage(prev => Math.max(1, prev - 1))}
-                            disabled={reportsPage === 1}
-                          >
-                            Previous
-                          </Button>
-                          <span className="text-sm text-gray-600">
-                            Page {reportsPage} of {Math.ceil(reportsTotal / itemsPerPage)}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setReportsPage(prev => Math.min(Math.ceil(reportsTotal / itemsPerPage), prev + 1))}
-                            disabled={reportsPage === Math.ceil(reportsTotal / itemsPerPage)}
-                          >
-                            Next
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </TabsContent>
           </Tabs>
         </section>
       </main>
@@ -1534,6 +1245,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     alt={`Product image ${activeImageIndex + 1}`}
                     fill
                     className="object-contain"
+                    priority
                     onError={(e) => {
                       const target = e.target as HTMLImageElement
                       target.src = "/building-billboard.png"
@@ -1573,11 +1285,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       <button
                         key={index}
                         onClick={() => setActiveImageIndex(index)}
-                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                          index === activeImageIndex
-                            ? "border-blue-500 ring-2 ring-blue-200"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
+                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${index === activeImageIndex
+                          ? "border-blue-500 ring-2 ring-blue-200"
+                          : "border-gray-200 hover:border-gray-300"
+                          }`}
                         aria-label={`View image ${index + 1}`}
                       >
                         <Image

@@ -864,7 +864,7 @@ export async function generateAndUploadQuotationPDF(
     if (!finalUserSignatureDataUrl && quotation.created_by) {
       try {
         console.log('[QUOTATION_PDF] Fetching user signature for createdBy:', quotation.created_by)
-        const userDocRef = doc(db, "iboard_users", quotation.created_by)
+        const userDocRef = doc(db, "boohk_users", quotation.created_by)
         const userDoc = await getDoc(userDocRef)
 
         if (userDoc.exists()) {

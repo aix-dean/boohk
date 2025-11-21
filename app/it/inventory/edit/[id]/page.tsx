@@ -293,7 +293,7 @@ export default function EditInventoryItemPage() {
       try {
         console.log("Fetching users for company_id:", userData.company_id)
 
-        const usersRef = collection(db, "iboard_users")
+        const usersRef = collection(db, "boohk_users")
         const q = query(usersRef, where("company_id", "==", userData.company_id))
         const querySnapshot = await getDocs(q)
 

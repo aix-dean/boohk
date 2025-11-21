@@ -59,7 +59,7 @@ export default function AdminReportPreviewPage() {
     try {
       console.log("Fetching user data for uid:", user.uid)
 
-      const userDocRef = doc(db, "iboard_users", user.uid)
+      const userDocRef = doc(db, "boohk_users", user.uid)
       const userDoc = await getDoc(userDocRef)
 
       if (userDoc.exists()) {
