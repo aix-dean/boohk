@@ -75,10 +75,9 @@ export function NewBookingDialog({
     scaledWidth = Math.floor(originalWidth * scale);
     scaledHeight = Math.floor(originalHeight * scale);
   }
-  console.log(`taken spots ${takenSpotNumbers}`)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[704] h-[439px]">
+      <DialogContent className=" overflow-auto" style={{ height: "500px", width: "800px" }}>
         <DialogHeader className="relative">
           <DialogTitle>New Booking</DialogTitle>
           <DialogClose className="absolute top-[-10px] right-0">
