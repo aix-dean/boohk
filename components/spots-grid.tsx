@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { X, Loader2, AlertTriangle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -77,24 +77,28 @@ interface SpotsGridProps {
  }
 
 export function SpotsGrid({
-   spots,
-   totalSpots,
-   occupiedCount,
-   vacantCount,
-   productId,
-   currentDate,
-   router,
-   selectedSpots,
-   onSpotToggle,
-   showSummary = true,
-   bg = true,
-   bookingRequests = [],
-   onBookingAccepted,
-   disableBookingActions = false,
-   disableEmptySpotClicks = false,
- }: SpotsGridProps) {
-  const { userData } = useAuth();
-  const { toast } = useToast();
+    spots,
+    totalSpots,
+    occupiedCount,
+    vacantCount,
+    productId,
+    currentDate,
+    router,
+    selectedSpots,
+    onSpotToggle,
+    showSummary = true,
+    bg = true,
+    bookingRequests = [],
+    onBookingAccepted,
+    disableBookingActions = false,
+    disableEmptySpotClicks = false,
+  }: SpotsGridProps) {
+   const { userData } = useAuth();
+   const { toast } = useToast();
+   const pathname = usePathname();
+   const isBusinessInventory = pathname.includes("business/inventory");
+   const effectiveDisableBookingActions = disableBookingActions || isBusinessInventory;
+   const effectiveDisableEmptySpotClicks = disableEmptySpotClicks || isBusinessInventory;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isAccepting, setIsAccepting] = useState(false);
@@ -579,7 +583,7 @@ export function SpotsGrid({
   const spotsContent = (
     <div className="flex gap-[13.758px] overflow-x-scroll pb-4 w-full pr-4">
       {localSpots.map((spot) => {
-        const isClickable = spot.imageUrl || !disableEmptySpotClicks;
+        const isClickable = spot.imageUrl || !effectiveDisableEmptySpotClicks;
         return (
           <div
             key={spot.id}
@@ -719,7 +723,7 @@ export function SpotsGrid({
                   return (
                     <div
                       key={booking.id}
-                      className="relative w-[245px] h-[76px] flex-shrink-0 rounded-[7.911px] border-[2.373px] border-[#B8D9FF] bg-[#F6F9FF] flex items-center cursor-pointer"
+                      className={`relative w-[245px] h-[76px] flex-shrink-0 rounded-[7.911px] border-[2.373px] border-[#B8D9FF] bg-[#F6F9FF] flex items-center cursor-pointer }`}
                       onClick={() => {
                         setSelectedBooking(booking);
                         setIsAccepting(true);
@@ -871,38 +875,38 @@ export function SpotsGrid({
         </div>
 
         <NewBookingDialog
-           open={isDialogOpen}
-           onOpenChange={setIsDialogOpen}
-           booking={selectedBooking}
-           playerOnline={playerOnline}
-           isAccepting={isAccepting}
-           onReject={() => {
-             setIsDialogOpen(false);
-             setIsDeclineConfirmDialogOpen(true);
-           }}
-           onAccept={() => {
-             setIsDialogOpen(false);
-             setIsConfirmDialogOpen(true);
-           }}
-           takenSpotNumbers={takenSpotNumbers}
+            open={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+            booking={selectedBooking as any}
+            playerOnline={playerOnline}
+            isAccepting={isAccepting}
+            onReject={() => {
+              setIsDialogOpen(false);
+              setIsDeclineConfirmDialogOpen(true);
+            }}
+            onAccept={() => {
+              setIsDialogOpen(false);
+              setIsConfirmDialogOpen(true);
+            }}
+            takenSpotNumbers={takenSpotNumbers}
+            retailSpotNumbers={retailSpotNumbers}
+            totalSpots={totalSpots}
+            activePages={activePages}
+            disabled={effectiveDisableBookingActions}
+          />
+        <BookingSpotSelectionDialog
+           open={isSpotSelectionOpen}
+           onOpenChange={setIsSpotSelectionOpen}
            retailSpotNumbers={retailSpotNumbers}
            totalSpots={totalSpots}
+           takenSpotNumbers={takenSpotNumbers}
            activePages={activePages}
-           disabled={disableBookingActions}
+           booking={selectedBooking as any}
+           onSpotSelect={(spotNumber) => {
+             handleAcceptBooking(spotNumber);
+             setIsSpotSelectionOpen(false);
+           }}
          />
-        <BookingSpotSelectionDialog
-          open={isSpotSelectionOpen}
-          onOpenChange={setIsSpotSelectionOpen}
-          retailSpotNumbers={retailSpotNumbers}
-          totalSpots={totalSpots}
-          takenSpotNumbers={takenSpotNumbers}
-          activePages={activePages}
-          booking={selectedBooking}
-          onSpotSelect={(spotNumber) => {
-            handleAcceptBooking(spotNumber);
-            setIsSpotSelectionOpen(false);
-          }}
-        />
         <Dialog
           open={isConfirmDialogOpen}
           onOpenChange={setIsConfirmDialogOpen}
