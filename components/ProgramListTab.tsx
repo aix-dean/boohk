@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2 } from "lucide-react"
 import type { Booking } from "@/lib/booking-service"
+import { bookingService } from "@/lib/booking-service"
 
 interface ProgramListTabProps {
   selectedMonth: number
@@ -51,6 +52,9 @@ const ProgramListTab: React.FC<ProgramListTabProps> = ({
     { value: 12, label: "December" },
   ]
 
+  const [playlistBooking, setPlaylistBooking] = React.useState<Booking | null>(null)
+  const [playlistBookingLoading, setPlaylistBookingLoading] = React.useState(false)
+
   // Get days in selected month/year
   const getDaysInMonth = (month: number, year: number) => {
     return new Date(year, month, 0).getDate()
@@ -89,6 +93,36 @@ const ProgramListTab: React.FC<ProgramListTabProps> = ({
       endDate: page?.schedules?.[0]?.endDate || null,
     })
   }
+
+  // Fetch booking from playlist pages
+  React.useEffect(() => {
+    const fetchPlaylistBooking = async () => {
+      if (!activePlaylistPages || activePlaylistPages.length === 0) {
+        setPlaylistBooking(null)
+        return
+      }
+
+      // Find the first page with a booking_id
+      const pageWithBookingId = activePlaylistPages.find(page => page.booking_id)
+      if (!pageWithBookingId?.booking_id) {
+        setPlaylistBooking(null)
+        return
+      }
+
+      setPlaylistBookingLoading(true)
+      try {
+        const booking = await bookingService.getBookingById(pageWithBookingId.booking_id)
+        setPlaylistBooking(booking)
+      } catch (error) {
+        console.error("Error fetching playlist booking:", error)
+        setPlaylistBooking(null)
+      } finally {
+        setPlaylistBookingLoading(false)
+      }
+    }
+
+    fetchPlaylistBooking()
+  }, [activePlaylistPages])
 
   return (
     <Card className="rounded-xl shadow-sm border-none p-4">
@@ -151,6 +185,7 @@ const ProgramListTab: React.FC<ProgramListTabProps> = ({
           </div>
         </div>
 
+
         {loading ? (
           <div className="p-8 text-center">
             <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
@@ -162,7 +197,7 @@ const ProgramListTab: React.FC<ProgramListTabProps> = ({
               <div className="space-y-3">
                 {Array.from({ length: totalSpots }, (_, i) => i + 1).map((spotNumber) => {
                   const page = filteredPages.find(p => p.spot_number === spotNumber)
-                  const booking = bookings.find(b => b.spot_number === spotNumber)
+                  const booking = page?.booking_id ? bookings.find(b => b.id === page.booking_id) : null
                   const startDate = page?.schedules?.[0]?.startDate?.toDate ? page.schedules[0].startDate.toDate() : page?.schedules?.[0]?.startDate ? new Date(page.schedules[0].startDate) : null
                   const endDate = page?.schedules?.[0]?.endDate?.toDate ? page.schedules[0].endDate.toDate() : page?.schedules?.[0]?.endDate ? new Date(page.schedules[0].endDate) : null
                   return (
