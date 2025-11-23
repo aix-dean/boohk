@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react"
 import { useState, useEffect } from "react"
 
 interface Step4WelcomeProps {
-  onNext: (permissions: string[], roles: string[]) => void
+  onNext: (switchStates: { uploadInventory: boolean; handleRetailOrders: boolean; handlePayments: boolean }) => void
 }
 
 export default function Step4Welcome({ onNext }: Step4WelcomeProps) {
@@ -51,11 +51,13 @@ export default function Step4Welcome({ onNext }: Step4WelcomeProps) {
 
   // Handle next button click
   const handleNext = () => {
-    const permissions = getPermissions()
-    const roles = getRoles()
-    console.log('Step 4 permissions:', permissions)
-    console.log('Step 4 roles:', roles)
-    onNext(permissions, roles)
+    const switchStates = {
+      uploadInventory,
+      handleRetailOrders: setupCompany,
+      handlePayments
+    }
+    console.log('Step 4 switch states:', switchStates)
+    onNext(switchStates)
   }
 
   return (

@@ -903,9 +903,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Redirect based on roles after authentication
   useEffect(() => {
     if (userData && !loading && !isRegistering && !pathname.startsWith("/account") && !hasInitialRedirectDone) {
-      const path = getRoleDashboardPath(userData.roles)
-      console.log("Auth context redirect: Current pathname:", pathname, "Calculated path:", path, "User roles:", userData.roles)
-      if (path) {
+      let path: string | null = null
+
+      // For new users (onboarding: true), always redirect to /it/user-management
+      if (userData.onboarding) {
+        path = "/it/user-management"
+        console.log("Auth context redirect: New user onboarding, redirecting to", path)
+      } else {
+        // For existing users, use role-based logic
+        path = getRoleDashboardPath(userData.roles)
+        console.log("Auth context redirect: Current pathname:", pathname, "Calculated path:", path, "User roles:", userData.roles)
+      }
+
+      if (path && pathname !== path) {
         console.log("Auth context: Redirecting to", path)
         router.push(path)
         setHasInitialRedirectDone(true)
