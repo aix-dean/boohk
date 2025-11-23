@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast"
 import { collection, getDocs, doc, setDoc, getDoc, addDoc, serverTimestamp, GeoPoint } from "firebase/firestore"
 import { createUserWithEmailAndPassword } from "firebase/auth"
 import { db, tenantAuth } from "@/lib/firebase"
-import { assignRoleToUser } from "@/lib/hardcoded-access-service"
+import { assignRoleToUser, RoleType } from "@/lib/hardcoded-access-service"
 import WelcomePage from "./welcome-page"
 import Step4Welcome from "./step-4-welcome"
 
@@ -348,14 +348,36 @@ export default function LoginPage() {
       const userDocRef = doc(db, "boohk_users", firebaseUser.uid)
       console.log("User document reference:", userDocRef.path)
 
-      // Get permissions and roles from pending registration or use defaults
-      const permissions = pendingRegistration?.permissions || ["admin", "it"]
-      const roles = pendingRegistration?.roles || ["admin", "it"]
-      console.log('Using permissions for user registration:', permissions)
-      console.log('Using roles for user registration:', roles)
+      // Get switch states from pending registration
+      const switchStates = pendingRegistration?.switchStates || {}
+      console.log('Using switch states for role assignment:', switchStates)
+
+      // Compute roles based on switch selections
+      const rolesSet = new Set<string>()
+      if (switchStates.uploadInventory) {
+        rolesSet.add('business')
+        rolesSet.add('it')
+      }
+      if (switchStates.handleRetailOrders) {
+        rolesSet.add('sales')
+        rolesSet.add('it')
+      }
+      if (switchStates.handlePayments) {
+        rolesSet.add('accounting')
+        rolesSet.add('it')
+      }
+      // If no switches active, assign only "it"
+      if (!switchStates.uploadInventory && !switchStates.handleRetailOrders && !switchStates.handlePayments) {
+        rolesSet.add('it')
+      }
+      const roles = Array.from(rolesSet)
+      console.log('Computed roles for user registration:', roles)
+
+      // For now, keep permissions as empty array or add basic permissions if needed
+      const permissions: string[] = []
 
       // Determine primary role based on roles array
-      let primaryRole = "admin" // Default role
+      let primaryRole = "sales" // Default role
       if (roles.includes("business")) {
         primaryRole = "business"
       } else if (roles.includes("it")) {
@@ -429,12 +451,12 @@ export default function LoginPage() {
       console.log("Assigning roles based on roles array:", roles)
       console.log("Firebase user UID:", firebaseUser.uid)
 
-      // Assign roles based on roles array from step 4 selection
+      // Assign roles based on computed roles array
       try {
         // Assign all roles from the roles array
         for (const role of roles) {
           console.log(`Assigning role '${role}' to user ${firebaseUser.uid}`)
-          await assignRoleToUser(firebaseUser.uid, role, firebaseUser.uid)
+          await assignRoleToUser(firebaseUser.uid, role as RoleType, firebaseUser.uid)
           console.log(`Role '${role}' assigned to user_roles collection`)
         }
 
@@ -466,7 +488,7 @@ export default function LoginPage() {
 
       // For new OHPLUS users, always redirect to IT management first
       console.log('Redirecting new OHPLUS user to IT user management')
-      router.push("/it/user-management")
+      router.push("/it/user-management?from=registration")
     } catch (error: any) {
       console.error("=== REGISTRATION FAILED ===")
       console.error("Registration failed:", error)
@@ -521,17 +543,15 @@ export default function LoginPage() {
     setPendingRegistration(null)
   }
 
-  const handleStep4Next = (permissions: string[], roles: string[]) => {
+  const handleStep4Next = (switchStates: { uploadInventory: boolean; handleRetailOrders: boolean; handlePayments: boolean }) => {
     console.log('=== handleStep4Next CALLED ===')
     console.log('Current step before:', currentStep)
-    console.log('Permissions received:', permissions)
-    console.log('Roles received:', roles)
+    console.log('Switch states received:', switchStates)
 
-    // Store permissions and roles for later use in registration
+    // Store switch states for later use in registration
     setPendingRegistration((prev: any) => ({
       ...prev,
-      permissions: permissions,
-      roles: roles
+      switchStates: switchStates
     }))
 
     setCurrentStep(5) // Move to welcome page
@@ -1031,7 +1051,7 @@ export default function LoginPage() {
                   {"It's great to finally meet you. I'm "}
 
                   <span style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '16px', fontStyle: 'normal', fontWeight: 700, lineHeight: '100%' }}>Ohwen</span>
-                  {", your OHPlus buddy."}
+                  {", your Boohk buddy."}
                   <br />
                   <br />
                 </p>
