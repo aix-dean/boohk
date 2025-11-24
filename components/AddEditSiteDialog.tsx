@@ -361,7 +361,7 @@ export function AddEditSiteDialog({
     if (isOpen) {
       if (editingProduct) {
         // Edit mode - populate with existing data
-        setSiteType("digital")
+        setSiteType(editingProduct.content_type || "digital")
         setCategory(editingProduct.categories?.[0] || DIGITAL_CATEGORIES[0])
         setSiteName(editingProduct.name || "")
         setLocation(editingProduct.specs_rental?.location || "")
@@ -373,7 +373,7 @@ export function AddEditSiteDialog({
         setElevation(editingProduct.specs_rental?.elevation ? String(editingProduct.specs_rental.elevation) : "")
         setElevationUnit("ft")
         setDescription(editingProduct.description || "")
-        setSelectedAudience(editingProduct.specs_rental?.audience_type || [])
+        setSelectedAudience(editingProduct.specs_rental?.audience_profile || editingProduct.specs_rental?.audience_type || [])
         setDailyTraffic(editingProduct.specs_rental?.traffic_count ? String(editingProduct.specs_rental.traffic_count) : "")
         setPrice(editingProduct.price ? formatPriceOnBlur(String(editingProduct.price)) : "0")
         setPriceUnit("per spot")
@@ -399,8 +399,48 @@ export function AddEditSiteDialog({
         }
 
         setPlayerId(editingProduct.playerIds?.[0] || "")
-        setSpotInputs([]) // Initialize empty for now, will be set based on CMS
-        setSelectedRetailSpots(editingProduct.retail_spot?.[0]?.spot_number || [])
+        setSpotInputs(new Array(parseInt(editingProduct.cms?.loops_per_day || "0") || 0).fill("")) // Initialize based on CMS
+        setSelectedRetailSpots(editingProduct.retail_spot?.spot_number || [])
+        setResolutionWidth(editingProduct.specs_rental?.resolution?.width ? String(editingProduct.specs_rental.resolution.width) : "")
+        setResolutionHeight(editingProduct.specs_rental?.resolution?.height ? String(editingProduct.specs_rental.resolution.height) : "")
+        setBrightness(editingProduct.specs_rental?.brightness || "")
+        setLandOwner(editingProduct.specs_rental?.land_owner || "")
+        setPartner(editingProduct.specs_rental?.partner || "")
+        setLocationVisibility(editingProduct.specs_rental?.location_visibility ? String(editingProduct.specs_rental.location_visibility) : "")
+        setLocationVisibilityUnit(editingProduct.specs_rental?.location_visibility_unit || "ft")
+        setDimensionUnit((editingProduct.specs_rental?.dimension_unit as "ft" | "m") || "ft")
+        setElevationUnit("ft") // Default, as it's not saved
+        setSpecialRateEnabled(editingProduct.enable_special_rate || false)
+        setSpecialRateType("multiplier") // Default
+        setSpecialRateMultiplier("") // Default
+        setSpecialRateAmount("") // Default
+        setTriggers({
+          manualToggle: editingProduct.cms?.triggers?.manual || false,
+          autoTrigger: editingProduct.cms?.triggers?.auto || false,
+          autoTriggerPercentage: editingProduct.cms?.triggers?.occupancy_percentage ? String(editingProduct.cms.triggers.occupancy_percentage) : "50"
+        })
+        // Initialize display photos from existing media
+        if (editingProduct.media && editingProduct.media.length > 0) {
+          const displayPhotosData = editingProduct.media.map(media => ({
+            file: null,
+            caption: media.description || "",
+            url: media.url
+          }))
+          setDisplayPhotos(displayPhotosData)
+        } else {
+          setDisplayPhotos([{ file: null, caption: "" }])
+        }
+        // Initialize campaign photos from notable campaigns
+        if (editingProduct.specs_rental?.notable_campaigns && editingProduct.specs_rental.notable_campaigns.length > 0) {
+          const campaignPhotosData = editingProduct.specs_rental.notable_campaigns.map(campaign => ({
+            file: null,
+            caption: campaign.caption || "",
+            url: campaign.image_url
+          }))
+          setCampaignPhotos(campaignPhotosData)
+        } else {
+          setCampaignPhotos([{ file: null, caption: "" }])
+        }
         setValidationError(null)
       } else {
         // Add mode - reset to defaults
@@ -504,16 +544,15 @@ export function AddEditSiteDialog({
   useEffect(() => {
     if (siteType === "digital") {
       const spots = parseInt(cms.loops_per_day) || 0
-      setSpotInputs(prev => {
-        if (prev.length !== spots) {
-          return new Array(spots).fill("")
-        }
-        return prev
-      })
+      if (spotInputs.length !== spots) {
+        setSpotInputs(new Array(spots).fill(""))
+        setSelectedRetailSpots([])
+      }
     } else {
       setSpotInputs([])
+      setSelectedRetailSpots([])
     }
-  }, [siteType, cms.loops_per_day])
+  }, [siteType, cms.loops_per_day, spotInputs.length])
 
   // Form handlers
   const toggleAudience = (type: string) => {
@@ -748,7 +787,7 @@ export function AddEditSiteDialog({
         const allMedia = [...(editingProduct.media || []), ...mediaUrls]
 
         // Create update data
-        const updateData = {
+        const updateData: any = {
           name: siteName,
           description,
           price: parseFloat(price.replace(/,/g, '')) || 0,
@@ -766,7 +805,7 @@ export function AddEditSiteDialog({
               occupancy_percentage: parseInt(triggers.autoTriggerPercentage) || 50
             }
           } : undefined,
-          playerIds: [],
+          playerIds: siteType === "digital" ? [playerId || ""] : [],
           specs_rental: {
             audience_type: selectedAudience,
             location,
@@ -776,7 +815,6 @@ export function AddEditSiteDialog({
             orientation,
             location_visibility: parseFloat(locationVisibility.replace(/,/g, '')) || 0,
             location_visibility_unit: locationVisibilityUnit,
-            ...(geopoint && { geopoint }),
             traffic_count: parseInt(dailyTraffic.replace(/,/g, '')) || 0,
             height: parseFloat(height.replace(/,/g, '')) || 0,
             width: parseFloat(width.replace(/,/g, '')) || 0,
@@ -809,9 +847,13 @@ export function AddEditSiteDialog({
               last_maintenance: serverTimestamp(),
             },
           },
-          retail_spot: selectedRetailSpots.length > 0 ? { spot_number: selectedRetailSpots } : [],
+          retail_spot: selectedRetailSpots.length > 0 ? { spot_number: selectedRetailSpots } : undefined,
           media: allMedia,
           updated: serverTimestamp(),
+        }
+
+        if (geopoint) {
+          updateData.specs_rental.geopoint = geopoint
         }
 
         // Update in Firestore
@@ -1324,9 +1366,9 @@ export function AddEditSiteDialog({
                     {displayPhotos.map((photo, index) => (
                       <div key={index} className="flex gap-4 items-center">
                         <label htmlFor={`display-photo-${index}`} className="bg-[#dedede] border border-[#c4c4c4] rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors w-[80px] h-[80px]">
-                          {photo.file ? (
+                          {photo.file || photo.url ? (
                             <img
-                              src={URL.createObjectURL(photo.file)}
+                              src={photo.file ? URL.createObjectURL(photo.file) : photo.url}
                               alt="Preview"
                               className="max-w-full max-h-full object-cover rounded"
                             />
@@ -1439,9 +1481,9 @@ export function AddEditSiteDialog({
                     {campaignPhotos.map((photo, index) => (
                       <div key={index} className="flex gap-4 items-center">
                         <label htmlFor={`campaign-photo-${index}`} className="bg-[#dedede] border border-[#c4c4c4] rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors w-[80px] h-[80px]">
-                          {photo.file ? (
+                          {photo.file || photo.url ? (
                             <img
-                              src={URL.createObjectURL(photo.file)}
+                              src={photo.file ? URL.createObjectURL(photo.file) : photo.url}
                               alt="Preview"
                               className="max-w-full max-h-full object-cover rounded"
                             />
