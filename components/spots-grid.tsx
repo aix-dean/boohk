@@ -198,16 +198,20 @@ export function SpotsGrid({
               const latestPlaylist = snapshot.docs[0].data();
               const existingPages = latestPlaylist.pages || [];
 
-              // Filter out expired pages (where any schedule has endDate in the past)
+              // Filter pages that are currently active (have at least one schedule running today)
               const today = new Date();
               today.setHours(0, 0, 0, 0);
               const activePagesTemp = existingPages.filter((page: any) =>
-                page.schedules?.every((schedule: any) => {
+                page.schedules?.some((schedule: any) => {
+                  let scheduleStartDate = schedule.startDate?.toDate
+                    ? schedule.startDate.toDate()
+                    : new Date(schedule.startDate);
                   let scheduleEndDate = schedule.endDate?.toDate
                     ? schedule.endDate.toDate()
                     : new Date(schedule.endDate);
+                  scheduleStartDate.setHours(0, 0, 0, 0);
                   scheduleEndDate.setHours(0, 0, 0, 0);
-                  return scheduleEndDate >= today;
+                  return scheduleStartDate <= today && scheduleEndDate >= today;
                 })
               );
               setActivePages(activePagesTemp);
@@ -265,6 +269,16 @@ export function SpotsGrid({
   const handleAcceptBooking = async (spotNumber: number) => {
     if (!selectedBooking) return;
 
+    // Check if retail spot is already occupied
+    if (retailSpotNumbers.includes(spotNumber) && takenSpotNumbers.includes(spotNumber)) {
+      toast({
+        title: "Cannot accept booking",
+        description: "The retail spot is already occupied.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       // Generate airing_code
       const airing_code = "BH" + Date.now();
@@ -312,16 +326,20 @@ export function SpotsGrid({
           existingPages = latestPlaylist.pages || [];
         }
 
-        // Filter out expired pages (where any schedule has endDate in the past)
+        // Filter pages that are currently active (have at least one schedule running today)
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Set to start of today
         const activePages = existingPages.filter((page: any) =>
-          page.schedules?.every((schedule: any) => {
+          page.schedules?.some((schedule: any) => {
+            let scheduleStartDate = schedule.startDate?.toDate
+              ? schedule.startDate.toDate()
+              : new Date(schedule.startDate);
             let scheduleEndDate = schedule.endDate?.toDate
               ? schedule.endDate.toDate()
               : new Date(schedule.endDate);
-            scheduleEndDate.setHours(0, 0, 0, 0); // Set to start of that day
-            return scheduleEndDate >= today;
+            scheduleStartDate.setHours(0, 0, 0, 0);
+            scheduleEndDate.setHours(0, 0, 0, 0);
+            return scheduleStartDate <= today && scheduleEndDate >= today;
           })
         );
 
@@ -587,7 +605,7 @@ export function SpotsGrid({
         return (
           <div
             key={spot.id}
-            className={`relative flex-shrink-0 w-[110px] h-[197px] bg-white p-1.5 rounded-[14px]  shadow-[-1px_3px_7px_-1px_rgba(0,0,0,0.25)] ${retailSpotNumbers.includes(spot.number) ? "border-4 border-[#737fff]" : "border border-gray-200"} overflow-hidden ${isClickable ? "cursor-pointer hover:shadow-lg" : ""} transition-shadow flex flex-col`}
+            className={`relative flex-shrink-0 w-[110px] h-[197px] bg-white p-1.5 rounded-[14px]  shadow-[-1px_3px_7px_-1px_rgba(0,0,0,0.25)] ${retailSpotNumbers.includes(spot.number) ? "border-4 border-[#737fff] bg-[#f0f1fd]" : "border border-gray-200"} overflow-hidden ${isClickable ? "cursor-pointer hover:shadow-lg" : ""} transition-shadow flex flex-col`}
             onClick={
               isClickable
                 ? () => {
@@ -837,25 +855,25 @@ export function SpotsGrid({
             <div className="flex items-center justify-between text-sm mb-4">
               <div className="flex items-center gap-8">
                 <div className="flex items-center">
-                  <span className="font-medium text-gray-900">
-                    Total Spots:
+                  <span className="font-medium text-xs text-gray-900">
+                    Total Retail Spots 
                   </span>
-                  <span className="text-gray-700">{totalSpots}</span>
+                  <span className="bg-gray-400 px-2 ml-1 rounded-sm text-white text-xs font-bold">{retailSpotNumbers.length}</span>
                 </div>
                 <div className="flex items-center">
-                  <span className="font-medium text-gray-900">
-                    Total Occupied:
+                  <span className="font-medium text-gray-900 text-xs">
+                    Occupied:
                   </span>
-                  <span className="text-gray-700 font-medium">
+                  <span className="text-white bg-green-600 text-xs px-2 ml-1 rounded-sm font-bold">
                     {occupiedCount} (
                     {Math.round((occupiedCount / totalSpots) * 100)}%)
                   </span>
                 </div>
                 <div className="flex items-center">
-                  <span className="font-medium text-gray-900">
+                  <span className="font-medium text-gray-900 text-xs">
                     Total Vacant:
                   </span>
-                  <span className="font-bold text-gray-700">
+                  <span className="font-bold text-white bg-red-400 text-xs px-2 ml-1 rounded-sm">
                     {vacantCount} (
                     {Math.round((vacantCount / totalSpots) * 100)}%)
                   </span>
@@ -865,9 +883,9 @@ export function SpotsGrid({
                 onClick={() =>
                   router?.push(`/sales/products/${productId}/spots/1`)
                 }
-                className="text-gray-700 cursor-pointer"
+                className="text-gray-900 text-xs font-medium"
               >
-                as of {currentDate} {"->"}
+                Total Spots: {totalSpots}
               </span>
             </div>
           )}
@@ -902,6 +920,7 @@ export function SpotsGrid({
            takenSpotNumbers={takenSpotNumbers}
            activePages={activePages}
            booking={selectedBooking as any}
+           productId={productId}
            onSpotSelect={(spotNumber) => {
              handleAcceptBooking(spotNumber);
              setIsSpotSelectionOpen(false);

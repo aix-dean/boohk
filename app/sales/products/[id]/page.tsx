@@ -806,16 +806,22 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         const latestPlaylist = playlistSnap.docs[0].data()
         const existingPages = latestPlaylist.pages || []
 
-        // Filter out expired pages (where any schedule has endDate in the past)
+        // Filter out pages that haven't started or have ended (where any schedule has startDate in the future or endDate in the past)
         const today = new Date()
         today.setHours(0, 0, 0, 0) // Set to start of today
         const activePages = existingPages.filter((page: any) =>
           page.schedules?.every((schedule: any) => {
+            let scheduleStartDate = schedule.startDate?.toDate
+              ? schedule.startDate.toDate()
+              : new Date(schedule.startDate)
+            scheduleStartDate.setHours(0, 0, 0, 0) // Set to start of that day
+
             let scheduleEndDate = schedule.endDate?.toDate
               ? schedule.endDate.toDate()
               : new Date(schedule.endDate)
             scheduleEndDate.setHours(0, 0, 0, 0) // Set to start of that day
-            return scheduleEndDate >= today
+
+            return scheduleStartDate <= today && scheduleEndDate >= today
           })
         )
         setActivePlaylistPages(activePages)

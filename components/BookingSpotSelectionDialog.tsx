@@ -1,35 +1,85 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
 import { any } from "zod"
-import { updateDoc, doc } from "firebase/firestore"
+import { updateDoc, doc, collection, query, where, orderBy, limit, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Booking } from "@/lib/booking-service"
 
 interface BookingSpotSelectionDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  retailSpotNumbers: number[]
-  totalSpots: number
-  takenSpotNumbers: number[]
-  onSpotSelect: (spotNumber: number) => void
-  activePages: any[]
-  booking: Booking | null
-}
+   open: boolean
+   onOpenChange: (open: boolean) => void
+   retailSpotNumbers: number[]
+   totalSpots: number
+   takenSpotNumbers: number[]
+   onSpotSelect: (spotNumber: number) => void
+   activePages: any[]
+   booking: Booking | null
+   productId?: string
+ }
 
 export function BookingSpotSelectionDialog({
-  open,
-  onOpenChange,
-  retailSpotNumbers,
-  totalSpots,
-  onSpotSelect,
-  activePages,
-  booking
+   open,
+   onOpenChange,
+   retailSpotNumbers,
+   totalSpots,
+   onSpotSelect,
+   activePages,
+   booking,
+   productId
 }: BookingSpotSelectionDialogProps) {
-  const [selectedSpot, setSelectedSpot] = useState<number | null>(null)
+   const [selectedSpot, setSelectedSpot] = useState<number | null>(null)
+   const [playlistPages, setPlaylistPages] = useState<any[]>([])
 
-  const handleSpotClick = (spotNumber: number) => {
+   const datesOverlap = (start1: Date, end1: Date, start2: Date, end2: Date): boolean => {
+      console.log("Checking overlap between", start1, end1, "and", start2, end2 ,"result:",  start1 <= end2 && start2 <= end1);
+      console.log("result:", start1 <= end2 && start2 <= end1);
+     return start2 <= end1
+   }
+
+   useEffect(() => {
+     if (!productId) return
+
+     const fetchPlaylist = async () => {
+       try {
+         const playlistQuery = query(
+           collection(db, "playlist"),
+           where("product_id", "==", productId),
+           orderBy("created", "desc"),
+           limit(1)
+         )
+         const playlistSnap = await getDocs(playlistQuery)
+         if (!playlistSnap.empty) {
+           const latestPlaylist = playlistSnap.docs[0].data()
+           const allPages = latestPlaylist.pages || []
+
+           // Filter pages to only include those with schedules that are not expired
+           const today = new Date()
+           today.setHours(0, 0, 0, 0)
+           const futurePages = allPages.filter((page: any) =>
+             page.schedules?.some((schedule: any) => {
+               let scheduleEndDate = schedule.endDate?.toDate
+                 ? schedule.endDate.toDate()
+                 : new Date(schedule.endDate)
+               scheduleEndDate.setHours(0, 0, 0, 0)
+               return scheduleEndDate >= today
+             })
+           )
+           setPlaylistPages(futurePages)
+         } else {
+           setPlaylistPages([])
+         }
+       } catch (error) {
+         console.error("Error fetching playlist:", error)
+         setPlaylistPages([])
+       }
+     }
+
+     fetchPlaylist()
+   }, [productId])
+
+   const handleSpotClick = (spotNumber: number) => {
     if (retailSpotNumbers.includes(spotNumber) && !activePages.some((page: any) => page.spot_number === spotNumber)) {
       setSelectedSpot(spotNumber)
     }
@@ -39,13 +89,39 @@ export function BookingSpotSelectionDialog({
 
     // Fill the array with a placeholder value until the length equals totalSpots
     for (let i = 1; i <= totalSpots; i++) {
-      // You can use any value here, like null, 0, or an object,
-      // depending on what you intend the "spots" to represent.
+      const isRetail = retailSpotNumbers.includes(i)
+      const isTaken = activePages.some((page: any) => page.spot_number === i)
+
+      // Check for schedule overlap
+      let hasOverlap = false
+      if (booking && booking.start_date && booking.end_date) {
+        const bookingStart = booking.start_date.toDate()
+        const bookingEnd = booking.end_date.toDate()
+
+        // Check all pages for this spot in the playlist
+        const spotPages = playlistPages.filter((page: any) => page.spot_number === i)
+        for (const page of spotPages) {
+          if (page.schedules) {
+            for (const schedule of page.schedules) {
+              if (schedule.startDate && schedule.endDate) {
+                const scheduleStart = schedule.startDate.toDate ? schedule.startDate.toDate() : new Date(schedule.startDate)
+                const scheduleEnd = schedule.endDate.toDate ? schedule.endDate.toDate() : new Date(schedule.endDate)
+                if (datesOverlap(bookingStart, bookingEnd, scheduleStart, scheduleEnd)) {
+                  hasOverlap = true
+                  break
+                }
+              }
+            }
+          }
+        }
+      }
+
       spots.push({
         spot_number: i ,
-        isRetail: retailSpotNumbers.includes(i),
-        isTaken: activePages.some((page: any) => page.spot_number === i)
-      }) // Using (i + 1) to generate sequential numbers (1, 2, 3, ...)
+        isRetail,
+        isTaken,
+        hasScheduleOverlap: hasOverlap
+      })
     }
 
     return spots
@@ -91,16 +167,16 @@ export function BookingSpotSelectionDialog({
               {/* Spots */}
         {spotPositions.map((spot) => {
           const isSelected = selectedSpot === spot.spot_number
-          const isAvailable = spot.isRetail
+          const isAvailable = spot.isRetail && !spot.isTaken && !spot.hasScheduleOverlap
 
           return (
             <div
               key={spot.spot_number}
               className={`w-[60px] h-[60px] rounded-md text-xs flex items-center justify-center ${isSelected
                   ? 'bg-indigo-300 shadow-lg'
-                  : spot.isTaken
+                  : spot.isTaken || spot.hasScheduleOverlap
                     ?'bg-gray-400 cursor-not-allowed opacity-50 shadow-md'
-                    : spot.isRetail
+                    : spot.isRetail 
                       ? 'bg-[#f0f1fd] cursor-pointer shadow-lg'
                       : 'bg-gray-100 cursor-not-allowed opacity-10'
                 }`}
