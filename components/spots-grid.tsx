@@ -93,7 +93,7 @@ export function SpotsGrid({
     disableBookingActions = false,
     disableEmptySpotClicks = false,
   }: SpotsGridProps) {
-   const { userData } = useAuth();
+   const { userData, hasRole } = useAuth();
    const { toast } = useToast();
    const pathname = usePathname();
    const isBusinessInventory = pathname.includes("business/inventory");
@@ -1230,6 +1230,7 @@ export function SpotsGrid({
           productId={productId}
           activePages={activePages}
           playerOnline={operatorPlayerOnline ?? true}
+          disabled={!pathname.includes('/logistics/')}
         />
         <Dialog
           open={isOfflineDialogOpen}
