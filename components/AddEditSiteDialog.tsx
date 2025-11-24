@@ -1445,7 +1445,7 @@ export function AddEditSiteDialog({
                   <div className="flex gap-2">
                     {["A", "B", "C", "D", "E"].map((type) => (
                       <Button
-                        key={type}
+                        key={`${type}-${selectedAudience.includes(type)}`}
                         variant="outline"
                         onClick={() => toggleAudience(type)}
                         className={`w-12 h-10 rounded-lg border-[#c4c4c4] ${

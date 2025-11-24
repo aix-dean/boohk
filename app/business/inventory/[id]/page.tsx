@@ -555,36 +555,36 @@ export default function BusinessProductDetailPage({ params }: { params: Promise<
 
 
 
-  useEffect(() => {
-    async function fetchProduct() {
-      if (!paramsData.id) return
+  const fetchProduct = async () => {
+    if (!paramsData.id) return
 
-      setLoading(true)
-      try {
-        const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
+    setLoading(true)
+    try {
+      const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
 
-        if (productId === "new") {
-          router.push("/sales/product/upload")
-          return
-        }
-
-        const productDoc = await getDoc(doc(db, "products", productId))
-
-        if (productDoc.exists()) {
-          const productData = { id: productDoc.id, ...productDoc.data() }
-          setProduct(productData)
-        } else {
-          console.error("Product not found")
-          showNotification("error", "Product not found")
-        }
-      } catch (error) {
-        console.error("Error fetching product:", error)
-        showNotification("error", "Failed to load product details")
-      } finally {
-        setLoading(false)
+      if (productId === "new") {
+        router.push("/sales/product/upload")
+        return
       }
-    }
 
+      const productDoc = await getDoc(doc(db, "products", productId))
+
+      if (productDoc.exists()) {
+        const productData = { id: productDoc.id, ...productDoc.data() }
+        setProduct(productData)
+      } else {
+        console.error("Product not found")
+        showNotification("error", "Product not found")
+      }
+    } catch (error) {
+      console.error("Error fetching product:", error)
+      showNotification("error", "Failed to load product details")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchProduct()
   }, [paramsData.id, router])
 
@@ -832,7 +832,7 @@ export default function BusinessProductDetailPage({ params }: { params: Promise<
     })
 
     return unsubscribe
-  }, [paramsData.id])
+  }, [paramsData.id, product?.updated])
 
 
 
@@ -1177,6 +1177,7 @@ export default function BusinessProductDetailPage({ params }: { params: Promise<
           {product && product.content_type?.toLowerCase() === "digital" && product.cms && (
             <div className="mb-6">
               <SpotsGrid
+                key={product.updated}
                 spots={generateSpotsData(product.cms, activePlaylistPages)}
                 totalSpots={product.cms.loops_per_day || 18}
                 occupiedCount={activePlaylistPages.length}
@@ -1430,7 +1431,10 @@ export default function BusinessProductDetailPage({ params }: { params: Promise<
         editingProduct={product}
         userData={userData}
         user={user}
-        onSuccess={() => setEditDialogOpen(false)}
+        onSuccess={() => {
+          setEditDialogOpen(false)
+          fetchProduct()
+        }}
       />
     </div>
   )
