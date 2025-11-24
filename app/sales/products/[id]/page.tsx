@@ -1141,7 +1141,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
       <header className="flex items-center justify-between mb-6">
         <div className="flex items-center">
-          <Button variant="ghost" size="sm" onClick={() => router.push("/sales/dashboard")} className="mr-2">
+          <Button variant="ghost" size="sm" onClick={() => router.back()} className="mr-2">
             <ArrowLeft className="h-5 w-5 mr-1" />
           </Button>
           <h1 className="text-xl font-semibold">Site Information</h1>

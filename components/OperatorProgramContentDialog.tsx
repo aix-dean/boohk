@@ -147,7 +147,8 @@ export function OperatorProgramContentDialog({
         setEndDate("");
       }
       // Set edit mode: true if no content (creating), false if content exists (viewing)
-      setIsEditMode(!spot.imageUrl);
+      // Only allow edit mode in logistics
+      setIsEditMode(!spot.imageUrl && pathname.includes('/logistics/'));
     }
   }, [spot, activePages]);
 
@@ -569,7 +570,7 @@ export function OperatorProgramContentDialog({
                   autoPlay
                   muted
                 />
-              ) : isEditMode ? (
+              ) : isEditMode && pathname.includes('/logistics/') ? (
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 inset-0 flex items-center justify-center h-[210px] w-[139px] rounded-md bg-black bg-opacity-50">
                   <div className="flex flex-col gap-2">
                     <label className="cursor-pointer">
@@ -611,41 +612,43 @@ export function OperatorProgramContentDialog({
             </div>
           </div>
         </div>
-        <DialogFooter>
-          {isEditMode ? (
-            <>
-              <Button
-                variant="outline"
-                className="w-[90px] h-6 rounded-md border-silver text-xs font-medium"
-                onClick={handleCancel}
+        {pathname.includes('/logistics/') && (
+          <DialogFooter>
+            {isEditMode ? (
+              <>
+                <Button
+                  variant="outline"
+                  className="w-[90px] h-6 rounded-md border-silver text-xs font-medium"
+                  onClick={handleCancel}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="w-[90px] h-6 rounded-[6px] bg-green-700 text-xs font-bold"
+                  onClick={handleSave}
+                  disabled={isSaving || !isFormValid}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                      Saving
+                    </>
+                  ) : (
+                    "Save"
+                  )}
+                </Button>
+              </>
+            ) : (
+              <button
+                onClick={handleEdit}
+                className={`w-[90px] text-sm font-semibold h-[24px] rounded-[6px] border border-gray-400 ${!playerOnline || disabled || pathname.includes('/business/inventory/') ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
+                disabled={!playerOnline || disabled || pathname.includes('/business/inventory/')}
               >
-                Cancel
-              </Button>
-              <Button
-                className="w-[90px] h-6 rounded-[6px] bg-green-700 text-xs font-bold"
-                onClick={handleSave}
-                disabled={isSaving || !isFormValid}
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                    Saving
-                  </>
-                ) : (
-                  "Save"
-                )}
-              </Button>
-            </>
-          ) : (
-            <button
-              onClick={handleEdit}
-              className={`w-[90px] text-sm font-semibold h-[24px] rounded-[6px] border border-gray-400 ${!playerOnline || disabled || pathname.includes('/business/inventory/') ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
-              disabled={!playerOnline || disabled || pathname.includes('/business/inventory/')}
-            >
-              Edit
-            </button>
-          )}
-        </DialogFooter>
+                Edit
+              </button>
+            )}
+          </DialogFooter>
+        )}
       </DialogContent>
 
       <MediaLibraryDialog

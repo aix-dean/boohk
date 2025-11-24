@@ -37,7 +37,7 @@ const departmentMapping: Partial<Record<RoleType, DepartmentOption>> = {
   },
   logistics: {
     name: "Logistics",
-    path: "/logistics/dashboard",
+    path: "/logistics/enrolled-sites",
     role: "logistics",
     color: "bg-blue-500"
   },
@@ -120,7 +120,7 @@ export function DepartmentDropdown() {
   let accessibleDepartments = userRoles
       .map(role => departmentMapping[role])
       .filter((dept): dept is DepartmentOption => dept !== undefined);
-  
+
     if (userRoles.includes("admin")) {
       const requiredDepartments: DepartmentOption[] = [
         {name: "Sales", path: "/sales/dashboard", role: "sales", color: "bg-red-500"},
@@ -135,7 +135,7 @@ export function DepartmentDropdown() {
       }
       accessibleDepartments = accessibleDepartments.filter(d => d.role !== "admin");
     } else {
-      accessibleDepartments = accessibleDepartments.filter(dept => ['Sales', 'IT', 'Business Dev', 'Accounting'].includes(dept.name));
+      accessibleDepartments = accessibleDepartments.filter(dept => ['Sales', 'IT', 'Business Dev', 'Accounting', 'Logistics'].includes(dept.name));
     }
 
   console.log("User roles:", userRoles);
