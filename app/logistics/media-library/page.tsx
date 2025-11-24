@@ -184,7 +184,7 @@ function MediaLibraryContent() {
 
 export default function MediaLibraryPage() {
   return (
-    <RouteProtection requiredRoles="sales">
+    <RouteProtection requiredRoles="logistics">
       <div className="min-h-screen bg-[#fafafa] p-6">
         <MediaLibraryContent />
       </div>

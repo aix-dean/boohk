@@ -109,7 +109,6 @@ const navigationItems = [
       { title: "Billings", href: "/sales/billings", icon: FileText },
       { title: "Planner", href: "/sales/planner", icon: Calendar },
       { title: "Customer Chat", href: "/sales/chat", icon: MessageCircle },
-      { title: "Media Library", href: "/sales/media-library", icon: MediaLibraryIcon },
     ],
   },
   {
@@ -405,6 +404,7 @@ export function SideNavigation() {
               <div className="p-1">
                 {[
                   { title: "Enrolled Sites", href: "/logistics/enrolled-sites", icon: MapPin },
+                  { title: "Media Library", href: "/logistics/media-library", icon: MediaLibraryIcon },
                 ].map((item) => {
                   const Icon = item.icon
                   const active = isActive(pathname, item.href)
@@ -1118,7 +1118,6 @@ export function SideNavigation() {
                     { title: "Enrolled Sites", href: "/sales/dashboard", icon: LayoutDashboard },
                     { title: "Price Listing", href: "/sales/price-listing", icon: DollarSign },
                     { title: "Transactions", href: "/sales/transactions", icon: CalendarCheck },
-                    { title: "Media Library", href: "/sales/media-library", icon: MediaLibraryIcon },
                   ].map((item) => {
                     const Icon = item.icon
                     const active = isActive(pathname, item.href)
