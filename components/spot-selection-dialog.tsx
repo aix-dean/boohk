@@ -156,15 +156,20 @@ export function SpotSelectionDialog({
           //   }
           // }
 
-          // Fetch current day's bookings
-          const today = new Date()
-          const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-          const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59)
+          // Determine the date to check for availability
+          let checkDate: Date;
+          if (selectedDate && selectedDate.trim() !== "") {
+            checkDate = new Date(selectedDate);
+          } else {
+            checkDate = new Date();
+          }
+          const startOfDay = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate())
+          const endOfDay = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate(), 23, 59, 59)
 
           const bookingsQuery = query(
             collection(db, "booking"),
             where("product_id", "==", productId),
-            where("status", "in", ["RESERVED", "COMPLETED"])
+            where("status", "==", "ONGOING")
           )
 
           const querySnapshot = await getDocs(bookingsQuery)
@@ -196,11 +201,11 @@ export function SpotSelectionDialog({
           const totalSpots = product.cms?.loops_per_day ?? 0
 
           for (let i = 1; i <= totalSpots; i++) {
-            // Check if this spot has bookings today
+            // Check if this spot has bookings for the selected date
             const isOccupied = currentDayBookings.some(booking =>
-              booking.spot_numbers?.includes(i)
+              booking.spot_number === i
             )
-            const booking = currentDayBookings.find(b => b.spot_numbers?.includes(i))
+            const booking = currentDayBookings.find(b => b.spot_number === i)
             const report = booking ? reportsData[booking.id] : null
 
             // Get image URL from report attachments
@@ -244,7 +249,7 @@ export function SpotSelectionDialog({
             totalSpots,
             occupiedCount,
             vacantCount,
-            currentDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+            currentDate: checkDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
           }
         }
 

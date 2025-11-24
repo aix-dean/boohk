@@ -63,40 +63,27 @@ const ProgramListTab: React.FC<ProgramListTabProps> = ({
   const daysInMonth = getDaysInMonth(selectedMonth, selectedYear)
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
 
-  // Filter active pages for selected date
-  const selectedDate = new Date(selectedYear, selectedMonth - 1, selectedDay)
-  const selectedDateStr = selectedDate.toDateString()
-
-  const filteredPages = activePlaylistPages.filter(page => {
-    return page.schedules?.some((schedule: any) => {
-      let startDate = schedule.startDate?.toDate ? schedule.startDate.toDate() : new Date(schedule.startDate)
-      let endDate = schedule.endDate?.toDate ? schedule.endDate.toDate() : new Date(schedule.endDate)
-      const startDateStr = startDate.toDateString()
-      const endDateStr = endDate.toDateString()
-      return selectedDateStr >= startDateStr && selectedDateStr <= endDateStr
-    })
-  })
-
   // Calculate occupied spots
   const totalSpots = cms?.loops_per_day || 18
-  const occupiedByBoohk = filteredPages.length
+  const occupiedByBoohk = 0
   const occupiedByOperator = new Set(bookings.map(b => b.spot_number).filter(Boolean)).size
   const vacant = totalSpots - occupiedByBoohk - occupiedByOperator
 
   // Generate spots data for selected date
   const spotsData = []
   for (let i = 1; i <= totalSpots; i++) {
-    const page = filteredPages.find(p => p.spot_number === i)
-    const isOccupied = !!page
+    const booking = bookings.find(b => b.spot_number === i)
+    const isOccupied = !!booking
     spotsData.push({
       id: `spot-${i}`,
       number: i,
       status: isOccupied ? "occupied" : "vacant",
-      occupiedBy: isOccupied ? "boohk" : null, // Placeholder
-      imageUrl: page?.widgets?.[0]?.url || null,
-      endDate: page?.schedules?.[0]?.endDate || null,
+      occupiedBy: isOccupied ? "operator" : null,
+      imageUrl: null,
+      endDate: booking?.end_date || null,
     })
   }
+
 
   // Fetch booking from playlist pages
   React.useEffect(() => {
@@ -200,26 +187,17 @@ const ProgramListTab: React.FC<ProgramListTabProps> = ({
             <div className="min-w-[800px]">
               <div className="space-y-3">
                 {Array.from({ length: totalSpots }, (_, i) => i + 1).map((spotNumber) => {
-                  const page = filteredPages.find(p => p.spot_number === spotNumber)
-                  const booking = page?.booking_id ? bookings.find(b => b.id === page.booking_id) : null
-                  const startDate = page?.schedules?.[0]?.startDate?.toDate ? page.schedules[0].startDate.toDate() : page?.schedules?.[0]?.startDate ? new Date(page.schedules[0].startDate) : null
-                  const endDate = page?.schedules?.[0]?.endDate?.toDate ? page.schedules[0].endDate.toDate() : page?.schedules?.[0]?.endDate ? new Date(page.schedules[0].endDate) : null
+                  const booking = bookings.find(b => b.spot_number === spotNumber)
+                  const startDate = booking?.start_date?.toDate ? booking.start_date.toDate() : booking?.start_date ? new Date(booking.start_date as any) : null
+                  const endDate = booking?.end_date?.toDate ? booking.end_date.toDate() : booking?.end_date ? new Date(booking.end_date as any) : null
                   return (
                     <div key={spotNumber} className={`grid grid-cols-5 gap-4 px-4 py-2 items-center text-xs rounded-[10px] hover:bg-white transition-all duration-200 shadow-lg h-[100px] ${retailSite.includes(spotNumber) ? ' bg-[#f6f9ff] border-4 border-blue-400' : 'bg-white border border-transparent'}`}>
                       <div className="text-center">Spot {spotNumber}</div>
                       <div>{booking?.airing_code || '-'}</div>
                       <div>
-                        {page?.widgets?.[0]?.url ? (
-                          <video
-                            src={page.widgets[0].url}
-                            className="w-[76px] h-[80px] object-cover rounded"
-                            preload="metadata"
-                          >
-                            Your browser does not support the video tag.
-                          </video>
-                        ) : (
-                          <div className="w-[76px] h-[80px] bg-gray-200 flex items-center justify-center rounded"></div>
-                        )}
+                        <div className="w-[76px] h-[80px] bg-gray-200 flex items-center justify-center rounded">
+                          <video src={booking?.url} className="w-[76px] h-[80px] object-cover rounded-md"></video>
+                        </div>
                       </div>
                       <div>{startDate ? startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</div>
                       <div>{endDate ? endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</div>

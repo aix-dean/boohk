@@ -68,8 +68,20 @@ const TransactionsTab: React.FC<TransactionsTabProps> = ({
     }
   }
 
-  const renderBookingStatusBadge = (status : string) => {
-    switch (status?.toUpperCase()) {
+  const renderBookingStatusBadge = (booking: Booking) => {
+    const now = new Date()
+    let startDate: Date | null = null
+    if (booking.start_date) {
+      startDate = booking.start_date.toDate ? booking.start_date.toDate() : new Date(booking.start_date as any)
+    }
+    if (startDate && startDate > now) {
+      return (
+        <span className="font-bold text-[#ff9500]">
+          Upcoming
+        </span>
+      )
+    }
+    switch (booking.status?.toUpperCase()) {
       case "COMPLETED":
         return (
           <span className="font-bold text-[#30c71d]">
@@ -88,10 +100,16 @@ const TransactionsTab: React.FC<TransactionsTabProps> = ({
             Declined
           </span>
         )
+      case "UPCOMING":
+        return (
+          <span className="font-bold text-[#ff9500]">
+            Upcoming
+          </span>
+        )
       default:
         return (
           <span className="text-gray-700 font-bold">
-            {`${status.charAt(0).toUpperCase()}${status.slice(1, status.length)}` || "UNKNOWN"}
+            {`${booking.status?.charAt(0).toUpperCase()}${booking.status?.slice(1)}` || "UNKNOWN"}
           </span>
         )
     }
@@ -204,7 +222,7 @@ const TransactionsTab: React.FC<TransactionsTabProps> = ({
                             return `${startFormatted} - ${endFormatted} • ${days} Days`;
                           })() : 'N/A'}</div>
                           <div className="font-bold">{formatTotalAmount(booking.transaction?.amount)}</div>
-                          <div>{renderBookingStatusBadge(booking.status)}</div>
+                          <div>{renderBookingStatusBadge(booking)}</div>
                           <div>
                             <button onClick={() => { setSelectedBooking(booking); setBookingDialogOpen(true); }}>
                               <MoreVertical className="h-4 w-4" />
