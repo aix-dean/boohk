@@ -35,7 +35,7 @@ export function BookingSpotSelectionDialog({
    const datesOverlap = (start1: Date, end1: Date, start2: Date, end2: Date): boolean => {
       console.log("Checking overlap between", start1, end1, "and", start2, end2 ,"result:",  start1 <= end2 && start2 <= end1);
       console.log("result:", start1 <= end2 && start2 <= end1);
-     return start2 <= end1
+     return start1 <= end2 && start2 <= end1
    }
 
    useEffect(() => {
@@ -80,10 +80,10 @@ export function BookingSpotSelectionDialog({
    }, [productId])
 
    const handleSpotClick = (spotNumber: number) => {
-    if (retailSpotNumbers.includes(spotNumber) && !activePages.some((page: any) => page.spot_number === spotNumber)) {
-      setSelectedSpot(spotNumber)
-    }
-  }
+     if (retailSpotNumbers.includes(spotNumber)) {
+       setSelectedSpot(spotNumber)
+     }
+   }
   const generateSpots = (totalSpots: number) => {
     const spots = []
 
@@ -96,7 +96,8 @@ export function BookingSpotSelectionDialog({
       let hasOverlap = false
       if (booking && booking.start_date && booking.end_date) {
         const bookingStart = booking.start_date.toDate()
-        const bookingEnd = booking.end_date.toDate()
+        const bookingEnd = new Date(booking.end_date.toDate())
+        bookingEnd.setHours(23, 59, 59, 999)
 
         // Check all pages for this spot in the playlist
         const spotPages = playlistPages.filter((page: any) => page.spot_number === i)
@@ -105,7 +106,8 @@ export function BookingSpotSelectionDialog({
             for (const schedule of page.schedules) {
               if (schedule.startDate && schedule.endDate) {
                 const scheduleStart = schedule.startDate.toDate ? schedule.startDate.toDate() : new Date(schedule.startDate)
-                const scheduleEnd = schedule.endDate.toDate ? schedule.endDate.toDate() : new Date(schedule.endDate)
+                const scheduleEnd = new Date(schedule.endDate.toDate ? schedule.endDate.toDate() : new Date(schedule.endDate))
+                scheduleEnd.setHours(23, 59, 59, 999)
                 if (datesOverlap(bookingStart, bookingEnd, scheduleStart, scheduleEnd)) {
                   hasOverlap = true
                   break
@@ -167,16 +169,16 @@ export function BookingSpotSelectionDialog({
               {/* Spots */}
         {spotPositions.map((spot) => {
           const isSelected = selectedSpot === spot.spot_number
-          const isAvailable = spot.isRetail && !spot.isTaken && !spot.hasScheduleOverlap
+          const isAvailable = spot.isRetail && !spot.hasScheduleOverlap
 
           return (
             <div
               key={spot.spot_number}
               className={`w-[60px] h-[60px] rounded-md text-xs flex items-center justify-center ${isSelected
                   ? 'bg-indigo-300 shadow-lg'
-                  : spot.isTaken || spot.hasScheduleOverlap
+                  : spot.hasScheduleOverlap
                     ?'bg-gray-400 cursor-not-allowed opacity-50 shadow-md'
-                    : spot.isRetail 
+                    : spot.isRetail
                       ? 'bg-[#f0f1fd] cursor-pointer shadow-lg'
                       : 'bg-gray-100 cursor-not-allowed opacity-10'
                 }`}
