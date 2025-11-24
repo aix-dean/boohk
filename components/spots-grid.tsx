@@ -269,16 +269,6 @@ export function SpotsGrid({
   const handleAcceptBooking = async (spotNumber: number) => {
     if (!selectedBooking) return;
 
-    // Check if retail spot is already occupied
-    if (retailSpotNumbers.includes(spotNumber) && takenSpotNumbers.includes(spotNumber)) {
-      toast({
-        title: "Cannot accept booking",
-        description: "The retail spot is already occupied.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       // Generate airing_code
       const airing_code = "BH" + Date.now();
