@@ -568,7 +568,7 @@ export default function ITUserManagementPage() {
           Object.entries(usersByDepartment).map(([department, departmentUsers]) => {
             const memberCount = departmentUsers.length
             const memberText = memberCount === 1 ? "member" : "members"
-            const isDisabled = ['Treasury', 'Administrator', 'Logistics Team', 'Finance', 'Content Management'].includes(department)
+            const isDisabled = ['Treasury', 'Administrator', 'Finance', 'Content Management'].includes(department)
 
             return (
               <Card

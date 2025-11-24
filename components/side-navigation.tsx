@@ -38,6 +38,7 @@ import {
   ChevronDown,
   ArrowLeft,
   SquarePen,
+  MapPin,
 } from "lucide-react"
 import { useUnreadMessages } from "@/hooks/use-unread-messages"
 import { useAuth } from "@/contexts/auth-context"
@@ -117,6 +118,7 @@ const navigationItems = [
     icon: Truck,
     items: [
       { title: "Dashboard", href: "/logistics/dashboard", icon: LayoutDashboard },
+      { title: "Enrolled Sites", href: "/logistics/enrolled-sites", icon: MapPin },
       { title: "Service Assignments", href: "/logistics/assignments", icon: FileText },
       { title: "Planner", href: "/logistics/planner", icon: Calendar },
       { title: "Alerts", href: "/logistics/alerts", icon: AlertTriangle },
@@ -402,16 +404,7 @@ export function SideNavigation() {
             <div className="rounded-[20px] shadow-sm">
               <div className="p-1">
                 {[
-                  { title: "Dashboard", href: "/logistics/dashboard", icon: LayoutDashboard },
-                  { title: "Bulletin Board", href: "/logistics/bulletin-board", icon: ClipboardList },
-                  { title: "Planner", href: "/logistics/planner", icon: Calendar },
-                  { title: "Service Assignments", href: "/logistics/assignments", icon: FileText },
-                  { title: "Job Orders", href: "/logistics/job-orders", icon: ClipboardList },
-                  { title: "Reports", href: "/logistics/service-reports", icon: BarChart3 },
-                  { title: "Fleet", href: "/logistics/fleet", icon: Truck },
-                  { title: "Teams and Personnel", href: "/logistics/teams", icon: Users },
-                  { title: "News and Weather", href: "/logistics/weather", icon: CloudRain },
-                  { title: "To-do-list", href: "/logistics/todo-list", icon: ClipboardList },
+                  { title: "Enrolled Sites", href: "/logistics/enrolled-sites", icon: MapPin },
                 ].map((item) => {
                   const Icon = item.icon
                   const active = isActive(pathname, item.href)
