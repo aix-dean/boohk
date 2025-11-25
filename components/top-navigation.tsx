@@ -33,12 +33,12 @@ export function TopNavigation() {
       collection(db, "booking"),
       where("for_censorship", "==", 1),
       where("for_screening", "==", 0),
-      where("seller_id", "==", userData.uid)
+      where("company_id", "==", userData.company_id)
     )
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       snapshot.docChanges().forEach(async (change) => {
-        if (change.type === 'added' && !isInitialLoad) {
+        if (change.type === 'added' || change.type === 'modified' && !isInitialLoad) {
           const booking = change.doc.data()
           const productDoc = await getDoc(doc(db, "products", booking.product_id))
           const productName = productDoc.exists() ? productDoc.data().name : "Unknown Product"
