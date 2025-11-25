@@ -5,17 +5,18 @@ import { ArrowRight } from "lucide-react"
 import { useState, useEffect } from "react"
 
 interface Step4WelcomeProps {
-  onNext: (switchStates: { uploadInventory: boolean; handleRetailOrders: boolean; handlePayments: boolean }) => void
+  onNext: (switchStates: { uploadInventory: boolean; handleRetailOrders: boolean; handlePayments: boolean; controlInventory: boolean }) => void
 }
 
 export default function Step4Welcome({ onNext }: Step4WelcomeProps) {
   const [uploadInventory, setUploadInventory] = useState(false)
   const [setupCompany, setSetupCompany] = useState(false)
   const [handlePayments, setHandlePayments] = useState(false)
+  const [controlInventory, setControlInventory] = useState(false)
   const [animateIn, setAnimateIn] = useState(false)
 
   // Button text changes based on selections
-  const hasSelections = uploadInventory || setupCompany || handlePayments
+  const hasSelections = uploadInventory || setupCompany || handlePayments || controlInventory
 
   // Update state whenever switches change
   useEffect(() => {
@@ -23,9 +24,10 @@ export default function Step4Welcome({ onNext }: Step4WelcomeProps) {
       uploadInventory,
       setupCompany,
       handlePayments,
+      controlInventory,
       hasSelections
     })
-  }, [uploadInventory, setupCompany, handlePayments, hasSelections])
+  }, [uploadInventory, setupCompany, handlePayments, controlInventory, hasSelections])
 
   // Trigger slide-in animation on mount
   useEffect(() => {
@@ -38,6 +40,7 @@ export default function Step4Welcome({ onNext }: Step4WelcomeProps) {
     if (uploadInventory) permissions.push('business_dev')
     if (setupCompany) permissions.push('sales')
     if (handlePayments) permissions.push('accounting')
+    if (controlInventory) permissions.push('logistics')
     return permissions
   }
 
@@ -46,6 +49,7 @@ export default function Step4Welcome({ onNext }: Step4WelcomeProps) {
     if (uploadInventory) roles.push('business')
     if (setupCompany) roles.push('sales')
     if (handlePayments) roles.push('accounting')
+    if (controlInventory) roles.push('logistics')
     return roles
   }
 
@@ -54,7 +58,8 @@ export default function Step4Welcome({ onNext }: Step4WelcomeProps) {
     const switchStates = {
       uploadInventory,
       handleRetailOrders: setupCompany,
-      handlePayments
+      handlePayments,
+      controlInventory
     }
     console.log('Step 4 switch states:', switchStates)
     onNext(switchStates)
@@ -148,6 +153,20 @@ export default function Step4Welcome({ onNext }: Step4WelcomeProps) {
                   style={{ width: '14.463px', height: '14.463px', flexShrink: 0, aspectRatio: '14.46/14.46' }}
                 />
                 <span style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '16px', fontStyle: 'normal', fontWeight: 700, lineHeight: '100%' }}>Handle payments </span><span style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '16px', fontStyle: 'normal', fontWeight: 300, lineHeight: '100%' }}>(Accounting)</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <Switch
+                  checked={controlInventory}
+                  onCheckedChange={setControlInventory}
+                />
+                <img
+                  src="/logistics-header-new.png"
+                  alt="Control Inventory"
+                  style={{ width: '14.463px', height: '14.463px', flexShrink: 0, aspectRatio: '14.46/14.46' }}
+                />
+                <span style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '16px', fontStyle: 'normal', fontWeight: 700, lineHeight: '100%' }}>Control Inventory </span><span style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '16px', fontStyle: 'normal', fontWeight: 300, lineHeight: '100%' }}>(Logistics)</span>
               </div>
             </div>
           </div>
