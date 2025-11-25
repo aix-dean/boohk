@@ -616,6 +616,10 @@ export function AddEditSiteDialog({
       return
     }
 
+    if (siteType === "digital" && !playerId.trim()) {
+      errors.push("Controller Serial Number")
+    }
+
     if (height.trim() && isNaN(Number(height.replace(/,/g, '')))) {
       toast({
         title: "Validation Error",
