@@ -313,7 +313,7 @@ export default function ViewPDFPage() {
                  console.log('[DEBUG] User not available for signature fetch')
                  return
                }
-               const userDocRef = doc(db, "iboard_users", user.uid)
+               const userDocRef = doc(db, "boohk_users", user.uid)
                const userDocSnap = await getDoc(userDocRef)
 
                if (userDocSnap.exists()) {
@@ -355,7 +355,7 @@ export default function ViewPDFPage() {
                    console.log('[DEBUG] No signature URL available in user data')
                  }
                } else {
-                 console.log('[DEBUG] User document does not exist in iboard_users collection')
+                 console.log('[DEBUG] User document does not exist in boohk_users collection')
                }
              } catch (error) {
                console.error("[DEBUG] Error fetching user signature data:", error)

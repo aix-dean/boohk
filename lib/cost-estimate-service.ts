@@ -1083,7 +1083,7 @@ export async function generateAndUploadCostEstimatePDF(
     if (!finalUserSignatureDataUrl && costEstimate.createdBy) {
       try {
         console.log('[PDF_GENERATE] Fetching user signature for createdBy:', costEstimate.createdBy)
-        const userDocRef = doc(db, "iboard_users", costEstimate.createdBy)
+        const userDocRef = doc(db, "boohk_users", costEstimate.createdBy)
         const userDoc = await getDoc(userDocRef)
 
         if (userDoc.exists()) {

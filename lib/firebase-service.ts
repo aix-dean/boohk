@@ -105,129 +105,14 @@ async function removeServiceAssignmentFromIndex(serviceAssignmentId: string) {
   }
 }
 import type { QuotationProduct, ProjectCompliance, ClientCompliance } from "@/lib/types/quotation"
+import type { Media } from "oh-db-models"
+import type { Product } from "oh-db-models/dist/products/types"
+
+// Re-export the Product type from oh-db-models
+export type { Product }
 
 // Initialize Firebase Storage
 const storage = getStorage()
-
-// Product interface
-export interface Product {
-  id?: string
-  name: string
-  description: string
-  price: number
-  imageUrl?: string
-  active: boolean
-  deleted: boolean
-  created?: any
-  updated?: any
-  seller_id: string
-  seller_name: string
-  company_id?: string | null
-  position: number
-  media?: Array<{
-    url: string
-    distance: string
-    type: string
-    isVideo: boolean
-  }>
-  playerIds?: string[]
-  spotUrls?: string[]
-  retailSpot?: Array<{ spotNumber: number }>
-  retail_spot?: {
-    spot_number?: number[]
-  }
-  categories?: string[]
-  category_names?: string[]
-  content_type?: string
-  cms?: {
-    start_time?: string
-    end_time?: string
-    spot_duration?: number
-    loops_per_day?: number
-    spots_per_loop?: number
-  } | null
-  pages?: any[] | null
-  specs_rental?: {
-    audience_types?: string[]
-    geopoint?: GeoPoint
-    location?: string
-    location_label?: string
-    land_owner?: string
-    partner?: string
-    orientation?: string
-    traffic_count?: number | null
-    traffic_unit?: "monthly" | "daily" | "weekly"
-    elevation?: number | null
-    height?: number | null
-    width?: number | null
-    site_orientation?: string | null
-    caretaker?: string | null
-    size?: string
-    material?: string
-    panels?: string
-    gondola?: boolean
-    technology?: string
-    site_code?: string
-    location_visibility?: number | null
-    location_visibility_unit?: string
-    dimension_unit?: "ft" | "m"
-    elevation_unit?: "ft" | "m"
-    structure:{
-      color?: string | null
-      condition?: string | null
-      contractor?: string | null
-      last_maintenance?: Date | null
-    }
-    illumination: string | {
-      bottom_count?: number | null
-      bottom_lighting_specs?: string | null
-      left_count?: number | null
-      left_lighting_specs?: string | null
-      right_count?: number | null
-      right_lighting_specs?: string | null
-      upper_count?: number | null
-      upper_lighting_specs?: string | null
-      power_consumption_monthly?: number | null
-    }
-  }
-  type?: string
-  status?: string
-  health_percentage?: number
-  location?: string
-  address?: string
-  site_code?: string
-  light?: {
-    illumination_status?: string
-    location?: string
-    size?: string
-  }
-  blueprints?: Array<{
-    blueprint: string
-    uploaded_by: string
-    created: any
-  }>
-  compliance?: Array<{
-    name: string
-    doc_url: string
-    created: any
-    created_by: string
-  }>
-  structure?: {
-    color?: string
-    contractor?: string
-    condition?: string
-    last_maintenance?: any
-  }
-  personnel?: Array<{
-    status: boolean
-    name: string
-    position: string
-    contact: string
-    start_date: any
-    created: any
-    created_by: string
-  }>
-}
 
 // ServiceAssignment interface
 export interface ServiceAssignment {
@@ -1657,7 +1542,6 @@ export async function getProductsByContentTypeAndCompany(
         // Check search term match
         return (
           product.name?.toLowerCase().includes(searchLower) ||
-          product.light?.location?.toLowerCase().includes(searchLower) ||
           product.specs_rental?.location?.toLowerCase().includes(searchLower) ||
           product.description?.toLowerCase().includes(searchLower)
         )
@@ -1740,7 +1624,6 @@ export async function getProductsCountByContentTypeAndCompany(contentType: strin
         if (productContentType === contentTypeLower && product.company_id) {
           if (
             product.name?.toLowerCase().includes(searchLower) ||
-            product.light?.location?.toLowerCase().includes(searchLower) ||
             product.specs_rental?.location?.toLowerCase().includes(searchLower) ||
             product.description?.toLowerCase().includes(searchLower)
           ) {
@@ -2335,5 +2218,156 @@ export async function getNewsItemsByCategory(categoryId: string, limitCount = 5)
   } catch (error) {
     console.error("Error fetching news items by category:", error)
     return []
+  }
+}
+
+// MEDIA LIBRARY FUNCTIONS
+
+// Get paginated media library items for a company
+export async function getPaginatedMediaLibrary(
+  companyId: string,
+  itemsPerPage = 16,
+  lastDoc: QueryDocumentSnapshot<DocumentData> | null = null,
+  options: { searchTerm?: string } = {},
+): Promise<PaginatedResult<Media>> {
+  try {
+    const mediaLibraryRef = collection(db, "media_library")
+    const { searchTerm = "" } = options
+
+    // Start with basic constraints
+    const constraints: any[] = [
+      where("companyId", "==", companyId),
+      where("deleted", "==", false),
+      orderBy("uploadDate", "desc"),
+      limit(itemsPerPage),
+    ]
+
+    // Create the query with all constraints
+    let q = query(mediaLibraryRef, ...constraints)
+
+    // If we have a last document, start after it for pagination
+    if (lastDoc) {
+      q = query(q, startAfter(lastDoc))
+    }
+
+    const querySnapshot = await getDocs(q)
+
+    // Get the last visible document for next pagination
+    const lastVisible = querySnapshot.docs.length > 0 ? querySnapshot.docs[querySnapshot.docs.length - 1] : null
+
+    // Check if there are more documents to fetch
+    const hasMore = querySnapshot.docs.length === itemsPerPage
+
+    // Convert the documents to Media objects
+    const mediaItems: Media[] = []
+    querySnapshot.forEach((doc) => {
+      const mediaItem = { id: doc.id, ...doc.data() } as Media
+
+      // If there's a search term, filter client-side
+      if (searchTerm && typeof searchTerm === "string") {
+        const searchLower = searchTerm.toLowerCase()
+        if (mediaItem.title?.toLowerCase().includes(searchLower) || mediaItem.name?.toLowerCase().includes(searchLower)) {
+          mediaItems.push(mediaItem)
+        }
+      } else {
+        mediaItems.push(mediaItem)
+      }
+    })
+
+    return {
+      items: mediaItems,
+      lastDoc: lastVisible,
+      hasMore,
+    }
+  } catch (error) {
+    console.error("Error fetching paginated media library:", error)
+    return {
+      items: [],
+      lastDoc: null,
+      hasMore: false,
+    }
+  }
+}
+
+// Get count of media library items for a company
+export async function getMediaLibraryCount(companyId: string, searchTerm = ""): Promise<number> {
+  try {
+    const mediaLibraryRef = collection(db, "media_library")
+    const q = query(
+      mediaLibraryRef,
+      where("companyId", "==", companyId),
+      where("deleted", "==", false)
+    )
+
+    if (searchTerm && typeof searchTerm === "string") {
+      const querySnapshot = await getDocs(q)
+      const searchLower = searchTerm.toLowerCase()
+
+      let count = 0
+      querySnapshot.forEach((doc) => {
+        const mediaItem = doc.data() as Media
+        if (mediaItem.title?.toLowerCase().includes(searchLower) || mediaItem.name?.toLowerCase().includes(searchLower)) {
+          count++
+        }
+      })
+
+      return count
+    } else {
+      const snapshot = await getCountFromServer(q)
+      return snapshot.data().count
+    }
+  } catch (error) {
+    console.error("Error getting media library count:", error)
+    return 0
+  }
+}
+
+// Create a new media library item
+export async function createMediaLibrary(mediaData: Omit<Media, "id" | "uploadDate" | "modifiedDate" | "deleted" | "dateDeleted">): Promise<string> {
+  try {
+    const newMedia = {
+      ...mediaData,
+      uploadDate: serverTimestamp(),
+      modifiedDate: serverTimestamp(),
+      deleted: false,
+      dateDeleted: null,
+    }
+
+    const docRef = await addDoc(collection(db, "media_library"), newMedia)
+    return docRef.id
+  } catch (error) {
+    console.error("Error creating media library item:", error)
+    throw error
+  }
+}
+
+// Soft delete a media library item
+export async function softDeleteMediaLibrary(mediaId: string): Promise<void> {
+  try {
+    const mediaRef = doc(db, "media", mediaId)
+    await updateDoc(mediaRef, {
+      deleted: true,
+      dateDeleted: serverTimestamp(),
+      modifiedDate: serverTimestamp(),
+    })
+  } catch (error) {
+    console.error("Error soft deleting media library item:", error)
+    throw error
+  }
+}
+
+// Upload file to Firebase Storage for media library
+export async function uploadMediaFile(file: File, companyId: string): Promise<string> {
+  try {
+    const timestamp = Date.now()
+    const fileName = `${timestamp}_${file.name}`
+    const storageRef = ref(storage, fileName)
+    const snapshot = await uploadBytes(storageRef, file)
+    const downloadURL = await getDownloadURL(snapshot.ref)
+    console.log("Media file uploaded successfully:", downloadURL)
+    return downloadURL
+  } catch (error) {
+    console.error("Error uploading media file to Firebase Storage:", error)
+    throw error
   }
 }

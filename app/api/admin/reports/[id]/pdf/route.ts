@@ -231,7 +231,7 @@ export async function GET(
     let companyData = null
     if (report.createdBy) {
       try {
-        const userDocRef = doc(db, "iboard_users", report.createdBy)
+        const userDocRef = doc(db, "boohk_users", report.createdBy)
         const userDoc = await getDoc(userDocRef)
 
         if (userDoc.exists()) {

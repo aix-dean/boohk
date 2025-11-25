@@ -431,17 +431,17 @@ export async function assignRoleToUser(userId: string, roleId: RoleType, assigne
     const updatedRoles = await getUserRoles(userId)
     console.log("Updated roles after assignment:", updatedRoles)
 
-    // Update the iboard_users document with the new roles array
+    // Update the boohk_users document with the new roles array
     try {
-      const userDocRef = doc(db, "iboard_users", userId)
+      const userDocRef = doc(db, "boohk_users", userId)
       await updateDoc(userDocRef, {
         roles: updatedRoles,
         updated: serverTimestamp()
       })
-      console.log(`Updated iboard_users document with roles:`, updatedRoles)
+      console.log(`Updated boohk_users document with roles:`, updatedRoles)
     } catch (updateError) {
-      console.error("Error updating iboard_users document:", updateError)
-      // Don't fail the role assignment if updating iboard_users fails
+      console.error("Error updating boohk_users document:", updateError)
+      // Don't fail the role assignment if updating boohk_users fails
     }
   } catch (error) {
     console.error("Error assigning role to user:", error)
@@ -461,18 +461,18 @@ export async function removeRoleFromUser(userId: string, roleId: RoleType): Prom
 
     console.log(`Role ${roleId} removed from user ${userId}`)
 
-    // Update the iboard_users document with the updated roles array
+    // Update the boohk_users document with the updated roles array
     try {
       const updatedRoles = await getUserRoles(userId)
-      const userDocRef = doc(db, "iboard_users", userId)
+      const userDocRef = doc(db, "boohk_users", userId)
       await updateDoc(userDocRef, {
         roles: updatedRoles,
         updated: serverTimestamp()
       })
-      console.log(`Updated iboard_users document with roles after removal:`, updatedRoles)
+      console.log(`Updated boohk_users document with roles after removal:`, updatedRoles)
     } catch (updateError) {
-      console.error("Error updating iboard_users document after role removal:", updateError)
-      // Don't fail the role removal if updating iboard_users fails
+      console.error("Error updating boohk_users document after role removal:", updateError)
+      // Don't fail the role removal if updating boohk_users fails
     }
   } catch (error) {
     console.error("Error removing role from user:", error)
@@ -491,6 +491,11 @@ export async function hasPermission(
 
     if (userRoles.length === 0) {
       return false
+    }
+
+    // Admin users have access to all pages, overriding other permission checks
+    if (userRoles.includes("admin")) {
+      return true
     }
 
     // Check each role for the permission

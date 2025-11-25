@@ -39,10 +39,12 @@ import { subscriptionService } from "@/lib/subscription-service"
 import { RouteProtection } from "@/components/route-protection"
 import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete"
 import InventoryContent from "@/components/InventoryContent"
+import AddSiteDialog from "@/components/AddSiteDialog"
+import { AddEditSiteDialog } from "@/components/AddEditSiteDialog"
 import { GeoPoint } from "firebase/firestore"
 
 // Number of items to display per page
-const ITEMS_PER_PAGE = 12
+const ITEMS_PER_PAGE = 15
 
 // Category options based on site type
 const STATIC_CATEGORIES = [
@@ -64,6 +66,7 @@ const DIGITAL_CATEGORIES = [
   "LED Poster",
   "Digital Transit Ads"
 ]
+
 // Price validation functions
 const validatePriceInput = (value: string): boolean => {
   // Allow empty string, numbers, and decimal point
@@ -248,6 +251,7 @@ const validateDynamicContent = (cms: CmsData, siteType: string, setValidationErr
   }
 }
 
+
 export default function BusinessInventoryPage() {
   const router = useRouter()
   const { user, userData, subscriptionData, refreshUserData } = useAuth()
@@ -288,14 +292,12 @@ export default function BusinessInventoryPage() {
 
   // Add site dialog state
   const [showAddSiteDialog, setShowAddSiteDialog] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [validationErrors, setValidationErrors] = useState<string[]>([])
 
   // Edit site dialog state
   const [showEditSiteDialog, setShowEditSiteDialog] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
-  // Form state
+  // Form state for edit dialog
   const [siteType, setSiteType] = useState<"static" | "digital">("digital")
   const [cms, setCms] = useState<CmsData>({
     start_time: "06:00",
@@ -303,7 +305,9 @@ export default function BusinessInventoryPage() {
     spot_duration: "",
     loops_per_day: ""
   })
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [category, setCategory] = useState(DIGITAL_CATEGORIES[0])
   const [siteName, setSiteName] = useState("")
   const [location, setLocation] = useState("")
@@ -330,6 +334,20 @@ export default function BusinessInventoryPage() {
   const [playerId, setPlayerId] = useState("")
   const [spotInputs, setSpotInputs] = useState<string[]>([])
   const [selectedRetailSpots, setSelectedRetailSpots] = useState<number[]>([])
+  // New fields from Figma design
+  const [resolutionWidth, setResolutionWidth] = useState("")
+  const [resolutionHeight, setResolutionHeight] = useState("")
+  const [brightness, setBrightness] = useState("")
+  const [notableCampaigns, setNotableCampaigns] = useState<File[]>([])
+  const [specialRateEnabled, setSpecialRateEnabled] = useState(false)
+  const [specialRateType, setSpecialRateType] = useState<"multiplier" | "amount">("multiplier")
+  const [specialRateMultiplier, setSpecialRateMultiplier] = useState("")
+  const [specialRateAmount, setSpecialRateAmount] = useState("")
+  const [triggers, setTriggers] = useState({
+    manualToggle: false,
+    autoTrigger: false,
+    autoTriggerPercentage: "50"
+  })
 
   // Fetch total count of products
   const fetchTotalCount = useCallback(async () => {
@@ -576,59 +594,6 @@ export default function BusinessInventoryPage() {
     )
   }
 
-  // Update price unit based on site type
-  useEffect(() => {
-    if (siteType === "static") {
-      setPriceUnit("per month")
-    } else if (siteType === "digital") {
-      setPriceUnit("per spot")
-    }
-  }, [siteType])
-
-  // Update category based on site type
-  useEffect(() => {
-    if (siteType === "static") {
-      setCategory(STATIC_CATEGORIES[0])
-    } else if (siteType === "digital") {
-      setCategory(DIGITAL_CATEGORIES[0])
-    }
-  }, [siteType])
-
-  // Set default values when site type changes to digital
-  useEffect(() => {
-    if (siteType === "digital") {
-      setCms({
-        start_time: "06:00",
-        end_time: "22:00",
-        spot_duration: "10",
-        loops_per_day: "",
-      })
-    }
-  }, [siteType])
-
-  // Validate dynamic content when fields change
-  useEffect(() => {
-    if (siteType === "digital") {
-      validateDynamicContent(cms, siteType, setValidationError)
-    } else {
-      setValidationError(null)
-    }
-  }, [cms.start_time, cms.end_time, cms.spot_duration, cms.loops_per_day, siteType])
-
-  // Update spot inputs when loops_per_day changes for digital sites
-  useEffect(() => {
-    if (siteType === "digital") {
-      const spots = parseInt(cms.loops_per_day) || 0
-      setSpotInputs(prev => {
-        if (prev.length !== spots) {
-          return new Array(spots).fill("")
-        }
-        return prev
-      })
-    } else {
-      setSpotInputs([])
-    }
-  }, [siteType, cms.loops_per_day])
 
   // Pagination handlers
   const goToPage = (page: number) => {
@@ -739,7 +704,7 @@ export default function BusinessInventoryPage() {
     setElevation(product.specs_rental?.elevation ? String(product.specs_rental.elevation) : "")
     setElevationUnit("ft")
     setDescription(product.description || "")
-    setSelectedAudience(product.specs_rental?.audience_types || [])
+    setSelectedAudience(product.specs_rental?.audience_profile || product.specs_rental?.audience_type || [])
     setDailyTraffic(product.specs_rental?.traffic_count ? String(product.specs_rental.traffic_count) : "")
     setPrice(product.price ? formatPriceOnBlur(String(product.price)) : "0")
     setPriceUnit("per spot")
@@ -1319,6 +1284,69 @@ export default function BusinessInventoryPage() {
       return
     }
 
+    // Validate new Figma fields
+    if (resolutionWidth.trim() && isNaN(Number(resolutionWidth))) {
+      toast({
+        title: "Validation Error",
+        description: "Resolution Width must be a valid number.",
+        variant: "destructive",
+      })
+      setIsSubmitting(false)
+      return
+    }
+
+    if (resolutionHeight.trim() && isNaN(Number(resolutionHeight))) {
+      toast({
+        title: "Validation Error",
+        description: "Resolution Height must be a valid number.",
+        variant: "destructive",
+      })
+      setIsSubmitting(false)
+      return
+    }
+
+    if (brightness.trim() && isNaN(Number(brightness))) {
+      toast({
+        title: "Validation Error",
+        description: "Brightness must be a valid number.",
+        variant: "destructive",
+      })
+      setIsSubmitting(false)
+      return
+    }
+
+    if (specialRateEnabled) {
+      if (specialRateType === "multiplier" && specialRateMultiplier.trim() && isNaN(Number(specialRateMultiplier))) {
+        toast({
+          title: "Validation Error",
+          description: "Special Rate Multiplier must be a valid number.",
+          variant: "destructive",
+        })
+        setIsSubmitting(false)
+        return
+      }
+
+      if (specialRateType === "amount" && specialRateAmount.trim() && isNaN(Number(specialRateAmount))) {
+        toast({
+          title: "Validation Error",
+          description: "Special Rate Amount must be a valid number.",
+          variant: "destructive",
+        })
+        setIsSubmitting(false)
+        return
+      }
+    }
+
+    if (triggers.autoTrigger && triggers.autoTriggerPercentage.trim() && isNaN(Number(triggers.autoTriggerPercentage))) {
+      toast({
+        title: "Validation Error",
+        description: "Auto Trigger Percentage must be a valid number.",
+        variant: "destructive",
+      })
+      setIsSubmitting(false)
+      return
+    }
+
     // Show validation error for missing required fields
     if (errors.length > 0) {
       setValidationErrors(errors)
@@ -1459,7 +1487,7 @@ export default function BusinessInventoryPage() {
   return (
     <RouteProtection requiredRoles="business">
       <InventoryContent
-        title="Inventory"
+        title="Enrolled Sites"
         allProducts={allProducts}
         filteredProducts={filteredProducts}
         displayedProducts={displayedProducts}
@@ -1491,14 +1519,6 @@ export default function BusinessInventoryPage() {
         emptyStateDescription="Click the Add Site button below to create your first site."
         addButtonText="Add Site"
       />
-      {/* Floating Action Button */}
-      <Button
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[#4169e1] hover:bg-[#1d0beb] shadow-lg"
-        size="icon"
-        onClick={handleAddSiteClick}
-      >
-        <Plus className="w-6 h-6" />
-      </Button>
 
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmationDialog
@@ -1527,1063 +1547,28 @@ export default function BusinessInventoryPage() {
       </Dialog>
 
       {/* Add Site Dialog */}
-      <Dialog open={showAddSiteDialog} onOpenChange={setShowAddSiteDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-[20px] py-0 [&::-webkit-scrollbar]:w-3 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
-          <DialogHeader className="sticky top-0 bg-white z-10 pb-4 border-b px-6 mb-0 min-h-[4rem] flex items-start pt-6">
-            <DialogTitle className="text-2xl font-semibold text-[#333333]">Add site</DialogTitle>
-          </DialogHeader>
-
-          {/* Validation Errors Display */}
-          {validationErrors.length > 0 && (
-            <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">
-                    Please fill in the required fields:
-                  </h3>
-                  <div className="mt-2 text-sm text-red-700">
-                    <ul role="list" className="list-disc pl-5 space-y-1">
-                      {validationErrors.map((error, index) => (
-                        <li key={index}>{error}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
-            {/* Left Column */}
-            <div className="space-y-6">
-              {/* Category */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Category:</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="border-[#c4c4c4]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DIGITAL_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Site Name */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">
-                  Site Name: <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  placeholder="Site Name"
-                  className="border-[#c4c4c4]"
-                  value={siteName}
-                  onChange={(e) => setSiteName(e.target.value)}
-                />
-              </div>
-
-
-              {/* Location */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">
-                  Location: <span className="text-red-500">*</span>
-                </Label>
-                <GooglePlacesAutocomplete
-                  value={location}
-                  onChange={setLocation}
-                  onGeopointChange={setGeopoint}
-                  placeholder="Enter street address or search location..."
-                  enableMap={true}
-                  mapHeight="250px"
-                />
-              </div>
-
-              {/* Location Label */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Location Label:</Label>
-                <Input
-                  placeholder="e.g., Near Mall, Highway Side"
-                  className="border-[#c4c4c4]"
-                  value={locationLabel}
-                  onChange={(e) => setLocationLabel(e.target.value)}
-                />
-              </div>
-
-              {/* Location Visibility */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Location Visibility:</Label>
-                <div className="flex gap-3">
-                  <Input
-                    type="text"
-                    placeholder="e.g., 100"
-                    className="flex-1 border-[#c4c4c4]"
-                    value={locationVisibility}
-                    onChange={(e) => handleFormattedNumberInput(e, setLocationVisibility)}
-                  />
-                  <Select value={locationVisibilityUnit} onValueChange={(value: string) => setLocationVisibilityUnit(value)}>
-                    <SelectTrigger className="w-20 border-[#c4c4c4]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ft">ft</SelectItem>
-                      <SelectItem value="m">m</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Land Owner */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Land Owner:</Label>
-                <Input
-                  placeholder="Enter land owner name"
-                  className="border-[#c4c4c4]"
-                  value={landOwner}
-                  onChange={(e) => setLandOwner(e.target.value)}
-                />
-              </div>
-
-              {/* Partner */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Partner:</Label>
-                <Input
-                  placeholder="Enter partner name"
-                  className="border-[#c4c4c4]"
-                  value={partner}
-                  onChange={(e) => setPartner(e.target.value)}
-                />
-              </div>
-
-              {/* Orientation */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Orientation:</Label>
-                <Input
-                  placeholder="e.g., North, South, East, West"
-                  className="border-[#c4c4c4]"
-                  value={orientation}
-                  onChange={(e) => setOrientation(e.target.value)}
-                />
-              </div>
-
-              {/* Dimension */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Dimension:</Label>
-                <div className="flex items-end gap-3">
-                  <div className="flex-1">
-                    <Label className="text-[#4e4e4e] text-sm mb-1 block">Height:</Label>
-                    <Input
-                      type="text"
-                      placeholder="e.g., 10"
-                      className="border-[#c4c4c4]"
-                      value={height}
-                      onChange={(e) => handleFormattedNumberInput(e, setHeight)}
-                    />
-                  </div>
-                  <span className="text-[#4e4e4e]">x</span>
-                  <div className="flex-1">
-                    <Label className="text-[#4e4e4e] text-sm mb-1 block">Width:</Label>
-                    <Input
-                      type="text"
-                      placeholder="e.g., 20"
-                      className="border-[#c4c4c4]"
-                      value={width}
-                      onChange={(e) => handleFormattedNumberInput(e, setWidth)}
-                    />
-                  </div>
-                  <Select value={dimensionUnit} onValueChange={(value: "ft" | "m") => setDimensionUnit(value)}>
-                    <SelectTrigger className="w-20 border-[#c4c4c4]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ft">ft</SelectItem>
-                      <SelectItem value="m">m</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Elevation from ground */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">
-                  Elevation from ground: <span className="text-[#c4c4c4]">(Optional)</span>
-                </Label>
-                <div className="flex gap-3">
-                  <Input
-                    type="text"
-                    placeholder="e.g., 5"
-                    className="flex-1 border-[#c4c4c4]"
-                    value={elevation}
-                    onChange={(e) => handleFormattedNumberInput(e, setElevation)}
-                  />
-                  <Select value={elevationUnit} onValueChange={(value: "ft" | "m") => setElevationUnit(value)}>
-                    <SelectTrigger className="w-20 border-[#c4c4c4]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ft">ft</SelectItem>
-                      <SelectItem value="m">m</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column */}
-            <div className="space-y-6">
-              {/* Description */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Description:</Label>
-                <Textarea
-                  className="min-h-[120px] border-[#c4c4c4] resize-none"
-                  placeholder="Describe the site location, visibility, and any special features..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
-
-              {/* Audience Type */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">
-                  Audience Type: <span className="text-[#c4c4c4]">(can choose multiple)</span>
-                </Label>
-                <div className="flex gap-2">
-                  {["A", "B", "C", "D", "E"].map((type) => (
-                    <Button
-                      key={type}
-                      variant="outline"
-                      onClick={() => toggleAudience(type)}
-                      className={`w-12 h-10 ${selectedAudience.includes(type)
-                          ? "bg-[#30c71d] hover:bg-[#28a819] text-white border-[#30c71d]"
-                          : "bg-white border-[#c4c4c4] text-[#4e4e4e] hover:bg-gray-50"
-                        }`}
-                    >
-                      {type}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Traffic */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Monthly Traffic Count:</Label>
-                <Input
-                  type="text"
-                  placeholder="e.g., 50000"
-                  className="border-[#c4c4c4]"
-                  value={dailyTraffic}
-                  onChange={(e) => handleFormattedNumberInput(e, setDailyTraffic)}
-                />
-              </div>
-
-              {/* Photo Upload */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">
-                  Photo: <span className="text-[#c4c4c4]">(can upload multiple)</span>
-                </Label>
-
-                {/* Image Preview/Carousel */}
-                {uploadedFiles.length > 0 && (
-                  <div className="mb-4">
-                    <div className="relative bg-gray-100 rounded-lg overflow-hidden">
-                      {/* Main Image Display */}
-                      <div className="aspect-video relative">
-                        <img
-                          src={URL.createObjectURL(uploadedFiles[currentImageIndex])}
-                          alt={`Preview ${currentImageIndex + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-
-                        {/* Remove Button */}
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="absolute top-2 right-2 h-8 w-8 p-0"
-                          onClick={() => handleRemoveImage(currentImageIndex)}
-                        >
-                          ×
-                        </Button>
-                      </div>
-
-                      {/* Navigation Arrows (only show if multiple images) */}
-                      {uploadedFiles.length > 1 && (
-                        <>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="absolute left-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 bg-white/80 hover:bg-white"
-                            onClick={handlePrevImage}
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 bg-white/80 hover:bg-white"
-                            onClick={handleNextImage}
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-
-                      {/* Image Counter */}
-                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-2 py-1 rounded text-sm">
-                        {currentImageIndex + 1} / {uploadedFiles.length}
-                      </div>
-                    </div>
-
-                    {/* Thumbnail Strip */}
-                    {uploadedFiles.length > 1 && (
-                      <div className="flex gap-2 mt-2 overflow-x-auto">
-                        {uploadedFiles.map((file, index) => (
-                          <button
-                            key={index}
-                            className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden ${index === currentImageIndex ? 'border-blue-500' : 'border-gray-300'
-                              }`}
-                            onClick={() => setCurrentImageIndex(index)}
-                          >
-                            <img
-                              src={URL.createObjectURL(file)}
-                              alt={`Thumbnail ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Upload Area */}
-                <div className="border-2 border-dashed border-[#c4c4c4] rounded-lg p-8 text-center bg-gray-50">
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*,video/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="add-file-upload"
-                  />
-                  <label htmlFor="add-file-upload" className="cursor-pointer">
-                    <Upload className="w-8 h-8 text-[#c4c4c4] mx-auto mb-2" />
-                    <p className="text-[#c4c4c4] font-medium">Upload</p>
-                  </label>
-                  {uploadedFiles.length === 0 && (
-                    <p className="text-sm text-gray-600 mt-2">
-                      Click to select images
-                    </p>
-                  )}
-                </div>
-              </div>
-
-
-
-              {/* Price */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">
-                  Price: <span className="text-red-500">*</span>
-                </Label>
-                <div className="flex gap-3">
-                  <Input
-                    type="text"
-                    placeholder="e.g., 15000"
-                    className="flex-1 border-[#c4c4c4]"
-                    value={price}
-                    onChange={(e) => handlePriceChange(e, setPrice)}
-                    onBlur={(e) => handlePriceBlur(e, setPrice)}
-                  />
-                  <Select value={priceUnit} disabled>
-                    <SelectTrigger className="w-28 border-[#c4c4c4] bg-gray-50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="per spot">per spot</SelectItem>
-                      <SelectItem value="per day">per day</SelectItem>
-                      <SelectItem value="per month">per month</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Dynamic Settings - Only show for digital site type */}
-              {siteType === "digital" && (
-                <div>
-                  <Label className="text-[#4e4e4e] font-medium mb-3 block">Digital Content Settings:</Label>
-                    <div className="space-y-2 mb-2">
-                      <Label className="text-[#4e4e4e] font-medium mb-3 block">Player ID:</Label>
-                      <Input
-                        placeholder="Enter player ID"
-                        className="border-[#c4c4c4]"
-                        value={playerId}
-                        onChange={(e) => setPlayerId(e.target.value)}
-                      />
-                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Player ID */}
-             
-                    <div className="space-y-2">
-                      <Label htmlFor="add-start_time" className="text-[#4e4e4e] font-medium mb-3 block">Start Time</Label>
-                      <Input
-                        id="add-start_time"
-                        type="time"
-                        className="border-[#c4c4c4]"
-                        value={cms.start_time}
-                        onChange={(e) => setCms(prev => ({ ...prev, start_time: e.target.value }))}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="add-end_time" className="text-[#4e4e4e] font-medium mb-3 block">End Time</Label>
-                      <Input
-                        id="add-end_time"
-                        type="time"
-                        className="border-[#c4c4c4]"
-                        value={cms.end_time}
-                        onChange={(e) => setCms(prev => ({ ...prev, end_time: e.target.value }))}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="add-spot_duration" className="text-[#4e4e4e] font-medium mb-3 block">Spot Duration (seconds)</Label>
-                      <Input
-                        id="add-spot_duration"
-                        type="number"
-                        className="border-[#c4c4c4]"
-                        value={cms.spot_duration}
-                        onChange={(e) => setCms(prev => ({ ...prev, spot_duration: e.target.value }))}
-                        placeholder="Enter duration in seconds"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="add-loops_per_day" className="text-[#4e4e4e] font-medium mb-3 block">Spots Per Loop</Label>
-                      <Input
-                        id="add-loops_per_day"
-                        type="number"
-                        className="border-[#c4c4c4]"
-                        value={cms.loops_per_day}
-                        onChange={(e) => setCms(prev => ({ ...prev, loops_per_day: e.target.value }))}
-                        placeholder="Enter spots per loop"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Validation feedback display */}
-                  {validationError && (
-                    <div
-                      className={`mt-4 p-4 rounded-lg border ${validationError.startsWith("✓")
-                          ? "bg-green-50 border-green-200 text-green-800"
-                          : "bg-red-50 border-red-200 text-red-800"
-                        }`}
-                    >
-                      <div className="text-sm font-medium mb-2">
-                        {validationError.startsWith("✓") ? "Configuration Valid" : "Configuration Error"}
-                      </div>
-                      <pre className="text-xs whitespace-pre-wrap font-mono">{validationError}</pre>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Spot Inputs for Digital Sites */}
-              {siteType === "digital" && spotInputs.length > 0 && (
-                <div>
-                  <Label className="text-[#4e4e4e] font-medium mb-3 block">Spot Configuration:</Label>
-                  <div className="grid grid-cols-5 gap-4">
-                    {spotInputs.map((input, index) => (
-                      <div
-                        key={index}
-                        className={`flex flex-col h-[70px] w-[70px] items-center justify-center shadow-md rounded-[10px] px-3 py-2 cursor-pointer ${selectedRetailSpots.includes(index + 1) ? 'bg-indigo-100' : 'bg-white'}`}
-                        onClick={() => {
-                          if (selectedRetailSpots.includes(index + 1)) {
-                            setSelectedRetailSpots(prev => prev.filter(id => id !== index + 1))
-                          } else {
-                            setSelectedRetailSpots(prev => [...prev, index + 1])
-                          }
-                        }}
-                      >
-                        <span className="text-xs text-center font-semibold">
-                          {index + 1} / {spotInputs.length}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="sticky bottom-0 bg-white border-t border-[#c4c4c4] mt-8 pt-6 pb-6 -mb-6">
-            <div className="flex justify-end gap-4 px-6">
-              <Button
-                variant="outline"
-                className="px-8 border-[#c4c4c4] text-[#4e4e4e] hover:bg-gray-50 bg-transparent"
-                onClick={() => setShowAddSiteDialog(false)}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="px-8 bg-[#1d0beb] hover:bg-[#1508d1] text-white"
-                onClick={handleAddSubmit}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    Adding...
-                  </>
-                ) : (
-                  "Add"
-                )}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AddEditSiteDialog
+        isOpen={showAddSiteDialog}
+        onClose={() => setShowAddSiteDialog(false)}
+        onSuccess={() => {
+          setShowAddSiteDialog(false);
+          setCurrentPage(1);
+          fetchTotalCount();
+        }}
+        editingProduct={null}
+        userData={userData}
+        user={user}
+      />
 
       {/* Edit Site Dialog */}
-      <Dialog open={showEditSiteDialog} onOpenChange={setShowEditSiteDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-[20px] py-0 [&::-webkit-scrollbar]:w-3 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
-          <DialogHeader className="sticky top-0 bg-white z-10 pb-4 border-b px-6 mb-0 min-h-[4rem] flex items-start pt-6">
-            <DialogTitle className="text-2xl font-semibold text-[#333333]">Edit site</DialogTitle>
-          </DialogHeader>
-
-          {/* Validation Errors Display */}
-          {validationErrors.length > 0 && (
-            <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">
-                    Please fill in the required fields:
-                  </h3>
-                  <div className="mt-2 text-sm text-red-700">
-                    <ul role="list" className="list-disc pl-5 space-y-1">
-                      {validationErrors.map((error, index) => (
-                        <li key={index}>{error}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
-            {/* Left Column */}
-            <div className="space-y-6">
-              {/* Category */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Category:</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="border-[#c4c4c4]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DIGITAL_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Site Name */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">
-                  Site Name: <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  placeholder="Site Name"
-                  className="border-[#c4c4c4]"
-                  value={siteName}
-                  onChange={(e) => setSiteName(e.target.value)}
-                />
-              </div>
-
-              {/* Location */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">
-                  Location: <span className="text-red-500">*</span>
-                </Label>
-                <GooglePlacesAutocomplete
-                  value={location}
-                  onChange={setLocation}
-                  onGeopointChange={setGeopoint}
-                  placeholder="Enter street address or search location..."
-                  enableMap={true}
-                  mapHeight="250px"
-                />
-              </div>
-
-              {/* Location Label */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Location Label:</Label>
-                <Input
-                  placeholder="e.g., Near Mall, Highway Side"
-                  className="border-[#c4c4c4]"
-                  value={locationLabel}
-                  onChange={(e) => setLocationLabel(e.target.value)}
-                />
-              </div>
-
-              {/* Location Visibility */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Location Visibility:</Label>
-                <div className="flex gap-3">
-                  <Input
-                    type="text"
-                    placeholder="e.g., 100"
-                    className="flex-1 border-[#c4c4c4]"
-                    value={locationVisibility}
-                    onChange={(e) => handleFormattedNumberInput(e, setLocationVisibility)}
-                  />
-                  <Select value={locationVisibilityUnit} onValueChange={(value: string) => setLocationVisibilityUnit(value)}>
-                    <SelectTrigger className="w-20 border-[#c4c4c4]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ft">ft</SelectItem>
-                      <SelectItem value="m">m</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Land Owner */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Land Owner:</Label>
-                <Input
-                  placeholder="Enter land owner name"
-                  className="border-[#c4c4c4]"
-                  value={landOwner}
-                  onChange={(e) => setLandOwner(e.target.value)}
-                />
-              </div>
-
-              {/* Partner */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Partner:</Label>
-                <Input
-                  placeholder="Enter partner name"
-                  className="border-[#c4c4c4]"
-                  value={partner}
-                  onChange={(e) => setPartner(e.target.value)}
-                />
-              </div>
-
-              {/* Orientation */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Orientation:</Label>
-                <Input
-                  placeholder="e.g., North, South, East, West"
-                  className="border-[#c4c4c4]"
-                  value={orientation}
-                  onChange={(e) => setOrientation(e.target.value)}
-                />
-              </div>
-
-              {/* Dimension */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Dimension:</Label>
-                <div className="flex items-end gap-3">
-                  <div className="flex-1">
-                    <Label className="text-[#4e4e4e] text-sm mb-1 block">Height:</Label>
-                    <Input
-                      type="text"
-                      placeholder="e.g., 10"
-                      className="border-[#c4c4c4]"
-                      value={height}
-                      onChange={(e) => handleFormattedNumberInput(e, setHeight)}
-                    />
-                  </div>
-                  <span className="text-[#4e4e4e]">x</span>
-                  <div className="flex-1">
-                    <Label className="text-[#4e4e4e] text-sm mb-1 block">Width:</Label>
-                    <Input
-                      type="text"
-                      placeholder="e.g., 20"
-                      className="border-[#c4c4c4]"
-                      value={width}
-                      onChange={(e) => handleFormattedNumberInput(e, setWidth)}
-                    />
-                  </div>
-                  <Select value={dimensionUnit} onValueChange={(value: "ft" | "m") => setDimensionUnit(value)}>
-                    <SelectTrigger className="w-20 border-[#c4c4c4]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ft">ft</SelectItem>
-                      <SelectItem value="m">m</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Elevation from ground */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">
-                  Elevation from ground: <span className="text-[#c4c4c4]">(Optional)</span>
-                </Label>
-                <div className="flex gap-3">
-                  <Input
-                    type="text"
-                    placeholder="e.g., 5"
-                    className="flex-1 border-[#c4c4c4]"
-                    value={elevation}
-                    onChange={(e) => handleFormattedNumberInput(e, setElevation)}
-                  />
-                  <Select value={elevationUnit} onValueChange={(value: "ft" | "m") => setElevationUnit(value)}>
-                    <SelectTrigger className="w-20 border-[#c4c4c4]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ft">ft</SelectItem>
-                      <SelectItem value="m">m</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column */}
-            <div className="space-y-6">
-              {/* Description */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Description:</Label>
-                <Textarea
-                  className="min-h-[120px] border-[#c4c4c4] resize-none"
-                  placeholder="Describe the site location, visibility, and any special features..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
-
-              {/* Audience Type */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">
-                  Audience Type: <span className="text-[#c4c4c4]">(can choose multiple)</span>
-                </Label>
-                <div className="flex gap-2">
-                  {["A", "B", "C", "D", "E"].map((type) => (
-                    <Button
-                      key={type}
-                      variant="outline"
-                      onClick={() => toggleAudience(type)}
-                      className={`w-12 h-10 ${selectedAudience.includes(type)
-                          ? "bg-[#30c71d] hover:bg-[#28a819] text-white border-[#30c71d]"
-                          : "bg-white border-[#c4c4c4] text-[#4e4e4e] hover:bg-gray-50"
-                        }`}
-                    >
-                      {type}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Traffic */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">Monthly Traffic Count:</Label>
-                <Input
-                  type="text"
-                  placeholder="e.g., 50000"
-                  className="border-[#c4c4c4]"
-                  value={dailyTraffic}
-                  onChange={(e) => handleFormattedNumberInput(e, setDailyTraffic)}
-                />
-              </div>
-
-              {/* Photo Upload */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">
-                  Photo: <span className="text-[#c4c4c4]">(can upload multiple)</span>
-                </Label>
-
-                {/* Image Preview/Carousel */}
-                {uploadedFiles.length > 0 && (
-                  <div className="mb-4">
-                    <div className="relative bg-gray-100 rounded-lg overflow-hidden">
-                      {/* Main Image Display */}
-                      <div className="aspect-video relative">
-                        <img
-                          src={URL.createObjectURL(uploadedFiles[currentImageIndex])}
-                          alt={`Preview ${currentImageIndex + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-
-                        {/* Remove Button */}
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="absolute top-2 right-2 h-8 w-8 p-0"
-                          onClick={() => handleRemoveImage(currentImageIndex)}
-                        >
-                          ×
-                        </Button>
-                      </div>
-
-                      {/* Navigation Arrows (only show if multiple images) */}
-                      {uploadedFiles.length > 1 && (
-                        <>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="absolute left-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 bg-white/80 hover:bg-white"
-                            onClick={handlePrevImage}
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 bg-white/80 hover:bg-white"
-                            onClick={handleNextImage}
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-
-                      {/* Image Counter */}
-                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-2 py-1 rounded text-sm">
-                        {currentImageIndex + 1} / {uploadedFiles.length}
-                      </div>
-                    </div>
-
-                    {/* Thumbnail Strip */}
-                    {uploadedFiles.length > 1 && (
-                      <div className="flex gap-2 mt-2 overflow-x-auto">
-                        {uploadedFiles.map((file, index) => (
-                          <button
-                            key={index}
-                            className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden ${index === currentImageIndex ? 'border-blue-500' : 'border-gray-300'
-                              }`}
-                            onClick={() => setCurrentImageIndex(index)}
-                          >
-                            <img
-                              src={URL.createObjectURL(file)}
-                              alt={`Thumbnail ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Upload Area */}
-                <div className="border-2 border-dashed border-[#c4c4c4] rounded-lg p-8 text-center bg-gray-50">
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*,video/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="edit-file-upload"
-                  />
-                  <label htmlFor="edit-file-upload" className="cursor-pointer">
-                    <Upload className="w-8 h-8 text-[#c4c4c4] mx-auto mb-2" />
-                    <p className="text-[#c4c4c4] font-medium">Upload</p>
-                  </label>
-                  {uploadedFiles.length === 0 && (
-                    <p className="text-sm text-gray-600 mt-2">
-                      Click to select images
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Price */}
-              <div>
-                <Label className="text-[#4e4e4e] font-medium mb-3 block">
-                  Price: <span className="text-red-500">*</span>
-                </Label>
-                <div className="flex gap-3">
-                  <Input
-                    type="text"
-                    placeholder="e.g., 15000"
-                    className="flex-1 border-[#c4c4c4]"
-                    value={price}
-                    onChange={(e) => handlePriceChange(e, setPrice)}
-                    onBlur={(e) => handlePriceBlur(e, setPrice)}
-                  />
-                  <Select value={priceUnit} disabled>
-                    <SelectTrigger className="w-28 border-[#c4c4c4] bg-gray-50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="per spot">per spot</SelectItem>
-                      <SelectItem value="per day">per day</SelectItem>
-                      <SelectItem value="per month">per month</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Dynamic Settings - Only show for digital site type */}
-              {siteType === "digital" && (
-                <div>
-                  <Label className="text-[#4e4e4e] font-medium mb-3 block">Digital Content Settings:</Label>
-                    <div className="space-y-2 mb-2">
-                      <Label className="text-[#4e4e4e] font-medium mb-3 block">Player ID:</Label>
-                      <Input
-                        placeholder="Enter player ID"
-                        className="border-[#c4c4c4]"
-                        value={playerId}
-                        onChange={(e) => setPlayerId(e.target.value)}
-                      />
-                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Player ID */}
-
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-start_time" className="text-[#4e4e4e] font-medium mb-3 block">Start Time</Label>
-                      <Input
-                        id="edit-start_time"
-                        type="time"
-                        className="border-[#c4c4c4]"
-                        value={cms.start_time}
-                        onChange={(e) => setCms(prev => ({ ...prev, start_time: e.target.value }))}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-end_time" className="text-[#4e4e4e] font-medium mb-3 block">End Time</Label>
-                      <Input
-                        id="edit-end_time"
-                        type="time"
-                        className="border-[#c4c4c4]"
-                        value={cms.end_time}
-                        onChange={(e) => setCms(prev => ({ ...prev, end_time: e.target.value }))}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-spot_duration" className="text-[#4e4e4e] font-medium mb-3 block">Spot Duration (seconds)</Label>
-                      <Input
-                        id="edit-spot_duration"
-                        type="number"
-                        className="border-[#c4c4c4]"
-                        value={cms.spot_duration}
-                        onChange={(e) => setCms(prev => ({ ...prev, spot_duration: e.target.value }))}
-                        placeholder="Enter duration in seconds"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-loops_per_day" className="text-[#4e4e4e] font-medium mb-3 block">Spots Per Loop</Label>
-                      <Input
-                        id="edit-loops_per_day"
-                        type="number"
-                        className="border-[#c4c4c4]"
-                        value={cms.loops_per_day}
-                        onChange={(e) => setCms(prev => ({ ...prev, loops_per_day: e.target.value }))}
-                        placeholder="Enter spots per loop"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Validation feedback display */}
-                  {validationError && (
-                    <div
-                      className={`mt-4 p-4 rounded-lg border ${validationError.startsWith("✓")
-                          ? "bg-green-50 border-green-200 text-green-800"
-                          : "bg-red-50 border-red-200 text-red-800"
-                        }`}
-                    >
-                      <div className="text-sm font-medium mb-2">
-                        {validationError.startsWith("✓") ? "Configuration Valid" : "Configuration Error"}
-                      </div>
-                      <pre className="text-xs whitespace-pre-wrap font-mono">{validationError}</pre>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Spot Inputs for Digital Sites */}
-              {siteType === "digital" && spotInputs.length > 0 && (
-                <div>
-                  <Label className="text-[#4e4e4e] font-medium mb-3 block">Spot Configuration:</Label>
-                  <div className="grid grid-cols-5 gap-4">
-                    {spotInputs.map((input, index) => (
-                      <div
-                        key={index}
-                        className={`flex flex-col h-[70px] w-[70px] items-center justify-center shadow-md rounded-[10px] px-3 py-2 cursor-pointer ${selectedRetailSpots.includes(index + 1) ? 'bg-indigo-100' : 'bg-white'}`}
-                        onClick={() => {
-                          if (selectedRetailSpots.includes(index + 1)) {
-                            setSelectedRetailSpots(prev => prev.filter(id => id !== index + 1))
-                          } else {
-                            setSelectedRetailSpots(prev => [...prev, index + 1])
-                          }
-                        }}
-                      >
-                        <span className="text-xs text-center font-semibold">
-                          {index + 1} / {spotInputs.length}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="sticky bottom-0 bg-white border-t border-[#c4c4c4] mt-8 pt-6 pb-6 -mb-6">
-            <div className="flex justify-end gap-4 px-6">
-              <Button
-                variant="outline"
-                className="px-8 border-[#c4c4c4] text-[#4e4e4e] hover:bg-gray-50 bg-transparent"
-                onClick={() => setShowEditSiteDialog(false)}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="px-8 bg-[#1d0beb] hover:bg-[#1508d1] text-white"
-                onClick={handleEditSubmit}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    Updating...
-                  </>
-                ) : (
-                  "Update"
-                )}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AddEditSiteDialog
+        isOpen={showEditSiteDialog}
+        onClose={() => setShowEditSiteDialog(false)}
+        onSuccess={() => setShowEditSiteDialog(false)}
+        editingProduct={editingProduct}
+        userData={userData}
+        user={user}
+      />
     </RouteProtection>
   )
 }

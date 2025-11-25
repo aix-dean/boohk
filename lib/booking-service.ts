@@ -30,6 +30,9 @@ export interface Booking {
   company_id: string // This seems redundant with client.company_id, but keeping for now as per screenshot
   contract?: string
   cost: number
+  channel: {
+    name: string
+  }
   costDetails: {
     basePrice: number
     days: number
@@ -40,6 +43,12 @@ export interface Booking {
     total: number
     vatAmount: number
     vatRate: number
+  }
+  amounts: {
+    totalAmount: number
+    netAmount: number
+    taxRate: number
+    taxAmount: number
   }
   created: any // Firestore timestamp
   end_date: Timestamp | null
@@ -65,7 +74,7 @@ export interface Booking {
   }[]
   reservation_id: string // Generated reservation ID with format "RV-" + currentmillis
   seller_id: string
-  spot_numbers?: number[] // Added spot_numbers field for digital/dynamic bookings
+  spot_number?: number // Added spot_number field for digital/dynamic bookings
   start_date: Timestamp | null
   status: string
   total_cost: number
@@ -249,12 +258,11 @@ export class BookingService {
           bookingData.cms = quotation.items.cms
         }
 
-        // Add spot numbers if they exist (can be single number or array)
+        // Add spot number if it exists (single number)
         if (quotation.items?.spot_number) {
-          const spotNumber = quotation.items.spot_number
-          bookingData.spot_numbers = Array.isArray(spotNumber) ? spotNumber : [parseInt(String(spotNumber))]
+          bookingData.spot_number = parseInt(String(quotation.items.spot_number))
         } else if (quotation.spot_numbers && quotation.spot_numbers.length > 0) {
-          bookingData.spot_numbers = quotation.spot_numbers
+          bookingData.spot_number = quotation.spot_numbers[0] // Take first spot number
         }
       }
       console.log("[DEBUG] Booking data to be created:", bookingData)
@@ -590,40 +598,41 @@ export class BookingService {
 export const bookingService = BookingService.getInstance()
 
 // Export getAllBookings as a standalone function for indexing
-  export async function getAllBookings(): Promise<Booking[]> {
-    try {
-      console.log("Fetching all bookings from Firestore...")
-      const bookingsRef = collection(db, "booking")
-      const q = query(bookingsRef, orderBy("created", "desc"))
-      console.log("Executing query for all bookings...")
-      const querySnapshot = await getDocs(q)
-      console.log(`Query executed, found ${querySnapshot.size} documents`)
-      const bookings: Booking[] = []
+export async function getAllBookings(): Promise<Booking[]> {
+  try {
+    console.log("Fetching all bookings from Firestore...")
+    const bookingsRef = collection(db, "booking")
+    const q = query(bookingsRef, orderBy("created", "desc"))
+    console.log("Executing query for all bookings...")
+    const querySnapshot = await getDocs(q)
+    console.log(`Query executed, found ${querySnapshot.size} documents`)
+    const bookings: Booking[] = []
 
-      querySnapshot.forEach((doc) => {
-        bookings.push({
-          id: doc.id,
-          ...doc.data(),
-        } as Booking)
-      })
+    querySnapshot.forEach((doc) => {
+      bookings.push({
+        id: doc.id,
+        ...doc.data(),
+      } as Booking)
+    })
 
-      console.log(`Processed ${bookings.length} bookings`)
-      return bookings
-    } catch (error) {
-      console.error("Error fetching all bookings:", error)
-      throw error
-    }
+    console.log(`Processed ${bookings.length} bookings`)
+    return bookings
+  } catch (error) {
+    console.error("Error fetching all bookings:", error)
+    throw error
   }
+}
 
 // Utility function to format booking dates
 export const formatBookingDates = (startDate: any, endDate: any): string => {
   if (!startDate || !endDate) return "N/A"
   try {
-    const start = startDate.toDate ? startDate.toDate() : new Date(startDate)
-    const end = endDate.toDate ? endDate.toDate() : new Date(endDate)
-    const startStr = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    const days = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
-    return `${startStr} · ${days} Day${days !== 1 ? 's' : ''}`
+      const start_date = startDate.toDate ? startDate.toDate() : new Date(startDate as any);
+      const end_date = endDate.toDate ? endDate.toDate() : new Date(endDate as any);
+      const startFormatted = start_date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const endFormatted = `${end_date.getDate()}, ${end_date.getFullYear()}`;
+      const days = Math.ceil((end_date.getTime() - start_date.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      return `${startFormatted} - ${endFormatted} • ${days} Days`;
   } catch (error) {
     console.error("Error formatting booking dates:", error)
     return "Invalid Dates"

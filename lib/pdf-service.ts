@@ -2096,7 +2096,7 @@ export async function generateCostEstimatePDF(
 
       if (costEstimate.createdBy) {
         try {
-          const userDocRef = doc(db, "iboard_users", costEstimate.createdBy)
+          const userDocRef = doc(db, "boohk_users", costEstimate.createdBy)
           const userDoc = await getDoc(userDocRef)
 
           if (userDoc.exists()) {
@@ -2414,8 +2414,8 @@ export async function generateReportPDF(
 
         console.log("PDF: Fetching user data for uid:", userId)
 
-        // First, get the user document from iboard_users collection to access company_id
-        const userDocRef = doc(db, "iboard_users", userId)
+        // First, get the user document from boohk_users collection to access company_id
+        const userDocRef = doc(db, "boohk_users", userId)
         const userDoc = await getDoc(userDocRef)
 
         if (userDoc.exists()) {

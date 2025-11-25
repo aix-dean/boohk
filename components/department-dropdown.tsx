@@ -37,7 +37,7 @@ const departmentMapping: Partial<Record<RoleType, DepartmentOption>> = {
   },
   logistics: {
     name: "Logistics",
-    path: "/logistics/dashboard",
+    path: "/logistics/enrolled-sites",
     role: "logistics",
     color: "bg-blue-500"
   },
@@ -117,16 +117,36 @@ export function DepartmentDropdown() {
   }
 
   // Get accessible departments based on user roles
-  const accessibleDepartments = userRoles
-    .map(role => departmentMapping[role])
-    .filter((dept): dept is DepartmentOption => dept !== undefined)
-    .filter(dept => ['Sales', 'IT', 'Business Dev', 'Accounting'].includes(dept.name))
-    .sort((a, b) => {
-      // Prioritize Sales to be at the top
-      if (a.name === 'Sales') return -1
-      if (b.name === 'Sales') return 1
-      return 0
-    })
+  let accessibleDepartments = userRoles
+      .map(role => departmentMapping[role])
+      .filter((dept): dept is DepartmentOption => dept !== undefined);
+
+    if (userRoles.includes("admin")) {
+      const requiredDepartments: DepartmentOption[] = [
+        {name: "Sales", path: "/sales/dashboard", role: "sales", color: "bg-red-500"},
+        {name: "Business Dev", path: "/business/inventory", role: "business", color: "bg-purple-500"},
+        {name: "IT", path: "/it", role: "it", color: "bg-teal-500"},
+        {name: "Accounting", path: "/accounting/transactions", role: "accounting", color: "bg-blue-500"},
+      ];
+      for (const dept of requiredDepartments) {
+        if (!accessibleDepartments.some(d => d.role === dept.role)) {
+          accessibleDepartments.push(dept);
+        }
+      }
+      accessibleDepartments = accessibleDepartments.filter(d => d.role !== "admin");
+    } else {
+      accessibleDepartments = accessibleDepartments.filter(dept => ['Sales', 'IT', 'Business Dev', 'Accounting', 'Logistics'].includes(dept.name));
+    }
+
+  console.log("User roles:", userRoles);
+  console.log("Accessible departments:", accessibleDepartments.map(d => d.name));
+
+  accessibleDepartments = accessibleDepartments.sort((a, b) => {
+    // Prioritize Sales to be at the top
+    if (a.name === 'Sales') return -1
+    if (b.name === 'Sales') return 1
+    return 0
+  });
 
   if (accessibleDepartments.length === 0) {
     return null
@@ -138,6 +158,7 @@ export function DepartmentDropdown() {
   ) || accessibleDepartments[0]
 
   const handleDepartmentSelect = (department: DepartmentOption) => {
+    console.log("Department dropdown: Selecting department", department.name, "with path", department.path)
     router.push(department.path)
     setIsOpen(false)
   }

@@ -1,6 +1,7 @@
 let isLoading = false
 let isLoaded = false
-let loadPromise: Promise<void> | null = null
+let loadPromise: Promise<{ apiKey: string; mapId?: string }> | null = null
+let config: { apiKey: string; mapId?: string } | null = null
 
 declare global {
   interface Window {
@@ -9,7 +10,7 @@ declare global {
   }
 }
 
-export function loadGoogleMaps(): Promise<void> {
+export function loadGoogleMaps(): Promise<{ apiKey: string; mapId?: string }> {
   // Return existing promise if already loading
   if (loadPromise) {
     return loadPromise
@@ -18,7 +19,7 @@ export function loadGoogleMaps(): Promise<void> {
   // Return resolved promise if already loaded
   if (isLoaded || (window.google && window.google.maps)) {
     isLoaded = true
-    return Promise.resolve()
+    return Promise.resolve(config!)
   }
 
   // Check if script already exists
@@ -29,7 +30,7 @@ export function loadGoogleMaps(): Promise<void> {
       const checkLoaded = () => {
         if (window.google && window.google.maps) {
           isLoaded = true
-          resolve()
+          resolve(config!)
         } else {
           setTimeout(checkLoaded, 100)
         }
@@ -52,9 +53,9 @@ export function loadGoogleMaps(): Promise<void> {
         return
       }
 
-      const config = await response.json()
+      config = await response.json()
 
-      if (!config.apiKey) {
+      if (!config || !config.apiKey) {
         reject(new Error("Google Maps API key not configured"))
         return
       }
@@ -62,14 +63,14 @@ export function loadGoogleMaps(): Promise<void> {
       isLoading = true
 
       const script = document.createElement("script")
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${config.apiKey}&libraries=places&callback=initGoogleMapsGlobal`
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${config.apiKey}&libraries=places,marker&callback=initGoogleMapsGlobal`
       script.async = true
       script.defer = true
 
       window.initGoogleMapsGlobal = () => {
         isLoaded = true
         isLoading = false
-        resolve()
+        resolve(config!)
         delete window.initGoogleMapsGlobal
       }
 

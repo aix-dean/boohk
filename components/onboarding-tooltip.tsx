@@ -59,7 +59,6 @@ export function OnboardingTooltip({ onClose }: OnboardingTooltipProps) {
   const [currentStep, setCurrentStep] = useState(0)
 
   useEffect(() => {
-    // Small delay to ensure smooth animation
     const timer = setTimeout(() => setIsVisible(true), 100)
     return () => clearTimeout(timer)
   }, [])

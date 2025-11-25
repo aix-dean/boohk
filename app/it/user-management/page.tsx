@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -10,12 +10,11 @@ import { UserPlus, Settings, Mail, Shield, Users, Search } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { CompanyRegistrationDialog } from "@/components/company-registration-dialog"
 import { AddUserDialog } from "@/components/add-user-dialog"
 import { UserAddedSuccessDialog } from "@/components/user-added-success-dialog"
 import { AddTeammateDialog } from "@/components/add-teammate-dialog"
-import { OnboardingTooltip } from "@/components/onboarding-tooltip"
 import {
   Dialog,
   DialogContent,
@@ -82,6 +81,7 @@ export default function ITUserManagementPage() {
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   // Debounce search term
   useEffect(() => {
@@ -106,7 +106,7 @@ export default function ITUserManagementPage() {
       return
     }
 
-    const q = query(collection(db, "iboard_users"), where("company_id", "==", userData.company_id))
+    const q = query(collection(db, "boohk_users"), where("company_id", "==", userData.company_id))
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const usersData = snapshot.docs.map((doc) => {
@@ -132,11 +132,11 @@ export default function ITUserManagementPage() {
   }, [userData?.company_id])
 
   // Filter users based on debounced search term
-  const filteredUsers = users.filter(
+  const filteredUsers = useMemo(() => users.filter(
     (user) =>
       user.displayName?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase()),
-  )
+  ), [users, debouncedSearchTerm])
 
   // Calculate remaining teammate slots
   const calculateRemainingSlots = () => {
@@ -208,14 +208,14 @@ export default function ITUserManagementPage() {
 
   // Role to department mapping
   const roleToDepartment: Record<string, string> = {
-    admin: "Administrator",
+    business: "Business Development",
     sales: "Sales Team",
+    accounting: "Accounting",
+    it: "IT Team",
+    admin: "Administrator",
     logistics: "Logistics Team",
     treasury: "Treasury",
-    it: "IT Team",
-    business: "Business Development",
     cms: "Content Management",
-    accounting: "Accounting",
     finance: "Finance",
   }
 
@@ -273,21 +273,6 @@ export default function ITUserManagementPage() {
     }
   }, [filteredUsers])
 
-  const handleCloseOnboarding = async () => {
-    if (!userData?.uid) return
-
-    try {
-      const userDocRef = doc(db, "iboard_users", userData.uid)
-      await updateDoc(userDocRef, {
-        onboarding: false,
-        updated: new Date(),
-      })
-      // Refresh user data to update the context
-      refreshUserData()
-    } catch (error) {
-      console.error("Error updating onboarding status:", error)
-    }
-  }
 
   const handleActionWithCompanyCheck = (actionCallback: () => void) => {
     if (!userData?.company_id) {
@@ -529,14 +514,6 @@ export default function ITUserManagementPage() {
           <h1 className="text-2xl font-bold">User Management ({users.length})</h1>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="gap-2 bg-transparent"
-            onClick={() => handleActionWithCompanyCheck(() => router.push("/admin/access-management"))}
-          >
-            <Shield className="h-4 w-4" />
-            Roles & Access
-          </Button>
           <Button className="gap-2" onClick={handleAddUser}>
             <UserPlus className="h-4 w-4" />
             Add User
@@ -557,7 +534,7 @@ export default function ITUserManagementPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {loading || Object.keys(usersByDepartment).length === 0 ? (
           Array.from({ length: 3 }).map((_, i) => (
             <Card key={`skeleton-${i}`} className="p-6 bg-white shadow-sm border border-gray-200 rounded-xl">
@@ -591,7 +568,7 @@ export default function ITUserManagementPage() {
           Object.entries(usersByDepartment).map(([department, departmentUsers]) => {
             const memberCount = departmentUsers.length
             const memberText = memberCount === 1 ? "member" : "members"
-            const isDisabled = ['Accounting', 'Finance', 'Content Management'].includes(department)
+            const isDisabled = ['Treasury', 'Administrator', 'Finance', 'Content Management'].includes(department)
 
             return (
               <Card
@@ -780,8 +757,8 @@ export default function ITUserManagementPage() {
       />
 
       <Dialog open={isChooseFromTeamListDialogOpen} onOpenChange={setIsChooseFromTeamListDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-md h-[400px] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Choose from Team List</DialogTitle>
             <div className="space-y-2 text-sm text-muted-foreground">
               <div>You can add {calculateRemainingSlots()} more teammates</div>
@@ -793,7 +770,7 @@ export default function ITUserManagementPage() {
             </div>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="flex-1 overflow-y-auto py-4 min-h-0">
             {availableUsersForAssignment.length > 0 ? (
               <div className="border rounded-lg overflow-hidden">
                 <table className="w-full">
@@ -851,7 +828,7 @@ export default function ITUserManagementPage() {
             )}
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-shrink-0">
             <Button variant="outline" onClick={() => setIsChooseFromTeamListDialogOpen(false)}>
               Cancel
             </Button>
@@ -865,9 +842,6 @@ export default function ITUserManagementPage() {
         </DialogContent>
       </Dialog>
 
-      {userData?.onboarding && (
-        <OnboardingTooltip onClose={handleCloseOnboarding} />
-      )}
     </div>
   )
 }

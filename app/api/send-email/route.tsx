@@ -658,8 +658,8 @@ async function fetchUserData(userEmail: string) {
       return null
     }
 
-    // Query iboard_users collection for user data
-    const usersRef = collection(db, "iboard_users")
+    // Query boohk_users collection for user data
+    const usersRef = collection(db, "boohk_users")
     const q = query(usersRef, where("email", "==", userEmail))
     const querySnapshot = await getDocs(q)
 
@@ -667,7 +667,7 @@ async function fetchUserData(userEmail: string) {
       const userDoc = querySnapshot.docs[0]
       const userData = userDoc.data()
 
-      console.log("User data fetched from iboard_users:", {
+      console.log("User data fetched from boohk_users:", {
         email: userData.email,
         first_name: userData.first_name,
         last_name: userData.last_name,
@@ -685,7 +685,7 @@ async function fetchUserData(userEmail: string) {
           : userData.first_name || userData.last_name || "Sales Executive"
       }
     } else {
-      console.log("No user found in iboard_users with email:", userEmail)
+      console.log("No user found in boohk_users with email:", userEmail)
       return null
     }
   } catch (error) {
@@ -811,7 +811,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fetch user data from iboard_users table
+    // Fetch user data from boohk_users table
     let userData = null
     if (validatedReplyTo) {
       try {
