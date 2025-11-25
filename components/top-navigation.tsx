@@ -38,7 +38,7 @@ export function TopNavigation() {
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       snapshot.docChanges().forEach(async (change) => {
-        if (change.type === 'added' || change.type === 'modified' && !isInitialLoad) {
+        if (change.type === 'added' && !isInitialLoad) {
           const booking = change.doc.data()
           const productDoc = await getDoc(doc(db, "products", booking.product_id))
           const productName = productDoc.exists() ? productDoc.data().name : "Unknown Product"
