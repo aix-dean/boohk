@@ -252,6 +252,11 @@ export function SpotsGrid({
       if (unsubscribe) unsubscribe();
     };
   }, [productId]);
+  // Compute retail spot statistics
+  const retailSpots = spots.filter(s => retailSpotNumbers.includes(s.number));
+  const retailOccupied = retailSpots.filter(s => s.status === "occupied").length;
+  const retailVacant = retailSpots.filter(s => s.status === "vacant").length;
+  const retailTotal = retailSpotNumbers.length;
 
   const handleSpotClick = (spotNumber: number) => {
     const spot = localSpots.find((s) => s.number === spotNumber);
@@ -855,8 +860,8 @@ export function SpotsGrid({
                     Occupied:
                   </span>
                   <span className="text-white bg-green-600 text-xs px-2 ml-1 rounded-sm font-bold">
-                    {occupiedCount} (
-                    {Math.round((occupiedCount / totalSpots) * 100)}%)
+                    {retailOccupied} (
+                    {Math.round((retailOccupied / retailTotal) * 100)}%)
                   </span>
                 </div>
                 <div className="flex items-center">
@@ -864,8 +869,8 @@ export function SpotsGrid({
                     Total Vacant:
                   </span>
                   <span className="font-bold text-white bg-red-400 text-xs px-2 ml-1 rounded-sm">
-                    {vacantCount} (
-                    {Math.round((vacantCount / totalSpots) * 100)}%)
+                    {retailVacant} (
+                    {Math.round((retailVacant / retailTotal) * 100)}%)
                   </span>
                 </div>
               </div>
@@ -873,7 +878,7 @@ export function SpotsGrid({
                 onClick={() =>
                   router?.push(`/sales/products/${productId}/spots/1`)
                 }
-                className="text-gray-900 text-xs font-medium"
+                className="text-gray-900 text-xs font-bold"
               >
                 Total Spots: {totalSpots}
               </span>

@@ -144,9 +144,6 @@ const TransactionsTab: React.FC<TransactionsTabProps> = ({
               return date.getFullYear() === selectedYear;
             });
             const totalBookings = filteredBookings.length;
-            const forReviewBookings = filteredBookings.filter(booking =>
-              booking.status?.toUpperCase() === "CONFIRMED"
-            ).length;
             const completedBookings = filteredBookings.filter(booking =>
               booking.status?.toUpperCase() === "COMPLETED" || booking.status?.toUpperCase() === "ONGOING"
             ).length;
