@@ -860,7 +860,7 @@ export function SpotsGrid({
                     Occupied:
                   </span>
                   <span className="text-white bg-green-600 text-xs px-2 ml-1 rounded-sm font-bold">
-                    {retailOccupied} (
+                    {retailOccupied} / {retailTotal} (
                     {Math.round((retailOccupied / retailTotal) * 100)}%)
                   </span>
                 </div>
@@ -869,7 +869,7 @@ export function SpotsGrid({
                     Total Vacant:
                   </span>
                   <span className="font-bold text-white bg-red-400 text-xs px-2 ml-1 rounded-sm">
-                    {retailVacant} (
+                    {retailVacant} / {retailTotal} (
                     {Math.round((retailVacant / retailTotal) * 100)}%)
                   </span>
                 </div>
