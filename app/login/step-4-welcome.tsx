@@ -162,7 +162,7 @@ export default function Step4Welcome({ onNext }: Step4WelcomeProps) {
                   onCheckedChange={setControlInventory}
                 />
                 <img
-                  src="/logistics-header-new.png"
+                  src="/tune.png"
                   alt="Control Inventory"
                   style={{ width: '14.463px', height: '14.463px', flexShrink: 0, aspectRatio: '14.46/14.46' }}
                 />
