@@ -366,8 +366,12 @@ export default function LoginPage() {
         rolesSet.add('accounting')
         rolesSet.add('it')
       }
+      if (switchStates.controlInventory) {
+        rolesSet.add('logistics')
+        rolesSet.add('it')
+      }
       // If no switches active, assign only "it"
-      if (!switchStates.uploadInventory && !switchStates.handleRetailOrders && !switchStates.handlePayments) {
+      if (!switchStates.uploadInventory && !switchStates.handleRetailOrders && !switchStates.handlePayments && !switchStates.controlInventory) {
         rolesSet.add('it')
       }
       const roles = Array.from(rolesSet)
@@ -543,7 +547,7 @@ export default function LoginPage() {
     setPendingRegistration(null)
   }
 
-  const handleStep4Next = (switchStates: { uploadInventory: boolean; handleRetailOrders: boolean; handlePayments: boolean }) => {
+  const handleStep4Next = (switchStates: { uploadInventory: boolean; handleRetailOrders: boolean; handlePayments: boolean; controlInventory: boolean }) => {
     console.log('=== handleStep4Next CALLED ===')
     console.log('Current step before:', currentStep)
     console.log('Switch states received:', switchStates)
