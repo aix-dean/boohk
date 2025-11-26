@@ -143,6 +143,13 @@ export function SpotsGrid({
   const [operatorPlayerOnline, setOperatorPlayerOnline] = useState<
     boolean | null
   >(null);
+
+  // Drag to scroll state
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const dragStarted = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   // Add local state for spots to allow mutations
   const [localSpots, setLocalSpots] = useState<Spot[]>(spots);
@@ -281,7 +288,7 @@ export function SpotsGrid({
       // Update booking to set for_screening = 2 (accepted), status to ongoing, and airing_code
       await updateDoc(doc(db, "booking", selectedBooking.id), {
         for_screening: 2,
-        status: "ONGOING",
+        status: "ongoing",
         airing_code,
         updated: new Date(),
       });
@@ -560,6 +567,50 @@ export function SpotsGrid({
     }
   };
 
+  // Drag to scroll handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setStartX(e.pageX - (containerRef.current?.offsetLeft || 0));
+    setScrollLeft(containerRef.current?.scrollLeft || 0);
+    dragStarted.current = false;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const x = e.pageX - (containerRef.current?.offsetLeft || 0);
+    const walk = (x - startX) * 2; // scroll speed multiplier
+    if (containerRef.current) {
+      containerRef.current.scrollLeft = scrollLeft - walk;
+    }
+    if (Math.abs(x - startX) > 5) dragStarted.current = true;
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsDragging(true);
+    setStartX(e.touches[0].pageX - (containerRef.current?.offsetLeft || 0));
+    setScrollLeft(containerRef.current?.scrollLeft || 0);
+    dragStarted.current = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const x = e.touches[0].pageX - (containerRef.current?.offsetLeft || 0);
+    const walk = (x - startX) * 2;
+    if (containerRef.current) {
+      containerRef.current.scrollLeft = scrollLeft - walk;
+    }
+    if (Math.abs(x - startX) > 5) dragStarted.current = true;
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
+
   const handleSubmit = async () => {
     if (!selectedBooking) return;
     setIsSubmitting(true);
@@ -595,7 +646,20 @@ export function SpotsGrid({
   };
 
   const spotsContent = (
-    <div className="flex gap-[13.758px] overflow-x-scroll pb-4 w-full pr-4">
+    <>
+      <style dangerouslySetInnerHTML={{ __html: `.spots-container::-webkit-scrollbar { display: none; }` }} />
+      <div
+        ref={containerRef}
+        className={`spots-container flex gap-[13.758px] bg-gray-200 rounded-[14px] overflow-x-scroll p-2 w-full pr-4 select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
       {localSpots.map((spot) => {
         const isClickable = spot.imageUrl || !effectiveDisableEmptySpotClicks;
         return (
@@ -605,6 +669,10 @@ export function SpotsGrid({
             onClick={
               isClickable
                 ? () => {
+                    if (dragStarted.current) {
+                      dragStarted.current = false;
+                      return;
+                    }
                     if (retailSpotNumbers.includes(spot.number)) {
                       setSelectedSpot(spot);
                       setIsSpotDialogOpen(true);
@@ -711,7 +779,8 @@ export function SpotsGrid({
           </div>
         );
       })}
-    </div>
+      </div>
+    </>
   );
 
   if (bg) {
@@ -846,7 +915,7 @@ export function SpotsGrid({
           Site spots
         </div>
         {/* Spots Grid */}
-        <div className="bg-[#ECECEC] rounded-[13.8px] p-4">
+        <div className="rounded-[13.8px]">
           {showSummary && (
             <div className="flex items-center justify-between text-sm mb-4">
               <div className="flex items-center gap-8">

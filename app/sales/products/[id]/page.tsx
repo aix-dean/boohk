@@ -1220,7 +1220,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 setSelectedDay={setSelectedDay}
                 selectedYear={selectedYear}
                 setSelectedYear={setSelectedYear}
-                activePlaylistPages={activePlaylistPages}
+                productId={productId}
                 cms={product?.cms}
                 bookings={programListBookings}
                 loading={programListBookingsLoading}
