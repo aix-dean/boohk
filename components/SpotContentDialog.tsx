@@ -177,6 +177,7 @@ const SpotContentDialog: React.FC<SpotContentDialogProps> = ({ open, onOpenChang
                   src={spot.imageUrl}
                   width={scaledWidth}
                   height={scaledHeight}
+                  disablePictureInPicture
                   className="object-fill h-full w-full"
                   controls
                   autoPlay

@@ -127,7 +127,7 @@ export default function transactionDetailsDialog({
           <div className="h-[380px] flex-shrink-0 rounded-[10px] bg-gray-100 flex items-center justify-center">
             {booking?.url ? (
               booking.url.includes('.mp4') || booking.url.includes('video') ? (
-                <video src={booking.url} className="w-full h-[380px] object-contain rounded-[10px]" controls />
+                <video src={booking.url} disablePictureInPicture className="w-full h-[380px] object-contain rounded-[10px]" controls />
               ) : (
                 <img src={booking.url} alt="Content preview" className="w-full h-[380px] object-contain rounded-[10px]" />
               )

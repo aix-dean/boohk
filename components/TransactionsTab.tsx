@@ -74,6 +74,22 @@ const TransactionsTab: React.FC<TransactionsTabProps> = ({
     if (booking.start_date) {
       startDate = booking.start_date.toDate ? booking.start_date.toDate() : new Date(booking.start_date as any)
     }
+  // Special case for PENDING: always show "For Review"
+  if (booking.status?.toUpperCase() === "PENDING") {
+    return (
+      <span className="font-bold text-[#2d3fff]">
+        For Review
+      </span>
+    )
+  }
+  // Special case for DECLINED: always show "Declined"
+  if (booking.status?.toUpperCase() === "DECLINED") {
+    return (
+      <span className="font-bold text-[#f95151]">
+        Declined
+      </span>
+    )
+  }
     if (startDate && startDate > now) {
       return (
         <span className="font-bold text-[#ff9500]">
@@ -88,18 +104,12 @@ const TransactionsTab: React.FC<TransactionsTabProps> = ({
             Completed
           </span>
         )
-      case "PENDING":
-        return (
-          <span className="font-bold text-[#2d3fff]">
-            For Review
-          </span>
-        )
-      case "DECLINED":
-        return (
-          <span className="font-bold text-[#f95151]">
-            Declined
-          </span>
-        )
+        case "ONGOING":
+          return (
+            <span className="font-bold text-gray-700">
+              Ongoing
+            </span>
+          )
       case "UPCOMING":
         return (
           <span className="font-bold text-[#ff9500]">
@@ -213,10 +223,21 @@ const TransactionsTab: React.FC<TransactionsTabProps> = ({
                           <div>{booking.start_date && booking.end_date ? (() => {
                             const startDate = booking.start_date.toDate ? booking.start_date.toDate() : new Date(booking.start_date as any);
                             const endDate = booking.end_date.toDate ? booking.end_date.toDate() : new Date(booking.end_date as any);
-                            const startFormatted = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                            const endFormatted = `${endDate.getDate()}, ${endDate.getFullYear()}`;
-                            const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-                            return `${startFormatted} - ${endFormatted} • ${days} Days`;
+                            const isSameDay = startDate.toDateString() === endDate.toDateString();
+                            if (isSameDay) {
+                              const formatted = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                              return `${formatted} • 1 Day`;
+                            } else {
+                              const startFormatted = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                              let endFormatted;
+                              if (startDate.getMonth() === endDate.getMonth() && startDate.getFullYear() === endDate.getFullYear()) {
+                                endFormatted = `${endDate.getDate()}, ${endDate.getFullYear()}`;
+                              } else {
+                                endFormatted = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                              }
+                              const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                              return `${startFormatted} - ${endFormatted} • ${days} Days`;
+                            }
                           })() : 'N/A'}</div>
                           <div className="font-bold">{formatTotalAmount(booking.transaction?.amount)}</div>
                           <div>{renderBookingStatusBadge(booking)}</div>
