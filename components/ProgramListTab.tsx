@@ -196,7 +196,7 @@ const ProgramListTab: React.FC<ProgramListTabProps> = ({
                       <div>{booking?.airing_code || '-'}</div>
                       <div>
                         <div className="w-[76px] h-[80px] bg-gray-200 flex items-center justify-center rounded">
-                          <video src={booking?.url} className="w-[76px] h-[80px] object-cover rounded-md"></video>
+                          <video src={booking?.url} disablePictureInPicture className="w-[76px] h-[80px] object-cover rounded-md"></video>
                         </div>
                       </div>
                       <div>{startDate ? startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</div>

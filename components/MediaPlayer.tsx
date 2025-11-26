@@ -10,6 +10,7 @@ interface MediaPlayerProps {
 const MediaPlayer: React.FC<MediaPlayerProps> = ({ url, className = "w-full h-full object-fill rounded-[10px]", controls = true, playing = false }) => {
   const [mediaError, setMediaError] = useState<string | null>(null)
   const [fallbackContent, setFallbackContent] = useState<React.JSX.Element | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
@@ -27,7 +28,18 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ url, className = "w-full h-fu
   // Reload video when URL changes
   useEffect(() => {
     if (videoRef.current && url && mimeType?.startsWith('video/')) {
+      console.log('Reloading video for URL:', url, 'MimeType:', mimeType)
+      videoRef.current.src = url // Explicitly set src to ensure reload
       videoRef.current.load()
+    }
+  }, [url])
+
+  // Set loading state based on URL validity
+  useEffect(() => {
+    if (url && isValidUrl(url)) {
+      setIsLoading(false)
+    } else {
+      setIsLoading(true)
     }
   }, [url])
 
@@ -132,6 +144,10 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ url, className = "w-full h-fu
     return <p className="text-red-500 text-center">Invalid media URL</p>
   }
 
+  if (isLoading) {
+    return <p className="text-gray-500 text-center">Loading media...</p>
+  }
+
   if (mediaError) {
     return (
       <div className="text-center">
@@ -206,10 +222,12 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ url, className = "w-full h-fu
         ref={videoRef}
         controls={controls}
         preload="metadata"
+        disablePictureInPicture
         className={className}
         muted // Add muted to allow autoplay on hover
         onError={(e) => {
           const target = e.target as HTMLVideoElement
+          console.error('Video load error:', target.error)
           let errorMessage = 'Video failed to load'
           let fallback = null
 
@@ -240,6 +258,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ url, className = "w-full h-fu
           setFallbackContent(fallback)
         }}
         onLoadedData={() => {
+          console.log('Video loaded successfully')
           setMediaError(null)
           setFallbackContent(null)
         }}

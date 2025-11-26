@@ -94,6 +94,12 @@ const TransactionsTab: React.FC<TransactionsTabProps> = ({
             For Review
           </span>
         )
+        case "ONGOING":
+          return (
+            <span className="font-bold text-gray-700">
+              Ongoing
+            </span>
+          )
       case "DECLINED":
         return (
           <span className="font-bold text-[#f95151]">
