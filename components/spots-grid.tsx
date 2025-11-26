@@ -143,7 +143,7 @@ export function SpotsGrid({
   const [operatorPlayerOnline, setOperatorPlayerOnline] = useState<
     boolean | null
   >(null);
-
+  
   // Add local state for spots to allow mutations
   const [localSpots, setLocalSpots] = useState<Spot[]>(spots);
 
@@ -505,6 +505,7 @@ export function SpotsGrid({
     try {
       await updateDoc(doc(db, "booking", selectedBooking.id), {
         for_screening: 3,
+        status: "DECLINED",
         updated: new Date(),
       });
 

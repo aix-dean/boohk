@@ -135,6 +135,7 @@ export function NewBookingDialog({
                       src={booking.url}
                       width={scaledWidth}
                       height={scaledHeight}
+                      disablePictureInPicture
                       className="object-fill h-full w-full"
                       controls
                       autoPlay
