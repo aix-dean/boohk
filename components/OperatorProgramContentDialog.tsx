@@ -31,15 +31,6 @@ import { createCMSContentDeployment } from "@/lib/cms-api";
 import { useToast } from "@/hooks/use-toast";
 import { uploadMediaFile, createMediaLibrary } from "@/lib/firebase-service";
 
-// Simple MD5 implementation for client-side
-const calculateFileMD5 = async (file: File): Promise<string> => {
-  // For simplicity, use SHA-256 and treat it as MD5 hash
-  // In production, you might want to use a proper MD5 library
-  const buffer = await file.arrayBuffer();
-  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-};
 
 interface Spot {
   id: string;
@@ -254,9 +245,6 @@ export function OperatorProgramContentDialog({
             description: "Uploading file to media library...",
           });
 
-          // Calculate MD5 hash of the file
-          const fileMd5 = await calculateFileMD5(videoFile);
-
           // Upload file to Firebase Storage
           const uploadedUrl = await uploadMediaFile(
             videoFile,
@@ -277,7 +265,7 @@ export function OperatorProgramContentDialog({
           const mediaId = await createMediaLibrary(mediaData);
 
           // Get accurate file info using the API
-          fileInfo = { size: videoFile.size, md5: fileMd5 };
+          fileInfo = { size: videoFile.size, md5: null };
           try {
             const response = await fetch("/api/file-info", {
               method: "POST",
