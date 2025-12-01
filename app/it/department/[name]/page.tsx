@@ -392,12 +392,7 @@ export default function ITDepartmentDetailsPage() {
             <p className="text-muted-foreground">Manage users in the {departmentName} department</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button className="gap-2" onClick={handleAddUser}>
-            <UserPlus className="h-4 w-4" />
-            Add User
-          </Button>
-        </div>
+
       </div>
 
       {/* Department Color Line */}
