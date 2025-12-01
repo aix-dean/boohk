@@ -130,9 +130,12 @@ export default function SiteInformation({
               </div>
               <div>
                 <div className="text-xs text-gray-900">Pitch</div>
-                <div className="text-sm font-bold text-gray-800">
-                  {product?.specs_rental?.pitch || "Not specified"} (mm)
-                </div>
+               <div className="text-sm font-bold text-gray-800">
+  {product?.specs_rental?.pitch
+    ? `${product.specs_rental.pitch} (mm)`
+    : "Not specified"}
+</div>
+
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
