@@ -215,6 +215,11 @@ If you didn't expect this invitation, you can safely ignore this email.
     `
 
     // Initialize Resend only when needed and API key is available
+    console.log("=== INVITATIONS SEND EMAIL DEBUG ===");
+    console.log("RESEND_API_KEY exists:", !!process.env.RESEND_API_KEY);
+    console.log("RESEND_API_KEY length:", process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.length : 0);
+    console.log("NODE_ENV:", process.env.NODE_ENV);
+    console.log("=== END DEBUG ===");
     const apiKey = process.env.RESEND_API_KEY
     if (!apiKey) {
       console.error("RESEND_API_KEY environment variable is not set")
@@ -225,7 +230,7 @@ If you didn't expect this invitation, you can safely ignore this email.
 
     // Send email using Resend
     const { data, error } = await resend.emails.send({
-      from: `${senderName} <noreply@boohk.ph>`,
+      from: `${senderName} <noreply@ohplus.ph>`,
       to: [recipientEmail],
       subject: subject,
       html: htmlContent,

@@ -87,6 +87,16 @@ export function AddUserDialog({ open, onOpenChange, onSuccess, initialRole, rema
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (disabledRoles.includes(formData.role)) {
+      toast({
+        variant: "destructive",
+        title: "Restricted Role",
+        description: `${roles.find(r => r.id === formData.role)?.name || formData.role} cannot be assigned via invitation. Contact administrator.`,
+      })
+      return
+    }
+
     if (!userData?.company_id) {
       toast({
         variant: "destructive",
