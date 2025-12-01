@@ -649,11 +649,11 @@ export function SpotsGrid({
 
   const spotsContent = (
     <>
-      <style dangerouslySetInnerHTML={{ __html: `.spots-container::-webkit-scrollbar { display: none; }` }} />
+
       <div
         ref={containerRef}
         className={`spots-container flex gap-[13.758px] bg-gray-200 rounded-[14px] overflow-x-scroll p-2 w-full pr-4 select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
