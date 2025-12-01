@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -244,8 +244,8 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
   // Form state
   const [siteType, setSiteType] = useState<"static" | "digital">("digital")
   const [cms, setCms] = useState<CmsData>({
-    start_time: "06:00",
-    end_time: "22:00",
+    start_time: "07:00",
+    end_time: "23:00",
     spot_duration: "",
     loops_per_day: ""
   })
@@ -269,13 +269,41 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [landOwner, setLandOwner] = useState("")
   const [partner, setPartner] = useState("")
-  const [orientation, setOrientation] = useState("")
+  const [orientation, setOrientation] = useState("North")
   const [locationVisibility, setLocationVisibility] = useState("")
   const [locationVisibilityUnit, setLocationVisibilityUnit] = useState<string>("ft")
 
   const [playerId, setPlayerId] = useState("")
   const [spotInputs, setSpotInputs] = useState<string[]>([])
   const [selectedRetailSpots, setSelectedRetailSpots] = useState<number[]>([])
+
+  // Refs for required fields to enable auto-scrolling
+  const siteNameRef = useRef<HTMLInputElement>(null)
+  const locationRef = useRef<HTMLInputElement>(null)
+  const heightRef = useRef<HTMLInputElement>(null)
+  const widthRef = useRef<HTMLInputElement>(null)
+  const priceRef = useRef<HTMLInputElement>(null)
+  const startTimeRef = useRef<HTMLInputElement>(null)
+  const endTimeRef = useRef<HTMLInputElement>(null)
+  const spotDurationRef = useRef<HTMLInputElement>(null)
+  const loopsPerDayRef = useRef<HTMLInputElement>(null)
+
+  // Scroll to field utility function
+  const scrollToField = (ref: React.RefObject<any>) => {
+    if (ref.current) {
+      ref.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest'
+      })
+      // Focus the field after scrolling
+      setTimeout(() => {
+        if (ref.current && 'focus' in ref.current) {
+          ref.current.focus()
+        }
+      }, 500)
+    }
+  }
 
   // Update price unit based on site type
   useEffect(() => {
@@ -295,13 +323,13 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
     }
   }, [siteType])
 
-  // Set default values when site type changes to digital
+  // Set default CMS values when site type changes to digital
   useEffect(() => {
     if (siteType === "digital") {
       setCms({
-        start_time: "06:00",
-        end_time: "22:00",
-        spot_duration: "10",
+        start_time: "07:00",
+        end_time: "23:00",
+        spot_duration: "",
         loops_per_day: "",
       })
     }
@@ -381,6 +409,14 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
       errors.push("Location")
     }
 
+    if (!width.trim()) {
+      errors.push("Width")
+    }
+
+    if (!height.trim()) {
+      errors.push("Height")
+    }
+
     if (!price.trim()) {
       errors.push("Price")
     } else if (isNaN(Number(price.replace(/,/g, '')))) {
@@ -391,6 +427,22 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
       })
       setIsSubmitting(false)
       return
+    }
+
+    // Validate digital site specific fields
+    if (siteType === "digital") {
+      if (!cms.start_time) {
+        errors.push("Start Time")
+      }
+      if (!cms.end_time) {
+        errors.push("End Time")
+      }
+      if (!cms.spot_duration) {
+        errors.push("Spot Duration")
+      }
+      if (!cms.loops_per_day) {
+        errors.push("Number of Spots")
+      }
     }
 
     if (height.trim() && isNaN(Number(height.replace(/,/g, '')))) {
@@ -430,6 +482,8 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
         description: "Please fix the dynamic content configuration errors.",
         variant: "destructive",
       })
+      // Scroll to the dynamic content section (start time field)
+      scrollToField(startTimeRef)
       setIsSubmitting(false)
       return
     }
@@ -446,6 +500,30 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
         description: errorMessage,
         variant: "destructive",
       })
+
+      // Scroll to first missing required field
+      if (!siteName.trim()) {
+        scrollToField(siteNameRef)
+      } else if (!location.trim()) {
+        scrollToField(locationRef)
+      } else if (!height.trim()) {
+        scrollToField(heightRef)
+      } else if (!width.trim()) {
+        scrollToField(widthRef)
+      } else if (!price.trim()) {
+        scrollToField(priceRef)
+      } else if (siteType === "digital") {
+        if (!cms.start_time) {
+          scrollToField(startTimeRef)
+        } else if (!cms.end_time) {
+          scrollToField(endTimeRef)
+        } else if (!cms.spot_duration || isNaN(Number(cms.spot_duration)) || Number(cms.spot_duration) <= 0) {
+          scrollToField(spotDurationRef)
+        } else if (!cms.loops_per_day || isNaN(Number(cms.loops_per_day)) || Number(cms.loops_per_day) <= 0) {
+          scrollToField(loopsPerDayRef)
+        }
+      }
+
       setIsSubmitting(false)
       return
     }
@@ -558,13 +636,13 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
       setDescription("")
       setSelectedAudience([])
       setDailyTraffic("")
-      setPrice("0")
+      setPrice("")
       setPriceUnit("per month")
       setUploadedFiles([])
       setCurrentImageIndex(0)
       setLandOwner("")
       setPartner("")
-      setOrientation("")
+      setOrientation("North")
       setLocationVisibility("")
       setLocationVisibilityUnit("ft")
       setPlayerId("")
@@ -651,6 +729,7 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
                 Site Name: <span className="text-red-500">*</span>
               </Label>
               <Input
+                ref={siteNameRef}
                 placeholder="Site Name"
                 className="border-[#c4c4c4]"
                 value={siteName}
@@ -664,14 +743,16 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
               <Label className="text-[#4e4e4e] font-medium mb-3 block">
                 Location: <span className="text-red-500">*</span>
               </Label>
-              <GooglePlacesAutocomplete
-                value={location}
-                onChange={setLocation}
-                onGeopointChange={setGeopoint}
-                placeholder="Enter street address or search location..."
-                enableMap={true}
-                mapHeight="250px"
-              />
+              <div ref={locationRef}>
+                <GooglePlacesAutocomplete
+                  value={location}
+                  onChange={setLocation}
+                  onGeopointChange={setGeopoint}
+                  placeholder="Enter street address or search location..."
+                  enableMap={true}
+                  mapHeight="250px"
+                />
+              </div>
             </div>
 
             {/* Location Label */}
@@ -730,15 +811,24 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
               />
             </div>
 
-            {/* Orientation */}
+            {/* Facing Direction */}
             <div>
-              <Label className="text-[#4e4e4e] font-medium mb-3 block">Orientation:</Label>
-              <Input
-                placeholder="e.g., North, South, East, West"
-                className="border-[#c4c4c4]"
-                value={orientation}
-                onChange={(e) => setOrientation(e.target.value)}
-              />
+              <Label className="text-[#4e4e4e] font-medium mb-3 block">Facing Direction:</Label>
+              <Select value={orientation} onValueChange={setOrientation}>
+                <SelectTrigger className="border-[#c4c4c4]">
+                  <SelectValue placeholder="Select facing direction" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="North">North</SelectItem>
+                  <SelectItem value="South">South</SelectItem>
+                  <SelectItem value="East">East</SelectItem>
+                  <SelectItem value="West">West</SelectItem>
+                  <SelectItem value="Northeast">Northeast</SelectItem>
+                  <SelectItem value="Northwest">Northwest</SelectItem>
+                  <SelectItem value="Southeast">Southeast</SelectItem>
+                  <SelectItem value="Southwest">Southwest</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Dimension */}
@@ -746,8 +836,9 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
               <Label className="text-[#4e4e4e] font-medium mb-3 block">Dimension:</Label>
               <div className="flex items-end gap-3">
                 <div className="flex-1">
-                  <Label className="text-[#4e4e4e] text-sm mb-1 block">Height:</Label>
+                  <Label className="text-[#4e4e4e] text-sm mb-1 block">Height: <span className="text-red-500">*</span></Label>
                   <Input
+                    ref={heightRef}
                     type="text"
                     placeholder="e.g., 10"
                     className="border-[#c4c4c4]"
@@ -757,8 +848,9 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
                 </div>
                 <span className="text-[#4e4e4e]">x</span>
                 <div className="flex-1">
-                  <Label className="text-[#4e4e4e] text-sm mb-1 block">Width:</Label>
+                  <Label className="text-[#4e4e4e] text-sm mb-1 block">Width: <span className="text-red-500">*</span></Label>
                   <Input
+                    ref={widthRef}
                     type="text"
                     placeholder="e.g., 20"
                     className="border-[#c4c4c4]"
@@ -841,7 +933,7 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
 
             {/* Traffic */}
             <div>
-              <Label className="text-[#4e4e4e] font-medium mb-3 block">Monthly Traffic Count:</Label>
+              <Label className="text-[#4e4e4e] font-medium mb-3 block">Average Daily Traffic:</Label>
               <Input
                 type="text"
                 placeholder="e.g., 50000"
@@ -961,6 +1053,7 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
               </Label>
               <div className="flex gap-3">
                 <Input
+                  ref={priceRef}
                   type="text"
                   placeholder="e.g., 15000"
                   className="flex-1 border-[#c4c4c4]"
@@ -998,8 +1091,9 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
                   {/* Player ID */}
 
                   <div className="space-y-2">
-                    <Label htmlFor="add-start_time" className="text-[#4e4e4e] font-medium mb-3 block">Start Time</Label>
+                    <Label htmlFor="add-start_time" className="text-[#4e4e4e] font-medium mb-3 block">Start Time <span className="text-red-500">*</span></Label>
                     <Input
+                      ref={startTimeRef}
                       id="add-start_time"
                       type="time"
                       className="border-[#c4c4c4]"
@@ -1010,8 +1104,9 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="add-end_time" className="text-[#4e4e4e] font-medium mb-3 block">End Time</Label>
+                    <Label htmlFor="add-end_time" className="text-[#4e4e4e] font-medium mb-3 block">End Time <span className="text-red-500">*</span></Label>
                     <Input
+                      ref={endTimeRef}
                       id="add-end_time"
                       type="time"
                       className="border-[#c4c4c4]"
@@ -1022,8 +1117,9 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="add-spot_duration" className="text-[#4e4e4e] font-medium mb-3 block">Spot Duration (seconds)</Label>
+                    <Label htmlFor="add-spot_duration" className="text-[#4e4e4e] font-medium mb-3 block">Spot Duration (seconds) <span className="text-red-500">*</span></Label>
                     <Input
+                      ref={spotDurationRef}
                       id="add-spot_duration"
                       type="number"
                       className="border-[#c4c4c4]"
@@ -1035,8 +1131,9 @@ export default function AddSiteDialog({ isOpen, onClose, userData, refreshData }
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="add-loops_per_day" className="text-[#4e4e4e] font-medium mb-3 block">Spots Per Loop</Label>
+                    <Label htmlFor="add-loops_per_day" className="text-[#4e4e4e] font-medium mb-3 block">Number of Spots <span className="text-red-500">*</span></Label>
                     <Input
+                      ref={loopsPerDayRef}
                       id="add-loops_per_day"
                       type="number"
                       className="border-[#c4c4c4]"

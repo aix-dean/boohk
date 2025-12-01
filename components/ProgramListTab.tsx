@@ -35,7 +35,7 @@ const ProgramListTab: React.FC<ProgramListTabProps> = ({
   cms,
   bookings,
   loading = false,
-  retailSite,
+  retailSite = [],
 }) => {
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: currentYear - 2020 + 1 }, (_, i) => 2020 + i)

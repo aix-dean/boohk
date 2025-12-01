@@ -65,12 +65,7 @@ export default function SiteInformation({
                 </>
               ) : (
                 <div className="w-full h-full bg-gray-100 flex items-center justify-center border-none">
-                  <Image
-                    src="/building-billboard.png"
-                    alt="Site placeholder"
-                    fill
-                    className="object-cover opacity-50 border-none"
-                  />
+                  <span className="text-gray-500 text-sm">No Site Image</span>
                 </div>
               )}
             </div>
