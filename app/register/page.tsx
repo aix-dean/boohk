@@ -460,6 +460,7 @@ export default function AccountCreationPage() {
   const [termsDialogOpen, setTermsDialogOpen] = useState(false)
   const [isStartingTour, setIsStartingTour] = useState(false)
 
+
   const { register, user, userData, getRoleDashboardPath } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -483,6 +484,7 @@ export default function AccountCreationPage() {
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+
   }
 
 
@@ -633,9 +635,7 @@ export default function AccountCreationPage() {
       )
 
       // Registration successful - show welcome UI
-      if (!orgCode) {
-        setShowWelcome(true);
-      }
+      setShowWelcome(false)
       setIsRegistering(false)
     } catch (error: unknown) {
       console.error("Registration failed:", error)
@@ -915,7 +915,7 @@ export default function AccountCreationPage() {
               <Button
                 type="submit"
                 style={{width: '140px', height: '23.493px', borderRadius: '6.024px', background: '#1D0BEB'}}
-                disabled={loading}
+                disabled={!formData.agreeToTerms}
               >
                 {loading ? "Creating Account..." : "Confirm"}
               </Button>

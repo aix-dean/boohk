@@ -109,7 +109,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionData | null>(null)
   const [loading, setLoading] = useState(true)
   const [isRegistering, setIsRegistering] = useState(false)
-  const [hasInitialRedirectDone, setHasInitialRedirectDone] = useState(false)
+  const [hasInitialRedirectDone, setHasInitialRedirectDone] = useState(() => {
+    // Check sessionStorage to persist across page refreshes
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('hasInitialRedirectDone') === 'true'
+    }
+    return false
+  })
 
   const router = useRouter()
   const pathname = usePathname()
@@ -697,6 +703,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProjectData(null)
       setSubscriptionData(null)
       setHasInitialRedirectDone(false)
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('hasInitialRedirectDone')
+      }
     } catch (error) {
       console.error("Logout error:", error)
       setLoading(false)
@@ -896,14 +905,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return "/it/user-management"
     }
 
-    if (roles.includes("admin") || roles.includes("sales")) {
-      console.log("Has admin or sales role, redirecting to /sales/dashboard")
+    if (roles.includes("sales")) {
+      if (pathname.startsWith("/sales/")) {
+        console.log("Sales user already in sales section, no redirect needed")
+        return null
+      }
+      console.log("Sales user not in sales section, redirecting to /sales/dashboard")
       return "/sales/dashboard"
-    } else {
-      console.log("No admin or sales role, redirecting to /it/user-management")
-      return "/it/user-management"
     }
-  }, [])
+
+    // Add similar checks for other roles
+    if (roles.includes("logistics")) {
+      if (pathname.startsWith("/logistics/")) {
+        return null
+      }
+      return "/logistics/dashboard"
+    }
+
+
+    if (roles.includes("business")) {
+      if (pathname.startsWith("/business/")) {
+        return null
+      }
+      return "/business/dashboard"
+    }
+
+    if (roles.includes("it")) {
+      if (pathname.startsWith("/it/")) {
+        return null
+      }
+      return "/it"
+    }
+
+
+    if (roles.includes("accounting")) {
+      if (pathname.startsWith("/accounting/")) {
+        return null
+      }
+      return "/accounting/transactions"
+    }
+
+    console.log("No matching role found, redirecting to /it/user-management")
+    return "/it/user-management"
+  }, [pathname])
 
   // Redirect based on roles after authentication
   useEffect(() => {
@@ -924,6 +968,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("Auth context: Redirecting to", path)
         router.push(path)
         setHasInitialRedirectDone(true)
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('hasInitialRedirectDone', 'true')
+        }
       }
     }
   }, [userData, loading, isRegistering, pathname, getRoleDashboardPath, router, hasInitialRedirectDone])
