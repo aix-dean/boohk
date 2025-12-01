@@ -195,6 +195,8 @@ export default function ITUserManagementPage() {
       })
 
       setIsChooseFromTeamListDialogOpen(false)
+      await refreshUserData();
+      console.log('Roles refreshed:', userData?.roles);
       setSelectedUsersForAssignment([])
     } catch (error) {
       console.error("Error assigning users to department:", error)
@@ -393,6 +395,8 @@ export default function ITUserManagementPage() {
       })
 
       setIsEditRolesDialogOpen(false)
+      await refreshUserData();
+      console.log('Roles refreshed:', userData?.roles);
     } catch (error) {
       console.error("Error saving user roles:", error)
       toast({

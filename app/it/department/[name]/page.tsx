@@ -304,6 +304,8 @@ export default function ITDepartmentDetailsPage() {
       })
 
       setIsEditRolesDialogOpen(false)
+      await refreshUserData();
+      console.log('Roles refreshed:', userData?.roles);
     } catch (error) {
       console.error("Error saving user roles:", error)
       toast({
