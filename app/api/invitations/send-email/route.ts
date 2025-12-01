@@ -47,8 +47,12 @@ export async function POST(request: NextRequest) {
             <tr>
               <td style="padding: 0 24px 40px; text-align: center;">
                               <a href="${registrationUrl}" style="display: inline-block; background-color: #4285f4; color: #ffffff !important; padding: 14px 28px; text-decoration: none; font-size: 16px; font-weight: 500; border-radius: 4px; line-height: 1.2;">Register now</a>
+                
+                <p style="font-size: 14px; margin:  0; color: #5f6368; padding: 15px;">or</p>
 
-                <p style="font-size: 14px; margin: 0 0 32px 0; color: #5f6368; padding-top: 10px;">Valid until ${expiresAt}</p>
+                
+                              <p style="font-size: 14px; margin: 0; color: #5f6368; font-weight: bold;">${registrationUrl}</p>
+                <p style="font-size: 14px; margin: 0 0 32px 0; color: #5f6368; padding-top: 5px;">Valid until ${expiresAt}</p>
               </td>
             </tr>
             <tr>
