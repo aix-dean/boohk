@@ -1225,6 +1225,7 @@ export function SideNavigation() {
                       href={item.href}
                       className={cn(
                         "w-full flex items-center gap-3 px-4 py-3 text-white font-bold text-base leading-none transition-colors",
+                        item.title === "Signature" && "hidden",
                         !active && "hover:bg-white/10 rounded-[10px]",
                         active && "rounded-[10px] bg-white text-[#333] font-bold text-base leading-none mb-2 relative",
                       )}
