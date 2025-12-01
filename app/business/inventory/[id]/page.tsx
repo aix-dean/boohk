@@ -1226,7 +1226,7 @@ export default function BusinessProductDetailPage({ params }: { params: Promise<
                 cms={product?.cms}
                 bookings={programListBookings as any}
                 loading={programListBookingsLoading}
-                retailSite={product.retail_spot.spot_number}
+                retailSite={product.retail_spot.spot_number || []}
               />
             </TabsContent>
             <TabsContent key={3} value="proof-of-play">

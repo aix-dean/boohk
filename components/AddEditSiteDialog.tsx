@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -46,9 +46,13 @@ const STATIC_CATEGORIES = [
 ]
 
 const DIGITAL_CATEGORIES = [
-  "Digital Billboard",
+  "LED billboard",
+  "3D LED Billboard",
   "LED Poster",
-  "Digital Transit Ads"
+  "LED Transit Display",
+  "LED Mailboard",
+  "LED Wallboard",
+  "Interactive LED Installation",
 ]
 
 // Type for CMS data
@@ -224,8 +228,8 @@ export function AddEditSiteDialog({
   // Form state
   const [siteType, setSiteType] = useState<"static" | "digital">("digital")
   const [cms, setCms] = useState<CmsData>({
-    start_time: "06:00",
-    end_time: "22:00",
+    start_time: "07:00",
+    end_time: "23:00",
     spot_duration: "",
     loops_per_day: ""
   })
@@ -249,7 +253,7 @@ export function AddEditSiteDialog({
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [landOwner, setLandOwner] = useState("")
   const [partner, setPartner] = useState("")
-  const [orientation, setOrientation] = useState("")
+  const [orientation, setOrientation] = useState("North")
   const [locationVisibility, setLocationVisibility] = useState("")
   const [locationVisibilityUnit, setLocationVisibilityUnit] = useState<string>("ft")
 
@@ -257,9 +261,27 @@ export function AddEditSiteDialog({
   const [spotInputs, setSpotInputs] = useState<string[]>([])
   const [selectedRetailSpots, setSelectedRetailSpots] = useState<number[]>([])
   // New fields from Figma design
-  const [resolutionWidth, setResolutionWidth] = useState("")
-  const [resolutionHeight, setResolutionHeight] = useState("")
   const [brightness, setBrightness] = useState("")
+  const [pitch, setPitch] = useState("")
+
+  // Calculated resolution values
+  const calculatedResolution = useMemo(() => {
+    const widthFt = parseFloat(width.replace(/,/g, '')) || 0
+    const heightFt = parseFloat(height.replace(/,/g, '')) || 0
+    const pitchMm = parseFloat(pitch) || 0
+
+    if (pitchMm === 0) {
+      return { width: "", height: "" }
+    }
+
+    const widthPx = Math.round(widthFt * 304.8 / pitchMm)
+    const heightPx = Math.round(heightFt * 304.8 / pitchMm)
+
+    return {
+      width: widthPx.toString(),
+      height: heightPx.toString()
+    }
+  }, [width, height, pitch])
   const [notableCampaigns, setNotableCampaigns] = useState<File[]>([])
   const [specialRateEnabled, setSpecialRateEnabled] = useState(false)
   const [specialRateType, setSpecialRateType] = useState<"multiplier" | "amount">("multiplier")
@@ -277,6 +299,34 @@ export function AddEditSiteDialog({
   const [campaignPhotos, setCampaignPhotos] = useState<Array<{ file: File | null; caption: string; url?: string }>>([
     { file: null, caption: "" }
   ])
+
+  // Refs for required fields to enable auto-scrolling
+  const siteNameRef = useRef<HTMLInputElement>(null)
+  const locationRef = useRef<HTMLInputElement>(null)
+  const widthRef = useRef<HTMLInputElement>(null)
+  const heightRef = useRef<HTMLInputElement>(null)
+  const priceRef = useRef<HTMLInputElement>(null)
+  const startTimeRef = useRef<HTMLInputElement>(null)
+  const endTimeRef = useRef<HTMLInputElement>(null)
+  const spotDurationRef = useRef<HTMLInputElement>(null)
+  const loopsPerDayRef = useRef<HTMLInputElement>(null)
+
+  // Scroll to field utility function
+  const scrollToField = (ref: React.RefObject<any>) => {
+    if (ref.current) {
+      ref.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest'
+      })
+      // Focus the field after scrolling
+      setTimeout(() => {
+        if (ref.current && 'focus' in ref.current) {
+          ref.current.focus()
+        }
+      }, 500)
+    }
+  }
 
   // Price validation functions
   const validatePriceInput = (value: string): boolean => {
@@ -343,12 +393,26 @@ export function AddEditSiteDialog({
     }
   };
 
-  const handleFormattedNumberInput = (e: React.ChangeEvent<HTMLInputElement>, setValue: (value: string) => void) => {
-    let value = e.target.value.replace(/,/g, '');
-    if (value === '' || /^\d*\.?\d*$/.test(value)) {
-      setValue(value === '' ? '' : Number(value).toLocaleString());
+const handleFormattedNumberInput = (
+  e: React.ChangeEvent<HTMLInputElement>,
+  setValue: (value: string) => void
+) => {
+  let value = e.target.value.replace(/,/g, '');
+
+  // Allow empty or valid decimal numbers
+  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+    // Only format if there is no trailing decimal point
+    if (value.includes('.') && value.endsWith('.')) {
+      setValue(value); // keep the decimal so user can continue typing
+    } else {
+      // Format number with commas
+      const [integerPart, decimalPart] = value.split('.');
+      const formattedInteger = Number(integerPart).toLocaleString();
+      setValue(decimalPart !== undefined ? `${formattedInteger}.${decimalPart}` : formattedInteger);
     }
-  };
+  }
+};
+
 
   const handlePriceBlur = (e: React.FocusEvent<HTMLInputElement>, setPrice: (value: string) => void) => {
     const value = e.target.value;
@@ -401,9 +465,8 @@ export function AddEditSiteDialog({
         setPlayerId(editingProduct.playerIds?.[0] || "")
         setSpotInputs(new Array(parseInt(editingProduct.cms?.loops_per_day || "0") || 0).fill("")) // Initialize based on CMS
         setSelectedRetailSpots(editingProduct.retail_spot?.spot_number || [])
-        setResolutionWidth(editingProduct.specs_rental?.resolution?.width ? String(editingProduct.specs_rental.resolution.width) : "")
-        setResolutionHeight(editingProduct.specs_rental?.resolution?.height ? String(editingProduct.specs_rental.resolution.height) : "")
         setBrightness(editingProduct.specs_rental?.brightness || "")
+        setPitch(editingProduct.specs_rental?.pitch || "")
         setLandOwner(editingProduct.specs_rental?.land_owner || "")
         setPartner(editingProduct.specs_rental?.partner || "")
         setLocationVisibility(editingProduct.specs_rental?.location_visibility ? String(editingProduct.specs_rental.location_visibility) : "")
@@ -450,30 +513,31 @@ export function AddEditSiteDialog({
         setLocation("")
         setLocationLabel("")
         setGeopoint(null)
-        setHeight("10")
-        setWidth("10")
+        setHeight("")
+        setWidth("")
         setDimensionUnit("ft")
         setElevation("")
         setElevationUnit("ft")
         setDescription("")
         setSelectedAudience([])
         setDailyTraffic("")
-        setPrice("0")
+        setPrice("")
         setPriceUnit("per month")
         setUploadedFiles([])
         setCurrentImageIndex(0)
         setLandOwner("")
         setPartner("")
-        setOrientation("")
+        setOrientation("North")
         setLocationVisibility("")
         setLocationVisibilityUnit("ft")
         setPlayerId("")
         setSpotInputs([])
         setSelectedRetailSpots([])
+        setDisplayPhotos([{ file: null, caption: "" }])
+        setCampaignPhotos([{ file: null, caption: "" }])
 
-        setResolutionWidth("")
-        setResolutionHeight("")
         setBrightness("")
+        setPitch("")
         setNotableCampaigns([])
         setSpecialRateEnabled(false)
         setSpecialRateType("multiplier")
@@ -488,15 +552,15 @@ export function AddEditSiteDialog({
         setValidationErrors([])
         setValidationError(null)
 
-        // Set default CMS values for digital sites
+        // Set default CMS values for new sites
         setCms({
-          start_time: "06:00",
-          end_time: "22:00",
-          spot_duration: "10",
-          loops_per_day: "18",
+          start_time: "07:00",
+          end_time: "23:00",
+          spot_duration: "",
+          loops_per_day: "",
         })
-        // Initialize spot inputs for the default 18 spots
-        setSpotInputs(new Array(18).fill(""))
+        // Clear spot inputs
+        setSpotInputs([])
       }
     }
   }, [isOpen, editingProduct])
@@ -604,6 +668,14 @@ export function AddEditSiteDialog({
       errors.push("Location")
     }
 
+    if (!width.trim()) {
+      errors.push("Width")
+    }
+
+    if (!height.trim()) {
+      errors.push("Height")
+    }
+
     if (!price.trim()) {
       errors.push("Price")
     } else if (isNaN(Number(price.replace(/,/g, '')))) {
@@ -614,6 +686,22 @@ export function AddEditSiteDialog({
       })
       setIsSubmitting(false)
       return
+    }
+
+    // Validate digital site specific fields
+    if (siteType === "digital") {
+      if (!cms.start_time) {
+        errors.push("Start Time")
+      }
+      if (!cms.end_time) {
+        errors.push("End Time")
+      }
+      if (!cms.spot_duration) {
+        errors.push("Spot Duration")
+      }
+      if (!cms.loops_per_day) {
+        errors.push("Number of Spots")
+      }
     }
 
     if (height.trim() && isNaN(Number(height.replace(/,/g, '')))) {
@@ -653,30 +741,12 @@ export function AddEditSiteDialog({
         description: "Please fix the dynamic content configuration errors.",
         variant: "destructive",
       })
+      // Scroll to the dynamic content section (start time field)
+      scrollToField(startTimeRef)
       setIsSubmitting(false)
       return
     }
 
-    // Validate new Figma fields
-    if (resolutionWidth.trim() && isNaN(Number(resolutionWidth))) {
-      toast({
-        title: "Validation Error",
-        description: "Resolution Width must be a valid number.",
-        variant: "destructive",
-      })
-      setIsSubmitting(false)
-      return
-    }
-
-    if (resolutionHeight.trim() && isNaN(Number(resolutionHeight))) {
-      toast({
-        title: "Validation Error",
-        description: "Resolution Height must be a valid number.",
-        variant: "destructive",
-      })
-      setIsSubmitting(false)
-      return
-    }
 
     if (brightness.trim() && isNaN(Number(brightness))) {
       toast({
@@ -732,6 +802,30 @@ export function AddEditSiteDialog({
         description: errorMessage,
         variant: "destructive",
       })
+
+      // Scroll to first missing required field
+      if (!siteName.trim()) {
+        scrollToField(siteNameRef)
+      } else if (!location.trim()) {
+        scrollToField(locationRef)
+      } else if (!width.trim()) {
+        scrollToField(widthRef)
+      } else if (!height.trim()) {
+        scrollToField(heightRef)
+      } else if (!price.trim()) {
+        scrollToField(priceRef)
+      } else if (siteType === "digital") {
+        if (!cms.start_time) {
+          scrollToField(startTimeRef)
+        } else if (!cms.end_time) {
+          scrollToField(endTimeRef)
+        } else if (!cms.spot_duration || isNaN(Number(cms.spot_duration)) || Number(cms.spot_duration) <= 0) {
+          scrollToField(spotDurationRef)
+        } else if (!cms.loops_per_day || isNaN(Number(cms.loops_per_day)) || Number(cms.loops_per_day) <= 0) {
+          scrollToField(loopsPerDayRef)
+        }
+      }
+
       setIsSubmitting(false)
       return
     }
@@ -793,18 +887,20 @@ export function AddEditSiteDialog({
           price: parseFloat(price.replace(/,/g, '')) || 0,
           content_type: siteType,
           categories: [category],
-          cms: siteType === "digital" ? {
-            start_time: cms.start_time,
-            end_time: cms.end_time,
-            spot_duration: parseInt(cms.spot_duration) || 0,
-            loops_per_day: parseInt(cms.loops_per_day) || 0,
-            serial_number: playerId || "",
-            triggers: {
-              manual: triggers.manualToggle,
-              auto: triggers.autoTrigger,
-              occupancy_percentage: parseInt(triggers.autoTriggerPercentage) || 50
+          ...(siteType === "digital" && {
+            cms: {
+              start_time: cms.start_time,
+              end_time: cms.end_time,
+              spot_duration: parseInt(cms.spot_duration) || 0,
+              loops_per_day: parseInt(cms.loops_per_day) || 0,
+              serial_number: playerId || "",
+              triggers: {
+                manual: triggers.manualToggle,
+                auto: triggers.autoTrigger,
+                occupancy_percentage: parseInt(triggers.autoTriggerPercentage) || 50
+              }
             }
-          } : undefined,
+          }),
           playerIds: siteType === "digital" ? [playerId || ""] : [],
           specs_rental: {
             audience_type: selectedAudience,
@@ -822,11 +918,12 @@ export function AddEditSiteDialog({
             dimension_unit: dimensionUnit,
             elevation_unit: elevationUnit,
             resolution: {
-              width: parseInt(resolutionWidth) || 0,
-              height: parseInt(resolutionHeight) || 0,
+              width: parseInt(calculatedResolution.width) || 0,
+              height: parseInt(calculatedResolution.height) || 0,
             },
             audience_profile: selectedAudience,
             brightness: brightness || "",
+            pitch: pitch || "",
             facing_direction: orientation,
             viewability_distance: locationVisibility || "",
             notable_campaigns: [],
@@ -847,7 +944,7 @@ export function AddEditSiteDialog({
               last_maintenance: serverTimestamp(),
             },
           },
-          retail_spot: selectedRetailSpots.length > 0 ? { spot_number: selectedRetailSpots } : undefined,
+          retail_spot: { spot_number: selectedRetailSpots },
           media: allMedia,
           updated: serverTimestamp(),
         }
@@ -876,18 +973,20 @@ export function AddEditSiteDialog({
           seller_id: user?.uid,
           seller_name: user?.displayName || user?.email || "",
           type: "RENTAL",
-          cms: siteType === "digital" ? {
-            start_time: cms.start_time,
-            end_time: cms.end_time,
-            spot_duration: parseInt(cms.spot_duration) || 0,
-            loops_per_day: parseInt(cms.loops_per_day) || 0,
-            serial_number: playerId || "",
-            triggers: {
-              manual: triggers.manualToggle,
-              auto: triggers.autoTrigger,
-              occupancy_percentage: parseInt(triggers.autoTriggerPercentage) || 50
+          ...(siteType === "digital" && {
+            cms: {
+              start_time: cms.start_time,
+              end_time: cms.end_time,
+              spot_duration: parseInt(cms.spot_duration) || 0,
+              loops_per_day: parseInt(cms.loops_per_day) || 0,
+              serial_number: playerId || "",
+              triggers: {
+                manual: triggers.manualToggle,
+                auto: triggers.autoTrigger,
+                occupancy_percentage: parseInt(triggers.autoTriggerPercentage) || 50
+              }
             }
-          } : undefined,
+          }),
           playerIds: siteType === "digital" ? [playerId || ""] : [],
           specs_rental: {
             audience_type: selectedAudience,
@@ -906,11 +1005,12 @@ export function AddEditSiteDialog({
             dimension_unit: dimensionUnit,
             elevation_unit: elevationUnit,
             resolution: {
-              width: parseInt(resolutionWidth) || 0,
-              height: parseInt(resolutionHeight) || 0,
+              width: parseInt(calculatedResolution.width) || 0,
+              height: parseInt(calculatedResolution.height) || 0,
             },
             audience_profile: selectedAudience,
             brightness: brightness || "",
+            pitch: pitch || "",
             facing_direction: orientation,
             viewability_distance: locationVisibility || "",
             notable_campaigns: campaignPhotoUrls.map(photo => ({
@@ -935,11 +1035,10 @@ export function AddEditSiteDialog({
               last_maintenance: serverTimestamp(),
             },
           },
-          retail_spot: selectedRetailSpots.length > 0 ? { spot_number: selectedRetailSpots } : [],
+          retail_spot: { spot_number: selectedRetailSpots },
           media: mediaUrls,
           active: true,
           rating: 0,
-          playerSns: [],
           enable_special_rate: specialRateEnabled,
           position: 0,
           status: "PENDING",
@@ -1013,6 +1112,7 @@ export function AddEditSiteDialog({
                     Display Name: <span className="text-red-500">*</span>
                   </Label>
                   <Input
+                    ref={siteNameRef}
                     placeholder="Display Name"
                     className="border-[#c4c4c4]"
                     value={siteName}
@@ -1025,14 +1125,16 @@ export function AddEditSiteDialog({
                   <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
                     Location: <span className="text-red-500">*</span>
                   </Label>
-                  <GooglePlacesAutocomplete
-                    value={location}
-                    onChange={setLocation}
-                    onGeopointChange={setGeopoint}
-                    placeholder="Location"
-                    enableMap={true}
-                    mapHeight="250px"
-                  />
+                  <div ref={locationRef}>
+                    <GooglePlacesAutocomplete
+                      value={location}
+                      onChange={setLocation}
+                      onGeopointChange={setGeopoint}
+                      placeholder="Location"
+                      enableMap={true}
+                      mapHeight="250px"
+                    />
+                  </div>
                 </div>
 
                 {/* Display Type */}
@@ -1055,17 +1157,28 @@ export function AddEditSiteDialog({
                 </div>
 
                 {/* Facing Direction */}
+                {/*
                 <div>
                   <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
                     Facing Direction: <span className="text-red-500">*</span>
                   </Label>
-                  <Input
-                    placeholder="Facing Direction"
-                    className="border-[#c4c4c4]"
-                    value={orientation}
-                    onChange={(e) => setOrientation(e.target.value)}
-                  />
+                  <Select value={orientation} onValueChange={setOrientation}>
+                    <SelectTrigger className="border-[#c4c4c4]">
+                      <SelectValue placeholder="Select facing direction" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="North">North</SelectItem>
+                      <SelectItem value="South">South</SelectItem>
+                      <SelectItem value="East">East</SelectItem>
+                      <SelectItem value="West">West</SelectItem>
+                      <SelectItem value="Northeast">Northeast</SelectItem>
+                      <SelectItem value="Northwest">Northwest</SelectItem>
+                      <SelectItem value="Southeast">Southeast</SelectItem>
+                      <SelectItem value="Southwest">Southwest</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+                */}
 
                 {/* Short Description */}
                 <div>
@@ -1095,6 +1208,7 @@ export function AddEditSiteDialog({
                         Width (ft): <span className="text-red-500">*</span>
                       </Label>
                       <Input
+                        ref={widthRef}
                         type="text"
                         placeholder="Width"
                         className="border-[#c4c4c4]"
@@ -1108,6 +1222,7 @@ export function AddEditSiteDialog({
                         Height (ft): <span className="text-red-500">*</span>
                       </Label>
                       <Input
+                        ref={heightRef}
                         type="text"
                         placeholder="Height"
                         className="border-[#c4c4c4]"
@@ -1118,37 +1233,49 @@ export function AddEditSiteDialog({
                   </div>
                 </div>
 
-                {/* Resolution */}
-                <div>
-                  <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">Resolution</Label>
-                  <div className="flex items-end gap-3">
-                    <div className="flex-1">
-                      <Label className="text-[#4e4e4e] text-[12px] mb-1 block">
-                        Width (px): <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        type="text"
-                        placeholder="Width"
-                        className="border-[#c4c4c4]"
-                        value={resolutionWidth}
-                        onChange={(e) => setResolutionWidth(e.target.value)}
-                      />
-                    </div>
-                    <span className="text-[#4e4e4e]">X</span>
-                    <div className="flex-1">
-                      <Label className="text-[#4e4e4e] text-[12px] mb-1 block">
-                        Height (px): <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        type="text"
-                        placeholder="Height"
-                        className="border-[#c4c4c4]"
-                        value={resolutionHeight}
-                        onChange={(e) => setResolutionHeight(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
+
+
+{/* Pitch */}
+<div>
+  <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
+    Pitch (mm):
+  </Label>
+  <Input
+    type="text"
+    placeholder="Pitch"
+    className="border-[#c4c4c4]"
+    value={pitch}
+    onChange={(e) => handleFormattedNumberInput(e, setPitch)}
+  />
+</div>
+
+{/* Resolution */}
+<div>
+  <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
+    Resolution
+  </Label>
+  <div className="flex items-end gap-3">
+    <div className="flex-1">
+      <Label className="text-[#4e4e4e] text-[12px] mb-1 block">
+        Width (pixels):
+      </Label>
+      <div className="border border-[#c4c4c4] rounded px-3 py-2 bg-gray-50 text-gray-700 min-h-[36px] flex items-center">
+        {calculatedResolution.width}
+      </div>
+    </div>
+    <span className="text-[#4e4e4e]">X</span>
+    <div className="flex-1">
+      <Label className="text-[#4e4e4e] text-[12px] mb-1 block">
+        Height (pixels):
+      </Label>
+      <div className="border border-[#c4c4c4] rounded px-3 py-2 bg-gray-50 text-gray-700 min-h-[36px] flex items-center">
+        {calculatedResolution.height}
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
                 {/* Preview */}
                 <div>
@@ -1223,6 +1350,7 @@ export function AddEditSiteDialog({
                 </div>
 
                 {/* Brightness */}
+                {/*
                 <div>
                   <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">Brightness</Label>
                   <Input
@@ -1233,6 +1361,7 @@ export function AddEditSiteDialog({
                     onChange={(e) => setBrightness(e.target.value)}
                   />
                 </div>
+                */}
 
                 {/* Operating Hours */}
                 <div>
@@ -1240,9 +1369,10 @@ export function AddEditSiteDialog({
                   <div className="flex items-end gap-3">
                     <div className="flex-1">
                       <Label className="text-[#4e4e4e] text-[12px] mb-1 block">
-                        Start Time: <span className="text-red-500">*</span>
+                        Start Time <span className="text-red-500">*</span>
                       </Label>
                       <Input
+                        ref={startTimeRef}
                         type="time"
                         className="border-[#c4c4c4]"
                         value={cms.start_time}
@@ -1252,9 +1382,10 @@ export function AddEditSiteDialog({
                     <span className="text-[#4e4e4e]">-</span>
                     <div className="flex-1">
                       <Label className="text-[#4e4e4e] text-[12px] mb-1 block">
-                        End Time: <span className="text-red-500">*</span>
+                        End Time <span className="text-red-500">*</span>
                       </Label>
                       <Input
+                        ref={endTimeRef}
                         type="time"
                         className="border-[#c4c4c4]"
                         value={cms.end_time}
@@ -1268,9 +1399,10 @@ export function AddEditSiteDialog({
                 <div className="flex gap-4">
                   <div className="flex-1">
                     <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
-                      Spot Duration (seconds): <span className="text-red-500">*</span>
+                      Spot Duration (seconds) <span className="text-red-500">*</span>
                     </Label>
                     <Input
+                      ref={spotDurationRef}
                       type="number"
                       placeholder="Spot Duration"
                       className="border-[#c4c4c4]"
@@ -1280,9 +1412,10 @@ export function AddEditSiteDialog({
                   </div>
                   <div className="flex-1">
                     <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
-                      No. of Spots (per loop): <span className="text-red-500">*</span>
+                      Number of Spots <span className="text-red-500">*</span>
                     </Label>
                     <Input
+                      ref={loopsPerDayRef}
                       type="number"
                       placeholder="No. of Spots"
                       className="border-[#c4c4c4]"
@@ -1359,7 +1492,7 @@ export function AddEditSiteDialog({
                 {/* Display Photos */}
                 <div>
                   <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
-                    Display Photos: <span className="text-red-500">*</span>
+                    Display Photos
                   </Label>
                   <p className="text-[#666666] text-[8px] mb-2">Site gallery for listings, multiple photos can be uploaded</p>
                   <div className="space-y-3">
@@ -1427,7 +1560,7 @@ export function AddEditSiteDialog({
                 {/* Average Daily Traffic */}
                 <div>
                   <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
-                    Average Daily Traffic: <span className="text-red-500">*</span>
+                    Average Daily Traffic
                   </Label>
                   <Input
                     type="text"
@@ -1462,7 +1595,7 @@ export function AddEditSiteDialog({
 
                 {/* Viewability Distance */}
                 <div>
-                  <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">Viewability Distance</Label>
+                  <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">Viewability Distance (m)</Label>
                   <p className="text-[#666666] text-[8px] mb-2">How far away can the audience see the site</p>
                   <Input
                     type="text"
@@ -1545,12 +1678,12 @@ export function AddEditSiteDialog({
                     Regular Rate (per spot per day): <span className="text-red-500">*</span>
                   </Label>
                   <Input
+                    ref={priceRef}
                     type="text"
                     placeholder="Regular rate"
                     className="border-[#c4c4c4]"
                     value={price}
                     onChange={(e) => handlePriceChange(e, setPrice)}
-                    onBlur={(e) => handlePriceBlur(e, setPrice)}
                   />
                 </div>
 
@@ -1614,23 +1747,9 @@ export function AddEditSiteDialog({
 
             {/* CMS */}
             <div>
-              <h3 className="text-[16px] font-semibold leading-[20px] text-[#333333] mb-4">Content Management System (CMS)</h3>
               <div className="space-y-4">
-                {/* Controller Serial Number */}
-                <div>
-                  <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
-                    Controller Serial Number: <span className="text-red-500">*</span>
-                  </Label>
-                  <p className="text-[#666666] text-[8px] mb-2">Warning: Content will not be published automatically if site has no controller is connected</p>
-                  <Input
-                    placeholder="Controller serial number"
-                    className="border-[#c4c4c4]"
-                    value={playerId}
-                    onChange={(e) => setPlayerId(e.target.value)}
-                  />
-                </div>
 
-                {/* Triggers */}
+   {/* Triggers */}
                 <div>
                   <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">Triggers</Label>
                   <div className="space-y-2">
@@ -1657,6 +1776,24 @@ export function AddEditSiteDialog({
                     </div>
                   </div>
                 </div>
+
+              <h3 className="text-[16px] font-semibold leading-[20px] text-[#333333] mb-4">Content Management System (CMS)</h3>
+
+                {/* Controller Serial Number */}
+                <div>
+                  <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
+                    Controller Serial Number: <span className="text-red-500">*</span>
+                  </Label>
+                  <p className="text-[#666666] text-[8px] mb-2">Warning: Content will not be published automatically if site has no controller is connected</p>
+                  <Input
+                    placeholder="Controller serial number"
+                    className="border-[#c4c4c4]"
+                    value={playerId}
+                    onChange={(e) => setPlayerId(e.target.value)}
+                  />
+                </div>
+
+             
               </div>
             </div>
           </div>

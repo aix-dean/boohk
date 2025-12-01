@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { UserPlus, Settings, Mail, Shield, Users, Search } from "lucide-react"
+import { Plus, UserPlus, Settings, Mail, Shield, Users, Search } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -195,6 +195,8 @@ export default function ITUserManagementPage() {
       })
 
       setIsChooseFromTeamListDialogOpen(false)
+      await refreshUserData();
+      console.log('Roles refreshed:', userData?.roles);
       setSelectedUsersForAssignment([])
     } catch (error) {
       console.error("Error assigning users to department:", error)
@@ -208,12 +210,12 @@ export default function ITUserManagementPage() {
 
   // Role to department mapping
   const roleToDepartment: Record<string, string> = {
-    business: "Business Development",
+    business: "Business Dev",
     sales: "Sales Team",
     accounting: "Accounting",
     it: "IT Team",
-    admin: "Administrator",
     logistics: "Logistics Team",
+    admin: "Administrator",
     treasury: "Treasury",
     cms: "Content Management",
     finance: "Finance",
@@ -226,10 +228,18 @@ export default function ITUserManagementPage() {
     "Logistics Team": "bg-blue-500",
     "Content Management": "bg-yellow-500",
     "IT Team": "bg-teal-500",
-    "Business Development": "bg-purple-500",
+    "Business Dev": "bg-purple-500",
     "Treasury": "bg-green-500",
     "Accounting": "bg-blue-600",
     "Finance": "bg-emerald-500",
+  }
+
+  const departmentDescriptions: Record<string, string> = {
+    "Business Dev": "Manages company’s inventory including its prices and specifications.",
+    "Sales Team": "Approves/declines booking orders from retail channels. Monitors sites’ occupancy.",
+    "Accounting": "Verifies collections and financial reportings.",
+    "IT Team": "Adds teammates and handles integration of Boohk to internal ERP and CMS.",
+    "Logistics Team": "Uploads sites’ filler contents.",
   }
 
   // Group users by department (simple implementation)
@@ -385,6 +395,8 @@ export default function ITUserManagementPage() {
       })
 
       setIsEditRolesDialogOpen(false)
+      await refreshUserData();
+      console.log('Roles refreshed:', userData?.roles);
     } catch (error) {
       console.error("Error saving user roles:", error)
       toast({
@@ -425,7 +437,7 @@ export default function ITUserManagementPage() {
       "Logistics Team": "logistics",
       "Content Management": "cms",
       "IT Team": "it",
-      "Business Development": "business",
+      "Business Dev": "business",
       "Treasury": "treasury",
       "Accounting": "accounting",
       "Finance": "finance",
@@ -511,16 +523,11 @@ export default function ITUserManagementPage() {
     <div className="container mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">User Management ({users.length})</h1>
+          <h1 className="text-2xl font-bold">User Management</h1>
         </div>
-        <div className="flex items-center gap-2">
-          <Button className="gap-2" onClick={handleAddUser}>
-            <UserPlus className="h-4 w-4" />
-            Add User
-          </Button>
-        </div>
-      </div>
 
+      </div>
+{/* 
       <div className="flex items-center justify-between mb-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -532,13 +539,12 @@ export default function ITUserManagementPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-      </div>
+      </div> */}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {loading || Object.keys(usersByDepartment).length === 0 ? (
           Array.from({ length: 3 }).map((_, i) => (
-            <Card key={`skeleton-${i}`} className="p-6 bg-white shadow-sm border border-gray-200 rounded-xl">
-              <Skeleton className="h-1 w-full rounded-full mb-4 -mt-2" />
+            <Card key={`skeleton-${i}`} className="p-6 bg-white shadow-sm border border-gray-200 rounded-xl min-h-[236px]">
               <div className="mb-6">
                 <Skeleton className="h-8 w-48 mb-2" />
                 <Skeleton className="h-4 w-24" />
@@ -567,54 +573,39 @@ export default function ITUserManagementPage() {
         ) : (
           Object.entries(usersByDepartment).map(([department, departmentUsers]) => {
             const memberCount = departmentUsers.length
-            const memberText = memberCount === 1 ? "member" : "members"
             const isDisabled = ['Treasury', 'Administrator', 'Finance', 'Content Management'].includes(department)
 
             return (
               <Card
                 key={department}
-                className={`p-6 shadow-sm border border-gray-200 rounded-xl transition-shadow ${
+                className={`relative p-6 shadow-sm border border-gray-200 rounded-xl transition-shadow min-h-[236px] ${
                   isDisabled
                     ? 'bg-gray-100 opacity-50 cursor-not-allowed'
                     : 'bg-white cursor-pointer hover:shadow-md'
                 }`}
                 onClick={isDisabled ? undefined : () => router.push(`/it/department/${encodeURIComponent(department)}`)}
               >
-                <div className={`h-1 ${departmentColors[department] || 'bg-gray-300'} rounded-full mb-4 -mt-2`} />
+                <div className="">
+                  <div className="flex items-center mb-2">
+                    <div className={`w-6 h-6 rounded-full mr-1 ${departmentColors[department] || 'bg-gray-300'}`} />
+                    <h2 className="text-[#333] text-[22px] font-bold leading-[28px]">{department}</h2>
+                  </div>
+                  {departmentDescriptions[department] && (
+                    <p className="text-[#717375] text-[12px] font-normal leading-[12px] mb-3">{departmentDescriptions[department]}</p>
+                  )}
 
-                <div className="mb-6">
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-2">{department}</h2>
-                  <p className="text-gray-600">
-                    {memberCount} {memberText}
-                  </p>
+                  <hr className="my-3 border-gray-200" />
                 </div>
 
                 {departmentUsers.length > 0 && (
                   <div className="mb-6">
-                    <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
-                      <span>Name</span>
-                      <div className="flex items-center gap-2">
-                        <span></span>
-                        <span>Role</span>
-                      </div>
-                    </div>
-                    {departmentUsers.slice(0, 5).map((user) => {
-                      // Find the role that corresponds to this department
-                      const departmentRole = Object.entries(roleToDepartment).find(
-                        ([roleId, deptName]) => deptName === department
-                      )?.[0]
-
-                      return (
-                        <div key={user.id} className="flex justify-between text-sm text-gray-900 py-1">
-                          <span>{user.displayName}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-600">
-                              {departmentRole ? roles.find(r => r.id === departmentRole)?.name : 'No Role'}
-                            </span>
-                          </div>
-                        </div>
-                      )
-                    })}
+                {/* DEBUG log removed after diagnosis */}
+                {departmentUsers.slice(0, 5).map((user) => (
+                  <div key={user.id} className="flex items-center text-sm text-gray-900 py-1">
+                    <div className="inline-block w-[4px] h-[21px] bg-[#C4C4C4] mr-3 align-middle" />
+                    {user.email}
+                  </div>
+                ))}
                     {departmentUsers.length > 5 && (
                       <div className="text-center text-sm text-muted-foreground py-2">
                         +{departmentUsers.length - 5} more users
@@ -623,17 +614,36 @@ export default function ITUserManagementPage() {
                   </div>
                 )}
 
-                <Button
-                  variant="outline"
-                  className="w-full text-gray-600 border-gray-300 hover:bg-gray-50 bg-transparent"
-                  disabled={isDisabled}
-                  onClick={isDisabled ? undefined : (e) => {
-                    e.stopPropagation()
-                    handleAddTeammate(department)
-                  }}
-                >
-                  +Add Teammates
-                </Button>
+                {departmentUsers.length === 0 ? (
+                  <div className="flex justify-center mt-16">
+                    <Button
+                      variant="ghost"
+                      className="rounded-[6px] border-[1.5px] border-[#C4C4C4] bg-white hover:bg-gray-50 text-[12px] font-medium text-[#333] leading-[100%] h-6 px-[29px] w-[119px] flex justify-center items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isDisabled}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleAddTeammate(department)
+                      }}
+                    >
+                      <Plus className="h-3 w-3 mr-1 text-[#333]" />
+                      + Add teammates
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="absolute bottom-4 right-4 z-10">
+                    <Button
+                      variant="ghost"
+                      className="rounded-[6px] border-[1.5px] border-[#C4C4C4] bg-white hover:bg-gray-50 h-6 w-6 p-0 px-2 flex justify-center items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isDisabled}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleAddTeammate(department)
+                      }}
+                    >
+                      <Plus className="h-6 w-6 text-gray-600" />
+                    </Button>
+                  </div>
+                )}
               </Card>
             )
           })
@@ -761,7 +771,7 @@ export default function ITUserManagementPage() {
           <DialogHeader className="flex-shrink-0">
             <DialogTitle>Choose from Team List</DialogTitle>
             <div className="space-y-2 text-sm text-muted-foreground">
-              <div>You can add {calculateRemainingSlots()} more teammates</div>
+              {/* <div>You can add {calculateRemainingSlots()} more teammates</div> */}
               <div className="flex items-center gap-2">
                 <span>Add to:</span>
                 <div className={`w-2 h-2 rounded-full ${departmentColors[selectedDepartmentForTeammate] || 'bg-gray-300'}`} />

@@ -1572,7 +1572,7 @@ function SalesDashboardContent() {
   })
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-full overflow-auto flex flex-col pb-6">
       {/* Main content area */}
       <div className="flex-1 overflow-hidden">
         {loading ? (
@@ -1604,7 +1604,7 @@ function SalesDashboardContent() {
             </div>
 
             {/* Grid View Skeleton */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-5 mt-4">
               {Array(8)
                 .fill(0)
                 .map((_, i) => (
@@ -1630,7 +1630,7 @@ function SalesDashboardContent() {
             )}
           >
             {/* Left Column: Main Dashboard Content */}
-            <div className="flex flex-col gap-1 md:gap-2 h-full overflow-hidden">
+            <div className="flex flex-col gap-1  md:gap-2 h-full overflow-hidden">
               {/* Proposal Creation Header */}
               {proposalCreationMode && (
                 <div className="flex items-center mb-6 px-2 sm:px-0">
@@ -1852,8 +1852,8 @@ function SalesDashboardContent() {
                         // Grid View for Search Results
                         <ResponsiveCardGrid
                           mobileColumns={1}
-                          tabletColumns={2}
-                          desktopColumns={4}
+                          tabletColumns={3}
+                          desktopColumns={5}
                           gap="xl"
                         >
                           {searchResults.map((result) => {
@@ -1928,13 +1928,19 @@ function SalesDashboardContent() {
                                               className="h-full w-full object-cover"
                                               onError={(e) => {
                                                 const target = e.target as HTMLImageElement
-                                                target.src = "/abstract-geometric-sculpture.png"
-                                                target.className = "opacity-50"
+                                                target.style.display = "none"
+                                                const parent = target.parentElement
+                                                if (parent) {
+                                                  const textDiv = document.createElement("div")
+                                                  textDiv.className = "h-full w-full flex items-center justify-center text-gray-500 font-medium text-md"
+                                                  textDiv.textContent = "No Site Image"
+                                                  parent.appendChild(textDiv)
+                                                }
                                               }}
                                             />
                                           ) : (
                                             <div className="h-full w-full flex items-center justify-center text-gray-500 font-medium text-xs">
-                                              NO IMAGE
+                                              No Site Image
                                             </div>
                                           )}
                                         </div>
@@ -2068,8 +2074,8 @@ function SalesDashboardContent() {
                     <div className="flex-1 overflow-y-auto">
                       <ResponsiveCardGrid
                         mobileColumns={1}
-                        tabletColumns={2}
-                        desktopColumns={4}
+                        tabletColumns={3}
+                        desktopColumns={5}
                         gap="xl"
                       >
                         {filteredProducts.map((product) => (
@@ -2139,14 +2145,20 @@ function SalesDashboardContent() {
                                             className={`h-full w-full object-cover ${productsWithBookings[product.id || ""] ? "grayscale" : ""}`}
                                             onError={(e) => {
                                               const target = e.target as HTMLImageElement
-                                              target.src = "/abstract-geometric-sculpture.png"
-                                              target.className = "opacity-50"
+                                              target.style.display = "none"
+                                              const parent = target.parentElement
+                                              if (parent) {
+                                                const textDiv = document.createElement("div")
+                                                textDiv.className = "h-full w-full flex items-center justify-center text-gray-500 font-medium text-xs"
+                                                textDiv.textContent = "No Site Image"
+                                                parent.appendChild(textDiv)
+                                              }
                                             }}
                                           />
                                         </>
                                       ) : (
                                         <div className="h-full w-full flex items-center justify-center text-gray-500 font-medium text-xs">
-                                          NO IMAGE
+                                          No Site Image
                                         </div>
                                       )}
                                     </div>
@@ -2448,14 +2460,12 @@ export default function SalesDashboardPage() {
 
   return (
     <RouteProtection requiredRoles="sales">
-      <div className="min-h-screen bg-[#fafafa] p-6">
-        <div className="max-w-7xl mx-auto">
+      
+        <div className="h-full overflow-hidden">
           <SalesDashboardContent />
-
           {/* Render SalesChatWidget without the floating button */}
           <SalesChatWidget />
         </div>
-      </div>
     </RouteProtection>
   )
 }
@@ -2541,17 +2551,18 @@ export function ProductCard({
       onClick={handleClick}
     >
       <div className="h-[218px] bg-gray-300 relative rounded-t-2xl">
-        <Image
-          src={product.media && product.media.length > 0 ? product.media[0].url : "/placeholder.svg"}
-          alt={product.name || "Product image"}
-          fill
-          className={`object-cover ${hasOngoingBooking ? "grayscale" : ""}`}
-          onError={(e) => {
-            const target = e.target as HTMLImageElement
-            target.src = "/abstract-geometric-sculpture.png"
-            target.className = `opacity-50 object-contain ${hasOngoingBooking ? "grayscale" : ""}`
-          }}
-        />
+        {product.media && product.media.length > 0 ? (
+          <Image
+            src={product.media[0].url}
+            alt={product.name || "Product image"}
+            fill
+            className={`object-cover ${hasOngoingBooking ? "grayscale" : ""}`}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-gray-500 text-sm font-medium">
+            No Site Image
+          </div>
+        )}
 
         {/* Selection indicator */}
         {selectionMode && (

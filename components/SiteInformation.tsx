@@ -65,12 +65,7 @@ export default function SiteInformation({
                 </>
               ) : (
                 <div className="w-full h-full bg-gray-100 flex items-center justify-center border-none">
-                  <Image
-                    src="/building-billboard.png"
-                    alt="Site placeholder"
-                    fill
-                    className="object-cover opacity-50 border-none"
-                  />
+                  <span className="text-gray-500 text-sm">No Site Image</span>
                 </div>
               )}
             </div>
@@ -134,10 +129,13 @@ export default function SiteInformation({
                 </div>
               </div>
               <div>
-                <div className="text-xs text-gray-900">Orientation</div>
-                <div className="text-sm font-bold text-gray-800">
-                  {product?.specs_rental?.orientation || "Not specified"}
-                </div>
+                <div className="text-xs text-gray-900">Pitch</div>
+               <div className="text-sm font-bold text-gray-800">
+  {product?.specs_rental?.pitch
+    ? `${product.specs_rental.pitch} (mm)`
+    : "Not specified"}
+</div>
+
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -145,14 +143,20 @@ export default function SiteInformation({
                 <div className="text-xs text-gray-900">Dimension</div>
                 <div className="text-sm font-bold text-gray-800">
                   {product?.specs_rental?.height
-                    ? `${product.specs_rental.height}${product.specs_rental.dimension_unit}(H) x ${product.specs_rental.width || "N/A"}${product.specs_rental.dimension_unit} (W)`
+                    ? `${product.specs_rental.height}${product.specs_rental.dimension_unit} (H) x ${product.specs_rental.width || "N/A"}${product.specs_rental.dimension_unit} (W)`
                     : "Not specified"}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-gray-900">Elevation</div>
+                <div className="text-xs text-gray-900">Resolution</div>
                 <div className="text-sm font-bold text-gray-800">
-                  {product?.specs_rental?.elevation || "Not specified"}
+                {
+              product?.specs_rental?.resolution?.height &&
+              product?.specs_rental?.resolution?.width
+                ? `${product.specs_rental.resolution.height} (H) x ${product.specs_rental.resolution.width} (W)`
+                : "Not specified"
+}
+
                 </div>
               </div>
             </div>

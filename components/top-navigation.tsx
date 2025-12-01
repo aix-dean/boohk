@@ -117,7 +117,7 @@ export function TopNavigation() {
           {format(currentTime, "h:mm a | MMM d, yyyy")}
         </div>
 
-        {/* Notification Icon */}
+        {/* Notification Icon
         <button className="relative p-2 hover:bg-gray-50/20 transition-colors rounded">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -134,7 +134,7 @@ export function TopNavigation() {
           </svg>
         </button>
 
-        {/* Message Icon */}
+        {/* Message Icon
         <button className="relative p-2 hover:bg-gray-50/20 transition-colors rounded">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -150,6 +150,7 @@ export function TopNavigation() {
             />
           </svg>
         </button>
+         */}
 
         {/* User Profile Icon */}
         <button className="p-2 hover:bg-gray-50/20 transition-colors rounded" onClick={() => router.push('/account')}>

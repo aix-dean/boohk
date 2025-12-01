@@ -286,6 +286,9 @@ export default function BusinessInventoryPage() {
   const cardElementsRef = useRef<(HTMLDivElement | null)[]>([])
   const tlRef = useRef<gsap.core.Timeline | null>(null)
 
+  // Search ref to prevent stale updates
+  const currentSearchRef = useRef<string>("")
+
   // Subscription limit dialog state
   const [showSubscriptionLimitDialog, setShowSubscriptionLimitDialog] = useState(false)
   const [subscriptionLimitMessage, setSubscriptionLimitMessage] = useState("")
@@ -422,6 +425,7 @@ export default function BusinessInventoryPage() {
   // Handle search query - use Algolia for search, fallback to client-side filtering
   useEffect(() => {
     const trimmedQuery = searchQuery.trim()
+    currentSearchRef.current = trimmedQuery
 
     if (!trimmedQuery) {
       setFilteredProducts(allProducts)
@@ -440,6 +444,11 @@ export default function BusinessInventoryPage() {
           0, // page
           1000 // large number to get all results for client-side pagination
         )
+
+        // Check if search query has changed during the async call
+        if (currentSearchRef.current !== trimmedQuery) {
+          return // Stale search, ignore results
+        }
 
         if (searchResponse.hits && searchResponse.hits.length > 0) {
           // Convert Algolia results back to Product format for consistency
@@ -478,6 +487,10 @@ export default function BusinessInventoryPage() {
         }
       } catch (error) {
         console.error("Search error:", error)
+        // Check if search query has changed during the async call
+        if (currentSearchRef.current !== trimmedQuery) {
+          return // Stale search, ignore results
+        }
         // Fallback to client-side filtering
         const searchLower = trimmedQuery.toLowerCase()
         const filtered = allProducts.filter((product) =>
@@ -488,7 +501,10 @@ export default function BusinessInventoryPage() {
         setFilteredProducts(filtered)
         setSearchResults([])
       } finally {
-        setIsSearching(false)
+        // Only stop searching if this is still the current search
+        if (currentSearchRef.current === trimmedQuery) {
+          setIsSearching(false)
+        }
       }
     }
 
