@@ -27,158 +27,37 @@ export async function POST(request: NextRequest) {
       <html>
         <head>
           <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Invitation to Join ${companyName || "Our Organization"}</title>
-          <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              line-height: 1.6;
-              color: #333;
-              max-width: 600px;
-              margin: 0 auto;
-              padding: 20px;
-            }
-            .header {
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-              color: white;
-              padding: 30px;
-              text-align: center;
-              border-radius: 8px 8px 0 0;
-            }
-            .content {
-              background: #ffffff;
-              padding: 30px;
-              border: 1px solid #e1e5e9;
-              border-top: none;
-            }
-            .code-box {
-              background: #f8f9fa;
-              border: 2px dashed #dee2e6;
-              padding: 20px;
-              text-align: center;
-              margin: 20px 0;
-              border-radius: 8px;
-            }
-            .code {
-              font-family: 'Courier New', monospace;
-              font-size: 24px;
-              font-weight: bold;
-              color: #495057;
-              letter-spacing: 2px;
-            }
-            .button {
-              display: inline-block;
-              background: #007bff;
-              color: white;
-              padding: 12px 30px;
-              text-decoration: none;
-              border-radius: 6px;
-              font-weight: 500;
-              margin: 20px 0;
-            }
-            .info-grid {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 15px;
-              margin: 20px 0;
-              padding: 20px;
-              background: #f8f9fa;
-              border-radius: 8px;
-            }
-            .info-item {
-              display: flex;
-              flex-direction: column;
-            }
-            .info-label {
-              font-weight: 600;
-              color: #6c757d;
-              font-size: 14px;
-              margin-bottom: 4px;
-            }
-            .info-value {
-              color: #495057;
-            }
-            .footer {
-              background: #f8f9fa;
-              padding: 20px 30px;
-              border: 1px solid #e1e5e9;
-              border-top: none;
-              border-radius: 0 0 8px 8px;
-              text-align: center;
-              color: #6c757d;
-              font-size: 14px;
-            }
-            .role-badge {
-              display: inline-block;
-              background: #e9ecef;
-              color: #495057;
-              padding: 4px 12px;
-              border-radius: 20px;
-              font-size: 14px;
-              font-weight: 500;
-            }
-          </style>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Invitation to Join ${companyName || "Boohk"}</title>
         </head>
-        <body>
-          <div class="header">
-            <h1>🎉 You're Invited!</h1>
-            <p>Join ${companyName || "our organization"} and start collaborating</p>
-          </div>
+        <body style="margin: 0; padding: 40px 20px; background-color: #f8f9fa; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Oxygen, Ubuntu, Cantarell, \"Open Sans\", \"Helvetica Neue\", sans-serif; font-size: 16px; line-height: 1.5; color: #202124;">
+          <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+            <tr>
+              <td style="padding: 48px 24px 0;">
+                <h1 style="font-size: 32px; font-weight: 400; margin: 0 0 8px 0; color: #202124; line-height: 1.2;">You've been invited</h1>
+                <p style="font-size: 18px; margin: 0 0 32px 0; color: #5f6368;">Join <strong>${companyName || "Boohk"}</strong> as <strong>${role}</strong></p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 0 24px 32px;">
+                <p style="font-size: 16px; margin: 0 0 24px 0; color: #202124;">Hi ${recipientName || "there"},</p>
+                <p style="font-size: 16px; margin: 0 0 40px 0; color: #202124;">${message}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 0 24px 40px; text-align: center;">
+                              <a href="${registrationUrl}" style="display: inline-block; background-color: #4285f4; color: #ffffff !important; padding: 14px 28px; text-decoration: none; font-size: 16px; font-weight: 500; border-radius: 4px; line-height: 1.2;">Register now</a>
 
-          <div class="content">
-            <p>Hello ${recipientName || "there"},</p>
-
-            <p>${message}</p>
-
-            <div class="code-box">
-              <p style="margin: 0 0 10px 0; font-weight: 600;">Your invitation code:</p>
-              <div class="code">${invitationCode}</div>
-              <p style="margin: 10px 0 0 0; font-size: 14px; color: #6c757d;">
-                Copy this code and use it during registration
-              </p>
-            </div>
-
-            <div class="info-grid">
-              <div class="info-item">
-                <span class="info-label">Assigned Role</span>
-                <span class="info-value">
-                  <span class="role-badge">${role}</span>
-                </span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Valid Until</span>
-                <span class="info-value">${expiresAt}</span>
-              </div>
-            </div>
-
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${registrationUrl}" class="button">
-                Register Your Account
-              </a>
-            </div>
-
-            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 6px; margin: 20px 0;">
-              <p style="margin: 0; color: #856404; font-size: 14px;">
-                <strong>📋 Registration Instructions:</strong><br>
-                1. Click the button above or visit: <code>${registrationUrl}</code><br>
-                2. Fill out the registration form<br>
-                3. Your invitation code will be automatically applied<br>
-                4. Complete your profile setup
-              </p>
-            </div>
-
-            <p>If you have any questions or need assistance, please don't hesitate to reach out.</p>
-
-            <p>
-              Best regards,<br>
-              <strong>${senderName}</strong>
-            </p>
-          </div>
-
-          <div class="footer">
-            <p>This invitation was sent by ${senderName} from ${companyName || "Boohk"}.</p>
-            <p>If you didn't expect this invitation, you can safely ignore this email.</p>
-          </div>
+                <p style="font-size: 14px; margin: 0 0 32px 0; color: #5f6368; padding-top: 10px;">Valid until ${expiresAt}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 0 24px 48px; text-align: center; font-size: 14px; color: #5f6368; border-top: 1px solid #dadce0;">
+                <p style="margin: 16px 0 0 0;">Best,<br><strong>${senderName}</strong></p>
+                <p style="margin: 24px 0 0 0;">Sent from ${companyName || "Boohk"}.<br>If you didn't expect this invitation, you can ignore this email.</p>
+              </td>
+            </tr>
+          </table>
         </body>
       </html>
     `
@@ -190,8 +69,6 @@ You're invited to join ${companyName || "our organization"}!
 Hello ${recipientName || "there"},
 
 ${message}
-
-Your invitation code: ${invitationCode}
 
 Role: ${role}
 Valid until: ${expiresAt}
@@ -215,6 +92,11 @@ If you didn't expect this invitation, you can safely ignore this email.
     `
 
     // Initialize Resend only when needed and API key is available
+    console.log("=== INVITATIONS SEND EMAIL DEBUG ===");
+    console.log("RESEND_API_KEY exists:", !!process.env.RESEND_API_KEY);
+    console.log("RESEND_API_KEY length:", process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.length : 0);
+    console.log("NODE_ENV:", process.env.NODE_ENV);
+    console.log("=== END DEBUG ===");
     const apiKey = process.env.RESEND_API_KEY
     if (!apiKey) {
       console.error("RESEND_API_KEY environment variable is not set")
@@ -225,7 +107,7 @@ If you didn't expect this invitation, you can safely ignore this email.
 
     // Send email using Resend
     const { data, error } = await resend.emails.send({
-      from: `${senderName} <noreply@boohk.ph>`,
+      from: `${senderName} <noreply@ohplus.ph>`,
       to: [recipientEmail],
       subject: subject,
       html: htmlContent,

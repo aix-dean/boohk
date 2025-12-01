@@ -84,7 +84,7 @@ export default function ITDepartmentDetailsPage() {
     logistics: "Logistics Team",
     cms: "Content Management",
     it: "IT Team",
-    business: "Business Development",
+    business: "Business Dev",
     treasury: "Treasury",
     accounting: "Accounting",
     finance: "Finance",
@@ -97,14 +97,14 @@ export default function ITDepartmentDetailsPage() {
     "Logistics Team": "bg-blue-500",
     "Content Management": "bg-yellow-500",
     "IT Team": "bg-teal-500",
-    "Business Development": "bg-purple-500",
+    "Business Dev": "bg-purple-500",
     "Treasury": "bg-green-500",
     "Accounting": "bg-blue-600",
     "Finance": "bg-emerald-500",
   }
 
   // Disabled roles in the edit dialog
-  const disabledRoles: RoleType[] = ['admin', 'logistics', 'cms', 'treasury', 'finance']
+  const disabledRoles: RoleType[] = ['admin', 'cms', 'treasury', 'finance']
 
   // Debounce search term
   useEffect(() => {
@@ -515,9 +515,11 @@ export default function ITDepartmentDetailsPage() {
                         {getRoleBadge(role.id)}
                       </Label>
                       <div className="text-sm text-muted-foreground mt-1">{role.description}</div>
+                      {/*
                       <div className="text-xs text-muted-foreground mt-2">
                         <strong>Permissions:</strong> {role.permissions.length} modules
                       </div>
+                      */}
                     </div>
                   </div>
                 ))}
