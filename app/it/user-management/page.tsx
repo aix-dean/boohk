@@ -214,8 +214,8 @@ export default function ITUserManagementPage() {
     sales: "Sales Team",
     accounting: "Accounting",
     it: "IT Team",
-    admin: "Administrator",
     logistics: "Logistics Team",
+    admin: "Administrator",
     treasury: "Treasury",
     cms: "Content Management",
     finance: "Finance",
@@ -523,7 +523,7 @@ export default function ITUserManagementPage() {
     <div className="container mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">User Management ({users.length})</h1>
+          <h1 className="text-2xl font-bold">User Management</h1>
         </div>
 
       </div>

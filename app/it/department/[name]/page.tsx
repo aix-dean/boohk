@@ -501,7 +501,7 @@ export default function ITDepartmentDetailsPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {roles.map((role) => (
+                {roles.filter((role) => !disabledRoles.includes(role.id)).concat(roles.filter((role) => disabledRoles.includes(role.id))).map((role) => (
                   <div key={role.id} className={`flex items-start space-x-3 p-3 border rounded-lg ${disabledRoles.includes(role.id) ? 'opacity-50' : ''}`}>
                     <Checkbox
                       id={`role-${role.id}`}
