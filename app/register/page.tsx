@@ -633,7 +633,9 @@ export default function AccountCreationPage() {
       )
 
       // Registration successful - show welcome UI
-      setShowWelcome(true)
+      if (!orgCode) {
+        setShowWelcome(true);
+      }
       setIsRegistering(false)
     } catch (error: unknown) {
       console.error("Registration failed:", error)
