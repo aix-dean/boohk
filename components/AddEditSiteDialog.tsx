@@ -873,18 +873,20 @@ export function AddEditSiteDialog({
           price: parseFloat(price.replace(/,/g, '')) || 0,
           content_type: siteType,
           categories: [category],
-          cms: siteType === "digital" ? {
-            start_time: cms.start_time,
-            end_time: cms.end_time,
-            spot_duration: parseInt(cms.spot_duration) || 0,
-            loops_per_day: parseInt(cms.loops_per_day) || 0,
-            serial_number: playerId || "",
-            triggers: {
-              manual: triggers.manualToggle,
-              auto: triggers.autoTrigger,
-              occupancy_percentage: parseInt(triggers.autoTriggerPercentage) || 50
+          ...(siteType === "digital" && {
+            cms: {
+              start_time: cms.start_time,
+              end_time: cms.end_time,
+              spot_duration: parseInt(cms.spot_duration) || 0,
+              loops_per_day: parseInt(cms.loops_per_day) || 0,
+              serial_number: playerId || "",
+              triggers: {
+                manual: triggers.manualToggle,
+                auto: triggers.autoTrigger,
+                occupancy_percentage: parseInt(triggers.autoTriggerPercentage) || 50
+              }
             }
-          } : undefined,
+          }),
           playerIds: siteType === "digital" ? [playerId || ""] : [],
           specs_rental: {
             audience_type: selectedAudience,
@@ -927,7 +929,7 @@ export function AddEditSiteDialog({
               last_maintenance: serverTimestamp(),
             },
           },
-          ...(selectedRetailSpots.length > 0 && { retail_spot: { spot_number: selectedRetailSpots } }),
+          retail_spot: { spot_number: selectedRetailSpots },
           media: allMedia,
           updated: serverTimestamp(),
         }
@@ -956,18 +958,20 @@ export function AddEditSiteDialog({
           seller_id: user?.uid,
           seller_name: user?.displayName || user?.email || "",
           type: "RENTAL",
-          cms: siteType === "digital" ? {
-            start_time: cms.start_time,
-            end_time: cms.end_time,
-            spot_duration: parseInt(cms.spot_duration) || 0,
-            loops_per_day: parseInt(cms.loops_per_day) || 0,
-            serial_number: playerId || "",
-            triggers: {
-              manual: triggers.manualToggle,
-              auto: triggers.autoTrigger,
-              occupancy_percentage: parseInt(triggers.autoTriggerPercentage) || 50
+          ...(siteType === "digital" && {
+            cms: {
+              start_time: cms.start_time,
+              end_time: cms.end_time,
+              spot_duration: parseInt(cms.spot_duration) || 0,
+              loops_per_day: parseInt(cms.loops_per_day) || 0,
+              serial_number: playerId || "",
+              triggers: {
+                manual: triggers.manualToggle,
+                auto: triggers.autoTrigger,
+                occupancy_percentage: parseInt(triggers.autoTriggerPercentage) || 50
+              }
             }
-          } : undefined,
+          }),
           playerIds: siteType === "digital" ? [playerId || ""] : [],
           specs_rental: {
             audience_type: selectedAudience,
@@ -1015,11 +1019,10 @@ export function AddEditSiteDialog({
               last_maintenance: serverTimestamp(),
             },
           },
-          retail_spot: selectedRetailSpots.length > 0 ? { spot_number: selectedRetailSpots } : undefined,
+          retail_spot: { spot_number: selectedRetailSpots },
           media: mediaUrls,
           active: true,
           rating: 0,
-          playerSns: undefined,
           enable_special_rate: specialRateEnabled,
           position: 0,
           status: "PENDING",
