@@ -104,7 +104,7 @@ export default function ITDepartmentDetailsPage() {
   }
 
   // Disabled roles in the edit dialog
-  const disabledRoles: RoleType[] = ['admin', 'logistics', 'cms', 'treasury', 'finance']
+  const disabledRoles: RoleType[] = ['admin', 'cms', 'treasury', 'finance']
 
   // Debounce search term
   useEffect(() => {
@@ -515,9 +515,11 @@ export default function ITDepartmentDetailsPage() {
                         {getRoleBadge(role.id)}
                       </Label>
                       <div className="text-sm text-muted-foreground mt-1">{role.description}</div>
+                      {/*
                       <div className="text-xs text-muted-foreground mt-2">
                         <strong>Permissions:</strong> {role.permissions.length} modules
                       </div>
+                      */}
                     </div>
                   </div>
                 ))}

@@ -31,14 +31,14 @@ export function AddTeammateDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">+ Add a Teammate</DialogTitle>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          {/* <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>You can add {remainingSlots} more teammates</span>
             <Badge variant="secondary" className="text-xs">
               Add
             </Badge>
-          </div>
+          </div> */}
         </DialogHeader>
-        <div className="space-y-3 pt-4">
+        <div className="space-y-3 pt-2">
           <Button variant="outline" className="w-full h-12 text-base bg-transparent" onClick={onChooseFromTeamList}>
             Choose from Team List
           </Button>
