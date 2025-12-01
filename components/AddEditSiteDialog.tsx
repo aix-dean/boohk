@@ -1652,7 +1652,6 @@ export function AddEditSiteDialog({
                     className="border-[#c4c4c4]"
                     value={price}
                     onChange={(e) => handlePriceChange(e, setPrice)}
-                    onBlur={(e) => handlePriceBlur(e, setPrice)}
                   />
                 </div>
 
