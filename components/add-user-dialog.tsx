@@ -210,7 +210,6 @@ export function AddUserDialog({ open, onOpenChange, onSuccess, initialRole, rema
             <span>Add New User</span>
           </DialogTitle>
           <div className="space-y-2 text-sm text-muted-foreground">
-            <div>You can add {remainingSlots || 0} more teammates</div>
             <div className="flex items-center gap-2">
               <span>Add to:</span>
               <div className={`w-2 h-2 rounded-full ${getDepartmentColor(departmentName)}`} />
@@ -266,7 +265,7 @@ export function AddUserDialog({ open, onOpenChange, onSuccess, initialRole, rema
                 type="text"
                 value={formData.firstName}
                 onChange={(e) => setFormData((prev) => ({ ...prev, firstName: e.target.value }))}
-                placeholder="John"
+                // placeholder="John"
                 className="col-span-2"
               />
             </div>
@@ -278,7 +277,7 @@ export function AddUserDialog({ open, onOpenChange, onSuccess, initialRole, rema
                 type="text"
                 value={formData.lastName}
                 onChange={(e) => setFormData((prev) => ({ ...prev, lastName: e.target.value }))}
-                placeholder="Doe"
+                // placeholder="Doe"
                 className="col-span-2"
               />
             </div>
