@@ -515,7 +515,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           invitationPermissions = invitationData.permissions || []
           invitationEmail = invitationData.invited_email || invitationData.email || ""
 
-          if (invitationRole && ["admin", "sales", "logistics", "cms", "it", "business", "treasury", "accounting", "finance"].includes(invitationRole)) {
+          const restrictedInviteRoles = ['admin', 'logistics', 'cms', 'treasury', 'finance'];
+          if (invitationRole && restrictedInviteRoles.includes(invitationRole)) {
+            throw new Error(`Restricted role "${invitationRole}" cannot be assigned via invitation codes. Contact your administrator for special access.`);
+          }
+
+          if (invitationRole && ["sales", "it", "business", "accounting"].includes(invitationRole)) {
             assignedRoles = [invitationRole as RoleType]
           } else {
             assignedRoles = ["sales"] // Default fallback for invited users

@@ -595,8 +595,9 @@ export default function ITUserManagementPage() {
 
                 {departmentUsers.length > 0 && (
                   <div className="mb-6">
+                {/* DEBUG log removed after diagnosis */}
                 {departmentUsers.slice(0, 5).map((user) => (
-                  <div className="flex items-center text-sm text-gray-900 py-1">
+                  <div key={user.id} className="flex items-center text-sm text-gray-900 py-1">
                     <div className="inline-block w-[4px] h-[21px] bg-[#C4C4C4] mr-3 align-middle" />
                     {user.email}
                   </div>
