@@ -129,9 +129,9 @@ export default function SiteInformation({
                 </div>
               </div>
               <div>
-                <div className="text-xs text-gray-900">Orientation</div>
+                <div className="text-xs text-gray-900">Pitch</div>
                 <div className="text-sm font-bold text-gray-800">
-                  {product?.specs_rental?.orientation || "Not specified"}
+                  {product?.specs_rental?.pitch || "Not specified"} (mm)
                 </div>
               </div>
             </div>
@@ -140,14 +140,20 @@ export default function SiteInformation({
                 <div className="text-xs text-gray-900">Dimension</div>
                 <div className="text-sm font-bold text-gray-800">
                   {product?.specs_rental?.height
-                    ? `${product.specs_rental.height}${product.specs_rental.dimension_unit}(H) x ${product.specs_rental.width || "N/A"}${product.specs_rental.dimension_unit} (W)`
+                    ? `${product.specs_rental.height}${product.specs_rental.dimension_unit} (H) x ${product.specs_rental.width || "N/A"}${product.specs_rental.dimension_unit} (W)`
                     : "Not specified"}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-gray-900">Elevation</div>
+                <div className="text-xs text-gray-900">Resolution</div>
                 <div className="text-sm font-bold text-gray-800">
-                  {product?.specs_rental?.elevation || "Not specified"}
+                {
+              product?.specs_rental?.resolution?.height &&
+              product?.specs_rental?.resolution?.width
+                ? `${product.specs_rental.resolution.height} (H) x ${product.specs_rental.resolution.width} (W)`
+                : "Not specified"
+}
+
                 </div>
               </div>
             </div>
