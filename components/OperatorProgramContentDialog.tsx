@@ -82,6 +82,7 @@ export function OperatorProgramContentDialog({
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [spotDuration, setSpotDuration] = useState<number>(9000)
 
   useEffect(() => {
     const fetchProductSpecs = async () => {
@@ -94,6 +95,7 @@ export function OperatorProgramContentDialog({
           const product = productSnap.data();
           const originalWidth = product.specs_rental?.width;
           const originalHeight = product.specs_rental?.height;
+          setSpotDuration(product.cms.spot_duration * 1000)
           if (originalWidth && originalHeight) {
             const availableWidth = 450;
             const availableHeight = 300;
@@ -140,8 +142,30 @@ export function OperatorProgramContentDialog({
       // Set edit mode: true if no content (creating), false if content exists (viewing)
       // Only allow edit mode in logistics
       setIsEditMode(!spot.imageUrl && pathname.includes('/logistics/'));
+      
+      // Reset preview data when spot changes to prevent caching, but only if not in edit mode
+      if (!isEditMode) {
+        setVideoFile(null);
+        setSelectedMedia(null);
+        setVideoPreviewUrl(null);
+      }
     }
   }, [spot, activePages]);
+
+  // Reset all preview data when dialog is closed to prevent caching
+  useEffect(() => {
+    if (!open) {
+      setVideoFile(null);
+      setSelectedMedia(null);
+      setVideoPreviewUrl(null);
+      setIsEditMode(false);
+      setStartDate("");
+      setEndDate("");
+      setIsUploading(false);
+      setIsSaving(false);
+      setMediaLibraryOpen(false); // Close media library dialog
+    }
+  }, [open]);
 
   const handleSave = async () => {
     if (!productId || !userData?.company_id || !spot) {
@@ -203,13 +227,13 @@ export function OperatorProgramContentDialog({
 
       // Get media URL and file info
       let mediaUrl: string | null = null;
-      let duration = 9000; // default 9 seconds
+      let duration = product.cms?.spot_duration ? product.cms.spot_duration * 1000 : (spotDuration || 9000);
       let mediaType = "VIDEO";
       let finalSelectedMedia = selectedMedia;
 
       let fileInfo: { size: number; md5: string | null } = { size: 0, md5: null };
 
-      if (selectedMedia) {
+      if (selectedMedia && selectedMedia.url) {
         finalSelectedMedia = selectedMedia;
         mediaUrl = selectedMedia.url;
         // For library media, try to get accurate file info, fallback to stored values
@@ -230,9 +254,7 @@ export function OperatorProgramContentDialog({
           console.error("Error getting file info for library media:", error);
           // Keep the fallback values
         }
-        duration = selectedMedia.duration
-          ? selectedMedia.duration * 1000
-          : 9000;
+        duration = product.cms?.spot_duration ? product.cms.spot_duration * 1000 : (spotDuration || 9000);
         mediaType = selectedMedia.type?.startsWith("video/")
           ? "VIDEO"
           : "IMAGE";
@@ -294,7 +316,7 @@ export function OperatorProgramContentDialog({
           setSelectedMedia(finalSelectedMedia);
 
           mediaUrl = uploadedUrl;
-          duration = 9000; // Default duration for uploaded videos
+          duration = product.cms?.spot_duration ? product.cms.spot_duration * 1000 : 9000; // Default duration for uploaded videos
           mediaType = videoFile.type.startsWith("video/") ? "VIDEO" : "IMAGE";
 
           toast({
@@ -351,7 +373,7 @@ export function OperatorProgramContentDialog({
       };
 
       // Remove existing page for this spot if editing, then add new page
-      const filteredPages = existingPages.filter(page => page.spot_number !== spot.number);
+      const filteredPages = existingPages.filter((page: any) => page.spot_number !== spot.number);
       const allPages = [...filteredPages, newPage];
 
       // Sort pages by spot_number
@@ -359,7 +381,7 @@ export function OperatorProgramContentDialog({
 
       // Create playlist document
       const playlistDoc = {
-        playerIds: product.playerIds,
+        playerIds: product.playerIds || [],
         product_id: productId,
         company_id: userData.company_id,
         created: serverTimestamp(),
@@ -375,8 +397,8 @@ export function OperatorProgramContentDialog({
         plans: [
           {
             weekDays: [0, 1, 2, 3, 4, 5, 6],
-            startTime: product.cms.start_time,
-            endTime: product.cms.end_time,
+            startTime: product.cms?.start_time || "00:00",
+            endTime: product.cms?.end_time || "23:59",
           },
         ],
       };
@@ -435,10 +457,14 @@ export function OperatorProgramContentDialog({
   };
 
   // Check if form is valid for saving
+  const hasValidMedia = isEditMode 
+    ? (videoFile || (selectedMedia && selectedMedia.url))
+    : (videoFile || (selectedMedia && selectedMedia.url) || spot?.imageUrl);
+    
   const isFormValid =
     startDate &&
     endDate &&
-    (isEditMode ? (videoFile || selectedMedia) : (videoFile || selectedMedia || spot?.imageUrl)) &&
+    hasValidMedia &&
     !isUploading;
 
   if (!spot) return null;
