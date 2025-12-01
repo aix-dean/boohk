@@ -208,7 +208,7 @@ export default function ITUserManagementPage() {
 
   // Role to department mapping
   const roleToDepartment: Record<string, string> = {
-    business: "Business Dev.",
+    business: "Business Dev",
     sales: "Sales Team",
     accounting: "Accounting",
     it: "IT Team",
@@ -226,14 +226,14 @@ export default function ITUserManagementPage() {
     "Logistics Team": "bg-blue-500",
     "Content Management": "bg-yellow-500",
     "IT Team": "bg-teal-500",
-    "Business Dev.": "bg-purple-500",
+    "Business Dev": "bg-purple-500",
     "Treasury": "bg-green-500",
     "Accounting": "bg-blue-600",
     "Finance": "bg-emerald-500",
   }
 
   const departmentDescriptions: Record<string, string> = {
-    "Business Dev.": "Manages company’s inventory including its prices and specifications.",
+    "Business Dev": "Manages company’s inventory including its prices and specifications.",
     "Sales Team": "Approves/declines booking orders from retail channels. Monitors sites’ occupancy.",
     "Accounting": "Verifies collections and financial reportings.",
     "IT Team": "Adds teammates and handles integration of Boohk to internal ERP and CMS.",
@@ -433,7 +433,7 @@ export default function ITUserManagementPage() {
       "Logistics Team": "logistics",
       "Content Management": "cms",
       "IT Team": "it",
-      "Business Development": "business",
+      "Business Dev": "business",
       "Treasury": "treasury",
       "Accounting": "accounting",
       "Finance": "finance",
