@@ -393,12 +393,26 @@ export function AddEditSiteDialog({
     }
   };
 
-  const handleFormattedNumberInput = (e: React.ChangeEvent<HTMLInputElement>, setValue: (value: string) => void) => {
-    let value = e.target.value.replace(/,/g, '');
-    if (value === '' || /^\d*\.?\d*$/.test(value)) {
-      setValue(value === '' ? '' : Number(value).toLocaleString());
+const handleFormattedNumberInput = (
+  e: React.ChangeEvent<HTMLInputElement>,
+  setValue: (value: string) => void
+) => {
+  let value = e.target.value.replace(/,/g, '');
+
+  // Allow empty or valid decimal numbers
+  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+    // Only format if there is no trailing decimal point
+    if (value.includes('.') && value.endsWith('.')) {
+      setValue(value); // keep the decimal so user can continue typing
+    } else {
+      // Format number with commas
+      const [integerPart, decimalPart] = value.split('.');
+      const formattedInteger = Number(integerPart).toLocaleString();
+      setValue(decimalPart !== undefined ? `${formattedInteger}.${decimalPart}` : formattedInteger);
     }
-  };
+  }
+};
+
 
   const handlePriceBlur = (e: React.FocusEvent<HTMLInputElement>, setPrice: (value: string) => void) => {
     const value = e.target.value;
@@ -1219,41 +1233,49 @@ export function AddEditSiteDialog({
                   </div>
                 </div>
 
-                {/* Pitch */}
-                <div>
-                  <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">Pitch (mm):</Label>
-                  <Input
-                    type="text"
-                    placeholder="Pitch"
-                    className="border-[#c4c4c4]"
-                    value={pitch}
-                    onChange={(e) => setPitch(e.target.value)}
-                  />
-                </div>
 
-                {/* Resolution */}
-                <div>
-                  <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">Resolution</Label>
-                  <div className="flex items-end gap-3">
-                    <div className="flex-1">
-                      <Label className="text-[#4e4e4e] text-[12px] mb-1 block">
-                        Width (pixels):
-                      </Label>
-                      <div className="border border-[#c4c4c4] rounded px-3 py-2 bg-gray-50 text-gray-700 min-h-[36px] flex items-center">
-                        {calculatedResolution.width}
-                      </div>
-                    </div>
-                    <span className="text-[#4e4e4e]">X</span>
-                    <div className="flex-1">
-                      <Label className="text-[#4e4e4e] text-[12px] mb-1 block">
-                        Height (pixels):
-                      </Label>
-                      <div className="border border-[#c4c4c4] rounded px-3 py-2 bg-gray-50 text-gray-700 min-h-[36px] flex items-center">
-                        {calculatedResolution.height}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+
+{/* Pitch */}
+<div>
+  <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
+    Pitch (mm):
+  </Label>
+  <Input
+    type="text"
+    placeholder="Pitch"
+    className="border-[#c4c4c4]"
+    value={pitch}
+    onChange={(e) => handleFormattedNumberInput(e, setPitch)}
+  />
+</div>
+
+{/* Resolution */}
+<div>
+  <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
+    Resolution
+  </Label>
+  <div className="flex items-end gap-3">
+    <div className="flex-1">
+      <Label className="text-[#4e4e4e] text-[12px] mb-1 block">
+        Width (pixels):
+      </Label>
+      <div className="border border-[#c4c4c4] rounded px-3 py-2 bg-gray-50 text-gray-700 min-h-[36px] flex items-center">
+        {calculatedResolution.width}
+      </div>
+    </div>
+    <span className="text-[#4e4e4e]">X</span>
+    <div className="flex-1">
+      <Label className="text-[#4e4e4e] text-[12px] mb-1 block">
+        Height (pixels):
+      </Label>
+      <div className="border border-[#c4c4c4] rounded px-3 py-2 bg-gray-50 text-gray-700 min-h-[36px] flex items-center">
+        {calculatedResolution.height}
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
                 {/* Preview */}
                 <div>
