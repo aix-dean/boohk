@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -224,8 +224,8 @@ export function AddEditSiteDialog({
   // Form state
   const [siteType, setSiteType] = useState<"static" | "digital">("digital")
   const [cms, setCms] = useState<CmsData>({
-    start_time: "06:00",
-    end_time: "22:00",
+    start_time: "07:00",
+    end_time: "23:00",
     spot_duration: "",
     loops_per_day: ""
   })
@@ -249,7 +249,7 @@ export function AddEditSiteDialog({
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [landOwner, setLandOwner] = useState("")
   const [partner, setPartner] = useState("")
-  const [orientation, setOrientation] = useState("")
+  const [orientation, setOrientation] = useState("North")
   const [locationVisibility, setLocationVisibility] = useState("")
   const [locationVisibilityUnit, setLocationVisibilityUnit] = useState<string>("ft")
 
@@ -277,6 +277,34 @@ export function AddEditSiteDialog({
   const [campaignPhotos, setCampaignPhotos] = useState<Array<{ file: File | null; caption: string; url?: string }>>([
     { file: null, caption: "" }
   ])
+
+  // Refs for required fields to enable auto-scrolling
+  const siteNameRef = useRef<HTMLInputElement>(null)
+  const locationRef = useRef<HTMLInputElement>(null)
+  const widthRef = useRef<HTMLInputElement>(null)
+  const heightRef = useRef<HTMLInputElement>(null)
+  const priceRef = useRef<HTMLInputElement>(null)
+  const startTimeRef = useRef<HTMLInputElement>(null)
+  const endTimeRef = useRef<HTMLInputElement>(null)
+  const spotDurationRef = useRef<HTMLInputElement>(null)
+  const loopsPerDayRef = useRef<HTMLInputElement>(null)
+
+  // Scroll to field utility function
+  const scrollToField = (ref: React.RefObject<any>) => {
+    if (ref.current) {
+      ref.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest'
+      })
+      // Focus the field after scrolling
+      setTimeout(() => {
+        if (ref.current && 'focus' in ref.current) {
+          ref.current.focus()
+        }
+      }, 500)
+    }
+  }
 
   // Price validation functions
   const validatePriceInput = (value: string): boolean => {
@@ -450,26 +478,28 @@ export function AddEditSiteDialog({
         setLocation("")
         setLocationLabel("")
         setGeopoint(null)
-        setHeight("10")
-        setWidth("10")
+        setHeight("")
+        setWidth("")
         setDimensionUnit("ft")
         setElevation("")
         setElevationUnit("ft")
         setDescription("")
         setSelectedAudience([])
         setDailyTraffic("")
-        setPrice("0")
+        setPrice("")
         setPriceUnit("per month")
         setUploadedFiles([])
         setCurrentImageIndex(0)
         setLandOwner("")
         setPartner("")
-        setOrientation("")
+        setOrientation("North")
         setLocationVisibility("")
         setLocationVisibilityUnit("ft")
         setPlayerId("")
         setSpotInputs([])
         setSelectedRetailSpots([])
+        setDisplayPhotos([{ file: null, caption: "" }])
+        setCampaignPhotos([{ file: null, caption: "" }])
 
         setResolutionWidth("")
         setResolutionHeight("")
@@ -488,15 +518,15 @@ export function AddEditSiteDialog({
         setValidationErrors([])
         setValidationError(null)
 
-        // Set default CMS values for digital sites
+        // Set default CMS values for new sites
         setCms({
-          start_time: "06:00",
-          end_time: "22:00",
-          spot_duration: "10",
-          loops_per_day: "18",
+          start_time: "07:00",
+          end_time: "23:00",
+          spot_duration: "",
+          loops_per_day: "",
         })
-        // Initialize spot inputs for the default 18 spots
-        setSpotInputs(new Array(18).fill(""))
+        // Clear spot inputs
+        setSpotInputs([])
       }
     }
   }, [isOpen, editingProduct])
@@ -604,6 +634,14 @@ export function AddEditSiteDialog({
       errors.push("Location")
     }
 
+    if (!width.trim()) {
+      errors.push("Width")
+    }
+
+    if (!height.trim()) {
+      errors.push("Height")
+    }
+
     if (!price.trim()) {
       errors.push("Price")
     } else if (isNaN(Number(price.replace(/,/g, '')))) {
@@ -614,6 +652,22 @@ export function AddEditSiteDialog({
       })
       setIsSubmitting(false)
       return
+    }
+
+    // Validate digital site specific fields
+    if (siteType === "digital") {
+      if (!cms.start_time) {
+        errors.push("Start Time")
+      }
+      if (!cms.end_time) {
+        errors.push("End Time")
+      }
+      if (!cms.spot_duration) {
+        errors.push("Spot Duration")
+      }
+      if (!cms.loops_per_day) {
+        errors.push("Number of Spots")
+      }
     }
 
     if (height.trim() && isNaN(Number(height.replace(/,/g, '')))) {
@@ -653,6 +707,8 @@ export function AddEditSiteDialog({
         description: "Please fix the dynamic content configuration errors.",
         variant: "destructive",
       })
+      // Scroll to the dynamic content section (start time field)
+      scrollToField(startTimeRef)
       setIsSubmitting(false)
       return
     }
@@ -732,6 +788,30 @@ export function AddEditSiteDialog({
         description: errorMessage,
         variant: "destructive",
       })
+
+      // Scroll to first missing required field
+      if (!siteName.trim()) {
+        scrollToField(siteNameRef)
+      } else if (!location.trim()) {
+        scrollToField(locationRef)
+      } else if (!width.trim()) {
+        scrollToField(widthRef)
+      } else if (!height.trim()) {
+        scrollToField(heightRef)
+      } else if (!price.trim()) {
+        scrollToField(priceRef)
+      } else if (siteType === "digital") {
+        if (!cms.start_time) {
+          scrollToField(startTimeRef)
+        } else if (!cms.end_time) {
+          scrollToField(endTimeRef)
+        } else if (!cms.spot_duration || isNaN(Number(cms.spot_duration)) || Number(cms.spot_duration) <= 0) {
+          scrollToField(spotDurationRef)
+        } else if (!cms.loops_per_day || isNaN(Number(cms.loops_per_day)) || Number(cms.loops_per_day) <= 0) {
+          scrollToField(loopsPerDayRef)
+        }
+      }
+
       setIsSubmitting(false)
       return
     }
@@ -847,7 +927,7 @@ export function AddEditSiteDialog({
               last_maintenance: serverTimestamp(),
             },
           },
-          retail_spot: selectedRetailSpots.length > 0 ? { spot_number: selectedRetailSpots } : undefined,
+          ...(selectedRetailSpots.length > 0 && { retail_spot: { spot_number: selectedRetailSpots } }),
           media: allMedia,
           updated: serverTimestamp(),
         }
@@ -935,11 +1015,11 @@ export function AddEditSiteDialog({
               last_maintenance: serverTimestamp(),
             },
           },
-          retail_spot: selectedRetailSpots.length > 0 ? { spot_number: selectedRetailSpots } : [],
+          retail_spot: selectedRetailSpots.length > 0 ? { spot_number: selectedRetailSpots } : undefined,
           media: mediaUrls,
           active: true,
           rating: 0,
-          playerSns: [],
+          playerSns: undefined,
           enable_special_rate: specialRateEnabled,
           position: 0,
           status: "PENDING",
@@ -1013,6 +1093,7 @@ export function AddEditSiteDialog({
                     Display Name: <span className="text-red-500">*</span>
                   </Label>
                   <Input
+                    ref={siteNameRef}
                     placeholder="Display Name"
                     className="border-[#c4c4c4]"
                     value={siteName}
@@ -1025,14 +1106,16 @@ export function AddEditSiteDialog({
                   <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
                     Location: <span className="text-red-500">*</span>
                   </Label>
-                  <GooglePlacesAutocomplete
-                    value={location}
-                    onChange={setLocation}
-                    onGeopointChange={setGeopoint}
-                    placeholder="Location"
-                    enableMap={true}
-                    mapHeight="250px"
-                  />
+                  <div ref={locationRef}>
+                    <GooglePlacesAutocomplete
+                      value={location}
+                      onChange={setLocation}
+                      onGeopointChange={setGeopoint}
+                      placeholder="Location"
+                      enableMap={true}
+                      mapHeight="250px"
+                    />
+                  </div>
                 </div>
 
                 {/* Display Type */}
@@ -1059,12 +1142,21 @@ export function AddEditSiteDialog({
                   <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
                     Facing Direction: <span className="text-red-500">*</span>
                   </Label>
-                  <Input
-                    placeholder="Facing Direction"
-                    className="border-[#c4c4c4]"
-                    value={orientation}
-                    onChange={(e) => setOrientation(e.target.value)}
-                  />
+                  <Select value={orientation} onValueChange={setOrientation}>
+                    <SelectTrigger className="border-[#c4c4c4]">
+                      <SelectValue placeholder="Select facing direction" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="North">North</SelectItem>
+                      <SelectItem value="South">South</SelectItem>
+                      <SelectItem value="East">East</SelectItem>
+                      <SelectItem value="West">West</SelectItem>
+                      <SelectItem value="Northeast">Northeast</SelectItem>
+                      <SelectItem value="Northwest">Northwest</SelectItem>
+                      <SelectItem value="Southeast">Southeast</SelectItem>
+                      <SelectItem value="Southwest">Southwest</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Short Description */}
@@ -1095,6 +1187,7 @@ export function AddEditSiteDialog({
                         Width (ft): <span className="text-red-500">*</span>
                       </Label>
                       <Input
+                        ref={widthRef}
                         type="text"
                         placeholder="Width"
                         className="border-[#c4c4c4]"
@@ -1108,6 +1201,7 @@ export function AddEditSiteDialog({
                         Height (ft): <span className="text-red-500">*</span>
                       </Label>
                       <Input
+                        ref={heightRef}
                         type="text"
                         placeholder="Height"
                         className="border-[#c4c4c4]"
@@ -1124,7 +1218,7 @@ export function AddEditSiteDialog({
                   <div className="flex items-end gap-3">
                     <div className="flex-1">
                       <Label className="text-[#4e4e4e] text-[12px] mb-1 block">
-                        Width (px): <span className="text-red-500">*</span>
+                        Width (ft): <span className="text-red-500">*</span>
                       </Label>
                       <Input
                         type="text"
@@ -1137,7 +1231,7 @@ export function AddEditSiteDialog({
                     <span className="text-[#4e4e4e]">X</span>
                     <div className="flex-1">
                       <Label className="text-[#4e4e4e] text-[12px] mb-1 block">
-                        Height (px): <span className="text-red-500">*</span>
+                        Height (ft): <span className="text-red-500">*</span>
                       </Label>
                       <Input
                         type="text"
@@ -1240,9 +1334,10 @@ export function AddEditSiteDialog({
                   <div className="flex items-end gap-3">
                     <div className="flex-1">
                       <Label className="text-[#4e4e4e] text-[12px] mb-1 block">
-                        Start Time: <span className="text-red-500">*</span>
+                        Start Time <span className="text-red-500">*</span>
                       </Label>
                       <Input
+                        ref={startTimeRef}
                         type="time"
                         className="border-[#c4c4c4]"
                         value={cms.start_time}
@@ -1252,9 +1347,10 @@ export function AddEditSiteDialog({
                     <span className="text-[#4e4e4e]">-</span>
                     <div className="flex-1">
                       <Label className="text-[#4e4e4e] text-[12px] mb-1 block">
-                        End Time: <span className="text-red-500">*</span>
+                        End Time <span className="text-red-500">*</span>
                       </Label>
                       <Input
+                        ref={endTimeRef}
                         type="time"
                         className="border-[#c4c4c4]"
                         value={cms.end_time}
@@ -1268,9 +1364,10 @@ export function AddEditSiteDialog({
                 <div className="flex gap-4">
                   <div className="flex-1">
                     <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
-                      Spot Duration (seconds): <span className="text-red-500">*</span>
+                      Spot Duration (seconds) <span className="text-red-500">*</span>
                     </Label>
                     <Input
+                      ref={spotDurationRef}
                       type="number"
                       placeholder="Spot Duration"
                       className="border-[#c4c4c4]"
@@ -1280,9 +1377,10 @@ export function AddEditSiteDialog({
                   </div>
                   <div className="flex-1">
                     <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
-                      No. of Spots (per loop): <span className="text-red-500">*</span>
+                      Number of Spots <span className="text-red-500">*</span>
                     </Label>
                     <Input
+                      ref={loopsPerDayRef}
                       type="number"
                       placeholder="No. of Spots"
                       className="border-[#c4c4c4]"
@@ -1359,7 +1457,7 @@ export function AddEditSiteDialog({
                 {/* Display Photos */}
                 <div>
                   <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
-                    Display Photos: <span className="text-red-500">*</span>
+                    Display Photos
                   </Label>
                   <p className="text-[#666666] text-[8px] mb-2">Site gallery for listings, multiple photos can be uploaded</p>
                   <div className="space-y-3">
@@ -1427,7 +1525,7 @@ export function AddEditSiteDialog({
                 {/* Average Daily Traffic */}
                 <div>
                   <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
-                    Average Daily Traffic: <span className="text-red-500">*</span>
+                    Average Daily Traffic
                   </Label>
                   <Input
                     type="text"
@@ -1545,6 +1643,7 @@ export function AddEditSiteDialog({
                     Regular Rate (per spot per day): <span className="text-red-500">*</span>
                   </Label>
                   <Input
+                    ref={priceRef}
                     type="text"
                     placeholder="Regular rate"
                     className="border-[#c4c4c4]"

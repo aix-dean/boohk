@@ -164,21 +164,18 @@ export default function InventoryContent({
                   onClick={() => product.id && handleViewDetails(product.id)}
                 >
                   <div className="h-48 bg-gray-200 relative rounded-t-xl overflow-hidden">
-                    <Image
-                      src={
-                        product.media && product.media.length > 0
-                          ? product.media[0].url
-                          : "/abstract-geometric-sculpture.png"
-                      }
-                      alt={product.name || "Product image"}
-                      fill
-                      className="object-cover rounded-lg"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.src = "/abstract-geometric-sculpture.png"
-                        target.className = "opacity-50"
-                      }}
-                    />
+                    {product.media && product.media.length > 0 ? (
+                      <Image
+                        src={product.media[0].url}
+                        alt={product.name || "Product image"}
+                        fill
+                        className="object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-gray-500 text-md font-medium">
+                        No Site Image
+                      </div>
+                    )}
                   </div>
 
                   <CardContent className="p-3">
@@ -239,22 +236,19 @@ export default function InventoryContent({
                         {/* Item Details */}
                         <div className="col-span-4 flex items-center space-x-3">
                           <div className="w-12 h-12 bg-gray-200 rounded overflow-hidden flex-shrink-0">
-                            <Image
-                              src={
-                                product.media && product.media.length > 0
-                                  ? product.media[0].url
-                                  : "/abstract-geometric-sculpture.png"
-                              }
-                              alt={product.name || "Product image"}
-                              width={48}
-                              height={48}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement
-                                target.src = "/abstract-geometric-sculpture.png"
-                                target.className = "opacity-50"
-                              }}
-                            />
+                            {product.media && product.media.length > 0 ? (
+                              <Image
+                                src={product.media[0].url}
+                                alt={product.name || "Product image"}
+                                width={48}
+                                height={48}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex items-center justify-center w-full h-full text-gray-500 text-xs font-medium">
+                                No Image
+                              </div>
+                            )}
                           </div>
                           <div>
                             <h3 className="font-medium text-gray-900 line-clamp-1">{product.name}</h3>
@@ -322,7 +316,7 @@ export default function InventoryContent({
               </div>
             ) : (
               <span>
-                Page {currentPage} of {totalPages} ({filteredProducts.length} items)
+                Page {currentPage} of {totalPages} ({displayedProducts.length} items)
               </span>
             )}
           </div>

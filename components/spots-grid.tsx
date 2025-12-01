@@ -257,6 +257,8 @@ export function SpotsGrid({
   const retailOccupied = retailSpots.filter(s => s.status === "occupied").length;
   const retailVacant = retailSpots.filter(s => s.status === "vacant").length;
   const retailTotal = retailSpotNumbers.length;
+  const retailOccupiedPercentage = retailTotal > 0 ? Math.round((retailOccupied / retailTotal) * 100) : 0;
+  const retailVacantPercentage = retailTotal > 0 ? Math.round((retailVacant / retailTotal) * 100) : 0;
 
   const handleSpotClick = (spotNumber: number) => {
     const spot = localSpots.find((s) => s.number === spotNumber);
@@ -861,7 +863,7 @@ export function SpotsGrid({
                   </span>
                   <span className="text-white bg-green-600 text-xs px-2 ml-1 rounded-sm font-bold">
                     {retailOccupied} / {retailTotal} (
-                    {Math.round((retailOccupied / retailTotal) * 100)}%)
+                    {retailOccupiedPercentage}%)
                   </span>
                 </div>
                 <div className="flex items-center">
@@ -870,7 +872,7 @@ export function SpotsGrid({
                   </span>
                   <span className="font-bold text-white bg-red-400 text-xs px-2 ml-1 rounded-sm">
                     {retailVacant} / {retailTotal} (
-                    {Math.round((retailVacant / retailTotal) * 100)}%)
+                    {retailVacantPercentage}%)
                   </span>
                 </div>
               </div>
