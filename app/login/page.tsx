@@ -1002,7 +1002,7 @@ export default function LoginPage() {
         {/* Promotional text at the bottom of the first column */}
         <div className="mt-auto pt-6 text-start">
           <p className="text-gray-500 italic text-sm leading-relaxed" style={{ color: 'var(--LIGHTER-BLACK, #333)', fontFamily: 'Inter', fontSize: '12px', fontStyle: 'italic', fontWeight: 400, lineHeight: '118%' }}>
-            Looking to streamline your OOH business? Explore our ERP with a free demo. Email us at{" "}
+            Looking to streamline your OOH business? Explore our OOH retail solutions with a free demo. Email us at{" "}
             <span className="font-bold">inquiry@aix.ph</span>
           </p>
         </div>
