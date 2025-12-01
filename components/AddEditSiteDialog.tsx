@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -46,9 +46,13 @@ const STATIC_CATEGORIES = [
 ]
 
 const DIGITAL_CATEGORIES = [
-  "Digital Billboard",
+  "LED billboard",
+  "3D LED Billboard",
   "LED Poster",
-  "Digital Transit Ads"
+  "LED Transit Display",
+  "LED Mailboard",
+  "LED Wallboard",
+  "Interactive LED Installation",
 ]
 
 // Type for CMS data
@@ -257,9 +261,27 @@ export function AddEditSiteDialog({
   const [spotInputs, setSpotInputs] = useState<string[]>([])
   const [selectedRetailSpots, setSelectedRetailSpots] = useState<number[]>([])
   // New fields from Figma design
-  const [resolutionWidth, setResolutionWidth] = useState("")
-  const [resolutionHeight, setResolutionHeight] = useState("")
   const [brightness, setBrightness] = useState("")
+  const [pitch, setPitch] = useState("")
+
+  // Calculated resolution values
+  const calculatedResolution = useMemo(() => {
+    const widthFt = parseFloat(width.replace(/,/g, '')) || 0
+    const heightFt = parseFloat(height.replace(/,/g, '')) || 0
+    const pitchMm = parseFloat(pitch) || 0
+
+    if (pitchMm === 0) {
+      return { width: "", height: "" }
+    }
+
+    const widthPx = Math.round(widthFt * 304.8 / pitchMm)
+    const heightPx = Math.round(heightFt * 304.8 / pitchMm)
+
+    return {
+      width: widthPx.toString(),
+      height: heightPx.toString()
+    }
+  }, [width, height, pitch])
   const [notableCampaigns, setNotableCampaigns] = useState<File[]>([])
   const [specialRateEnabled, setSpecialRateEnabled] = useState(false)
   const [specialRateType, setSpecialRateType] = useState<"multiplier" | "amount">("multiplier")
@@ -429,9 +451,8 @@ export function AddEditSiteDialog({
         setPlayerId(editingProduct.playerIds?.[0] || "")
         setSpotInputs(new Array(parseInt(editingProduct.cms?.loops_per_day || "0") || 0).fill("")) // Initialize based on CMS
         setSelectedRetailSpots(editingProduct.retail_spot?.spot_number || [])
-        setResolutionWidth(editingProduct.specs_rental?.resolution?.width ? String(editingProduct.specs_rental.resolution.width) : "")
-        setResolutionHeight(editingProduct.specs_rental?.resolution?.height ? String(editingProduct.specs_rental.resolution.height) : "")
         setBrightness(editingProduct.specs_rental?.brightness || "")
+        setPitch(editingProduct.specs_rental?.pitch || "")
         setLandOwner(editingProduct.specs_rental?.land_owner || "")
         setPartner(editingProduct.specs_rental?.partner || "")
         setLocationVisibility(editingProduct.specs_rental?.location_visibility ? String(editingProduct.specs_rental.location_visibility) : "")
@@ -501,9 +522,8 @@ export function AddEditSiteDialog({
         setDisplayPhotos([{ file: null, caption: "" }])
         setCampaignPhotos([{ file: null, caption: "" }])
 
-        setResolutionWidth("")
-        setResolutionHeight("")
         setBrightness("")
+        setPitch("")
         setNotableCampaigns([])
         setSpecialRateEnabled(false)
         setSpecialRateType("multiplier")
@@ -713,26 +733,6 @@ export function AddEditSiteDialog({
       return
     }
 
-    // Validate new Figma fields
-    if (resolutionWidth.trim() && isNaN(Number(resolutionWidth))) {
-      toast({
-        title: "Validation Error",
-        description: "Resolution Width must be a valid number.",
-        variant: "destructive",
-      })
-      setIsSubmitting(false)
-      return
-    }
-
-    if (resolutionHeight.trim() && isNaN(Number(resolutionHeight))) {
-      toast({
-        title: "Validation Error",
-        description: "Resolution Height must be a valid number.",
-        variant: "destructive",
-      })
-      setIsSubmitting(false)
-      return
-    }
 
     if (brightness.trim() && isNaN(Number(brightness))) {
       toast({
@@ -904,11 +904,12 @@ export function AddEditSiteDialog({
             dimension_unit: dimensionUnit,
             elevation_unit: elevationUnit,
             resolution: {
-              width: parseInt(resolutionWidth) || 0,
-              height: parseInt(resolutionHeight) || 0,
+              width: parseInt(calculatedResolution.width) || 0,
+              height: parseInt(calculatedResolution.height) || 0,
             },
             audience_profile: selectedAudience,
             brightness: brightness || "",
+            pitch: pitch || "",
             facing_direction: orientation,
             viewability_distance: locationVisibility || "",
             notable_campaigns: [],
@@ -990,11 +991,12 @@ export function AddEditSiteDialog({
             dimension_unit: dimensionUnit,
             elevation_unit: elevationUnit,
             resolution: {
-              width: parseInt(resolutionWidth) || 0,
-              height: parseInt(resolutionHeight) || 0,
+              width: parseInt(calculatedResolution.width) || 0,
+              height: parseInt(calculatedResolution.height) || 0,
             },
             audience_profile: selectedAudience,
             brightness: brightness || "",
+            pitch: pitch || "",
             facing_direction: orientation,
             viewability_distance: locationVisibility || "",
             notable_campaigns: campaignPhotoUrls.map(photo => ({
@@ -1141,6 +1143,7 @@ export function AddEditSiteDialog({
                 </div>
 
                 {/* Facing Direction */}
+                {/*
                 <div>
                   <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
                     Facing Direction: <span className="text-red-500">*</span>
@@ -1161,6 +1164,7 @@ export function AddEditSiteDialog({
                     </SelectContent>
                   </Select>
                 </div>
+                */}
 
                 {/* Short Description */}
                 <div>
@@ -1215,34 +1219,38 @@ export function AddEditSiteDialog({
                   </div>
                 </div>
 
+                {/* Pitch */}
+                <div>
+                  <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">Pitch (mm):</Label>
+                  <Input
+                    type="text"
+                    placeholder="Pitch"
+                    className="border-[#c4c4c4]"
+                    value={pitch}
+                    onChange={(e) => setPitch(e.target.value)}
+                  />
+                </div>
+
                 {/* Resolution */}
                 <div>
                   <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">Resolution</Label>
                   <div className="flex items-end gap-3">
                     <div className="flex-1">
                       <Label className="text-[#4e4e4e] text-[12px] mb-1 block">
-                        Width (ft): <span className="text-red-500">*</span>
+                        Width (pixels):
                       </Label>
-                      <Input
-                        type="text"
-                        placeholder="Width"
-                        className="border-[#c4c4c4]"
-                        value={resolutionWidth}
-                        onChange={(e) => setResolutionWidth(e.target.value)}
-                      />
+                      <div className="border border-[#c4c4c4] rounded px-3 py-2 bg-gray-50 text-gray-700 min-h-[36px] flex items-center">
+                        {calculatedResolution.width}
+                      </div>
                     </div>
                     <span className="text-[#4e4e4e]">X</span>
                     <div className="flex-1">
                       <Label className="text-[#4e4e4e] text-[12px] mb-1 block">
-                        Height (ft): <span className="text-red-500">*</span>
+                        Height (pixels):
                       </Label>
-                      <Input
-                        type="text"
-                        placeholder="Height"
-                        className="border-[#c4c4c4]"
-                        value={resolutionHeight}
-                        onChange={(e) => setResolutionHeight(e.target.value)}
-                      />
+                      <div className="border border-[#c4c4c4] rounded px-3 py-2 bg-gray-50 text-gray-700 min-h-[36px] flex items-center">
+                        {calculatedResolution.height}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1320,6 +1328,7 @@ export function AddEditSiteDialog({
                 </div>
 
                 {/* Brightness */}
+                {/*
                 <div>
                   <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">Brightness</Label>
                   <Input
@@ -1330,6 +1339,7 @@ export function AddEditSiteDialog({
                     onChange={(e) => setBrightness(e.target.value)}
                   />
                 </div>
+                */}
 
                 {/* Operating Hours */}
                 <div>
@@ -1563,7 +1573,7 @@ export function AddEditSiteDialog({
 
                 {/* Viewability Distance */}
                 <div>
-                  <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">Viewability Distance</Label>
+                  <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">Viewability Distance (ft.)</Label>
                   <p className="text-[#666666] text-[8px] mb-2">How far away can the audience see the site</p>
                   <Input
                     type="text"
@@ -1715,23 +1725,9 @@ export function AddEditSiteDialog({
 
             {/* CMS */}
             <div>
-              <h3 className="text-[16px] font-semibold leading-[20px] text-[#333333] mb-4">Content Management System (CMS)</h3>
               <div className="space-y-4">
-                {/* Controller Serial Number */}
-                <div>
-                  <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
-                    Controller Serial Number: <span className="text-red-500">*</span>
-                  </Label>
-                  <p className="text-[#666666] text-[8px] mb-2">Warning: Content will not be published automatically if site has no controller is connected</p>
-                  <Input
-                    placeholder="Controller serial number"
-                    className="border-[#c4c4c4]"
-                    value={playerId}
-                    onChange={(e) => setPlayerId(e.target.value)}
-                  />
-                </div>
 
-                {/* Triggers */}
+   {/* Triggers */}
                 <div>
                   <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">Triggers</Label>
                   <div className="space-y-2">
@@ -1758,6 +1754,24 @@ export function AddEditSiteDialog({
                     </div>
                   </div>
                 </div>
+
+              <h3 className="text-[16px] font-semibold leading-[20px] text-[#333333] mb-4">Content Management System (CMS)</h3>
+
+                {/* Controller Serial Number */}
+                <div>
+                  <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">
+                    Controller Serial Number: <span className="text-red-500">*</span>
+                  </Label>
+                  <p className="text-[#666666] text-[8px] mb-2">Warning: Content will not be published automatically if site has no controller is connected</p>
+                  <Input
+                    placeholder="Controller serial number"
+                    className="border-[#c4c4c4]"
+                    value={playerId}
+                    onChange={(e) => setPlayerId(e.target.value)}
+                  />
+                </div>
+
+             
               </div>
             </div>
           </div>
