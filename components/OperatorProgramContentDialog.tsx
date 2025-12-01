@@ -412,7 +412,13 @@ export function OperatorProgramContentDialog({
   };
 
   const handleCancel = () => {
-    onOpenChange(false);
+    if (isEditMode) {
+      setIsEditMode(false);
+      setVideoFile(null);
+      setSelectedMedia(null);
+    } else {
+      onOpenChange(false);
+    }
   };
 
   const handleEdit = () => {
