@@ -1595,7 +1595,7 @@ const handleFormattedNumberInput = (
 
                 {/* Viewability Distance */}
                 <div>
-                  <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">Viewability Distance (ft.)</Label>
+                  <Label className="text-[12px] font-normal leading-[16px] text-[#4e4e4e] mb-3 block">Viewability Distance (m)</Label>
                   <p className="text-[#666666] text-[8px] mb-2">How far away can the audience see the site</p>
                   <Input
                     type="text"
