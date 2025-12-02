@@ -474,7 +474,7 @@ export function OperatorProgramContentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[500px] h-[470px] rounded-xl overflow-auto flex flex-col gap-4">
+      <DialogContent className="w-[600px] h-[470px] rounded-xl overflow-auto flex flex-col gap-4">
         <DialogHeader className="relative">
           <DialogTitle className="text-left">Operator Content</DialogTitle>
           <DialogClose className="absolute top-[-10px] right-[-10px]">
@@ -551,9 +551,9 @@ export function OperatorProgramContentDialog({
           </div>
 
           {/* Content Section */}
-          <div className="relative flex items-center justify-center bg-gray-400">
+          <div className="h-[370px] relative flex items-center justify-center bg-gray-400">
             <div
-              className={`flex items-center justify-center overflow-hidden ${scaledWidth && scaledHeight ? "" : "aspect-square"}`}
+              className={`${scaledWidth && scaledHeight ? "" : "aspect-square"}`}
               style={
                 scaledWidth && scaledHeight
                   ? { width: `${scaledWidth}px`, height: `${scaledHeight}px` }
