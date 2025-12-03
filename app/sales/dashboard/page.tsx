@@ -777,11 +777,13 @@ function SalesDashboardContent() {
 
   // Handle search result click
   const handleSearchResultClick = useCallback((result: SearchResult) => {
+    console.log(`result type : ${result.type}`)
     if (result.type === "product") {
       router.push(`/sales/products/${result.objectID}`)
     } else if (result.type === "client") {
       router.push(`/sales/clients/${result.objectID}`)
     }
+    router.push(`/sales/products/${result.objectID}`)
   }, [router])
 
   // Handle search results

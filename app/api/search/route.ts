@@ -61,8 +61,8 @@ export async function POST(request: Request) {
     let finalIndexName: string | undefined
 
     if (indexName === 'products') {
-      appId = 'DHRR76C4T7'
-      apiKey = '67f06e32aa15542a1f9f118cb647d33a'
+      appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID
+      apiKey = process.env.ALGOLIA_ADMIN_API_KEY
       finalIndexName = 'products'
     } else if (indexName === 'service_assignments') {
       appId = process.env.NEXT_PUBLIC_ALGOLIA_ASSIGNMENTS_APP_ID
@@ -81,8 +81,8 @@ export async function POST(request: Request) {
       apiKey = process.env.ALGOLIA_COST_ESTIMATES_ADMIN_API_KEY
       finalIndexName = process.env.NEXT_PUBLIC_ALGOLIA_QUOTATIONS_INDEX_NAME
     } else if (indexName === 'booking') {
-      appId = 'DHRR76C4T7'
-      apiKey = '67f06e32aa15542a1f9f118cb647d33a'
+      appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID
+      apiKey = process.env.ALGOLIA_ADMIN_API_KEY
       finalIndexName = 'booking'
     } else if (indexName === 'reports') {
       appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID
