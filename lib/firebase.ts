@@ -5,18 +5,18 @@ import { getStorage } from "firebase/storage"
 import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBByUHvQmjYdalF2C1UIpzn-onB3iXGMhc",
-  authDomain: "oh-app-bcf24.firebaseapp.com",
-  projectId: "oh-app-bcf24",
-  storageBucket: "oh-app-bcf24.appspot.com",
-  messagingSenderId: "272363630855",
-  appId: "1:272363630855:web:820601c723e85625d915a2",
-  measurementId: "G-7CPDJLG85K"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID!
 };
 
 
 // Tenant ID for OHPLUS
-export const TENANT_ID = "boohk-ah1wg"
+export const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID!
 
 const app = initializeApp(firebaseConfig)
 let analytics;
