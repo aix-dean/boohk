@@ -133,9 +133,9 @@ export function TopNavigation() {
             />
           </svg>
         </button>
+         */}
 
-        {/* Message Icon
-        <button className="relative p-2 hover:bg-gray-50/20 transition-colors rounded">
+        <button className="relative p-2 hover:bg-gray-50/20 transition-colors rounded" onClick={() => router.push('/messages')}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -150,7 +150,6 @@ export function TopNavigation() {
             />
           </svg>
         </button>
-         */}
 
         {/* User Profile Icon */}
         <button className="p-2 hover:bg-gray-50/20 transition-colors rounded" onClick={() => router.push('/account')}>
