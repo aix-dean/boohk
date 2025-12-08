@@ -14,6 +14,8 @@ export interface Notification {
   uid_to: string
   company_id: string
   department_from: string
+  appNameTo: string
+  appNameFrom: string
   viewed: boolean
   navigate_to: string
   created: any
@@ -44,6 +46,8 @@ export function useNotifications(config: NotificationConfig) {
       collection(db, "notifications"),
       where("company_id", "==", userData.company_id),
       where("department_to", "==", config.department),
+      where("uid_to", "==", user?.uid),
+      where("appNameTo", "==", "boohk"),
       orderBy("created", "desc"),
       limit(10),
     )
@@ -56,29 +60,31 @@ export function useNotifications(config: NotificationConfig) {
         let unreadCounter = 0
 
         snapshot.forEach((doc) => {
-          const data = doc.data()
-          console.log(`${config.department} notification document:`, doc.id, data)
+           const data = doc.data()
+           console.log(`${config.department} notification document:`, doc.id, data)
 
-          const notification: Notification = {
-            id: doc.id,
-            type: data.type || "",
-            title: data.title || "",
-            description: data.description || "",
-            department_to: data.department_to || "",
-            uid_to: data.uid_to || "",
-            company_id: data.company_id || "",
-            department_from: data.department_from || "",
-            viewed: data.viewed || false,
-            navigate_to: data.navigate_to || "",
-            created: data.created,
-          }
+           const notification: Notification = {
+             id: doc.id,
+             type: data.type || "",
+             title: data.title || "",
+             description: data.description || "",
+             department_to: data.department_to || "",
+             uid_to: data.uid_to || "",
+             company_id: data.company_id || "",
+             department_from: data.department_from || "",
+             appNameTo: data.appNameTo || "",
+             appNameFrom: data.appNameFrom || "",
+             viewed: data.viewed || false,
+             navigate_to: data.navigate_to || "",
+             created: data.created,
+           }
 
-          notificationsList.push(notification)
+           notificationsList.push(notification)
 
-          if (!notification.viewed && (!notification.uid_to || notification.uid_to === user?.uid)) {
-            unreadCounter++
-          }
-        })
+           if (!notification.viewed) {
+             unreadCounter++
+           }
+         })
 
         console.log(`Final ${config.department} notifications list:`, notificationsList)
         setNotifications(notificationsList)

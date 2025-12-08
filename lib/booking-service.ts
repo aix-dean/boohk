@@ -33,6 +33,7 @@ export interface Booking {
   channel: {
     name: string
   }
+  for_censorship: number
   costDetails: {
     basePrice: number
     days: number
