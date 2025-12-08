@@ -11,6 +11,7 @@ import {
   getDocs,
   limit,
   startAfter,
+  Timestamp,
   type QueryDocumentSnapshot,
   type DocumentData,
 } from "firebase/firestore"
@@ -23,6 +24,7 @@ export function subscribeToConversations(
   callback: (conversations: Conversation[]) => void,
   onError?: (error: Error) => void
 ): () => void {
+  console.log('subscribeToConversations called with userId:', userId)
   const conversationsRef = collection(db, "conversations")
   const q = query(
     conversationsRef,
@@ -34,8 +36,10 @@ export function subscribeToConversations(
     q,
     (snapshot) => {
       try {
+        console.log('Conversations snapshot received, docs count:', snapshot.docs.length)
         const conversations: Conversation[] = snapshot.docs.map((doc) => {
           const data = doc.data()
+          console.log('Processing conversation:', doc.id, 'participants:', data.participants)
           return {
             id: doc.id,
             participants: data.participants || [],
@@ -65,6 +69,7 @@ export function subscribeToConversations(
             },
           } as Conversation
         })
+        console.log('Processed conversations:', conversations.map(c => ({ id: c.id, participants: c.participants })))
         callback(conversations)
       } catch (error) {
         console.error("Error processing conversations snapshot:", error)
@@ -428,4 +433,87 @@ export async function getMessages(
     console.error("Error fetching messages:", error)
     return []
   }
+}
+// Get paginated messages for a conversation
+export async function getMessagesPaginated(
+  userId: string,
+  conversationId: string,
+  limit: number = 15,
+  before?: string
+): Promise<{ messages: Message[], hasMore: boolean }> {
+  try {
+    const params = new URLSearchParams({
+      userId,
+      limit: limit.toString(),
+      ...(before && { before }),
+    })
+    console.log(`[DEBUG] Fetching messages for conversation ${conversationId} with params:`, Object.fromEntries(params))
+    const response = await fetch(`/api/messages/${conversationId}?${params}`)
+    console.log(`[DEBUG] Fetch response status: ${response.status}, statusText: ${response.statusText}`)
+    if (!response.ok) {
+      console.error(`[DEBUG] Fetch failed with status ${response.status}: ${response.statusText}`)
+      throw new Error(`Failed to fetch messages: ${response.statusText}`)
+    }
+    const data = await response.json()
+    console.log(`[DEBUG] Successfully fetched ${data.messages?.length || 0} messages, hasMore: ${data.hasMore}`)
+    return data
+  } catch (error) {
+    console.error("[DEBUG] Error fetching paginated messages:", error)
+    console.error("[DEBUG] Error type:", typeof error, "instanceof Error:", error instanceof Error)
+    if (error instanceof Error) {
+      console.error("[DEBUG] Error message:", error.message)
+      console.error("[DEBUG] Error stack:", error.stack)
+    }
+    return { messages: [], hasMore: false }
+  }
+}
+
+// Subscribe to new messages (after a certain timestamp)
+export function subscribeToNewMessages(
+  conversationId: string,
+  afterTimestamp: Date,
+  onNewMessages: (messages: Message[]) => void,
+  onError?: (error: Error) => void
+): () => void {
+  const messagesRef = collection(db, "messages")
+  const q = query(
+    messagesRef,
+    where("conversationId", "==", conversationId),
+    where("timestamp", ">", Timestamp.fromDate(afterTimestamp)),
+    orderBy("timestamp", "asc")
+  )
+
+  const unsubscribe = onSnapshot(
+    q,
+    (snapshot) => {
+      try {
+        const messages: Message[] = snapshot.docs.map((doc) => {
+          const data = doc.data()
+          return {
+            id: doc.id,
+            conversationId: data.conversationId,
+            senderId: data.senderId,
+            type: data.type || "text",
+            content: data.content || "",
+            timestamp: data.timestamp?.toDate() || new Date(),
+            editedAt: data.editedAt?.toDate(),
+            deletedAt: data.deletedAt?.toDate(),
+            metadata: data.metadata,
+            status: data.status || { delivered: {}, read: {} },
+            reactions: data.reactions || {},
+          } as Message
+        })
+        onNewMessages(messages)
+      } catch (error) {
+        console.error("Error processing new messages snapshot:", error)
+        onError?.(error as Error)
+      }
+    },
+    (error) => {
+      console.error("Error in new messages listener:", error)
+      onError?.(error)
+    }
+  )
+
+  return unsubscribe
 }

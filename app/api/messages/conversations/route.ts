@@ -6,13 +6,7 @@ import type { Conversation, Message } from "@/lib/types/messaging"
 // Helper function to verify Firebase Auth token
 async function verifyAuthToken(request: NextRequest): Promise<string | null> {
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return null
-    }
-
-    const token = authHeader.substring(7)
-    // For now, we'll trust the token and extract userId from query params
+    // For now, we'll trust the userId from query params
     // In production, you should verify the token with Firebase Admin SDK
     return request.nextUrl.searchParams.get('userId')
   } catch (error) {
@@ -130,10 +124,7 @@ export async function POST(request: NextRequest) {
     if (type === 'direct') {
       const existingQuery = query(
         collection(db, 'conversations'),
-        where('participants', 'in', [
-          participants.sort(),
-          participants.slice().reverse()
-        ]),
+        where('participants', '==', participants.sort()),
         where('type', '==', 'direct')
       )
 

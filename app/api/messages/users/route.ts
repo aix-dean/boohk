@@ -5,13 +5,7 @@ import { db } from "@/lib/firebase"
 // Helper function to verify Firebase Auth token
 async function verifyAuthToken(request: NextRequest): Promise<string | null> {
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return null
-    }
-
-    const token = authHeader.substring(7)
-    // For now, we'll trust the token and extract userId from query params
+    // For now, we'll trust the userId from query params
     // In production, you should verify the token with Firebase Admin SDK
     return request.nextUrl.searchParams.get('userId')
   } catch (error) {
@@ -23,18 +17,21 @@ async function verifyAuthToken(request: NextRequest): Promise<string | null> {
 export async function GET(request: NextRequest) {
   try {
     const userId = await verifyAuthToken(request)
+    console.log('GET /api/messages/users - userId:', userId)
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     // First get the current user's company_id
     const userDoc = await getDocs(query(collection(db, 'boohk_users'), where('uid', '==', userId)))
+    console.log('userDoc.empty:', userDoc.empty)
     if (userDoc.empty) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
     const userData = userDoc.docs[0].data()
     const companyId = userData.company_id
+    console.log('current user companyId:', companyId)
 
     if (!companyId) {
       return NextResponse.json({ users: [] })
@@ -43,6 +40,7 @@ export async function GET(request: NextRequest) {
     // Get all users in the same company
     const companyUsersQuery = query(collection(db, 'boohk_users'), where('company_id', '==', companyId))
     const companyUsersSnapshot = await getDocs(companyUsersQuery)
+    console.log('companyUsersSnapshot.size:', companyUsersSnapshot.size)
 
     const users = companyUsersSnapshot.docs
       .filter(doc => doc.data().uid !== userId) // Exclude current user
@@ -58,6 +56,7 @@ export async function GET(request: NextRequest) {
         }
       })
 
+    console.log('returning users:', users.length)
     return NextResponse.json({ users })
   } catch (error) {
     console.error("Error fetching company users:", error)
