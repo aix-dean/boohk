@@ -31,7 +31,7 @@ export async function GET(
 
     const { conversationId } = params
     const { searchParams } = new URL(request.url)
-    const limitParam = Number.parseInt(searchParams.get("limit") || "15")
+    const limitParam = Number.parseInt(searchParams.get("limit") || "9")
     const beforeParam = searchParams.get("before")
     console.log('[DEBUG] Query params - limit:', limitParam, 'before:', beforeParam)
 

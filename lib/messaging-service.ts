@@ -438,7 +438,7 @@ export async function getMessages(
 export async function getMessagesPaginated(
   userId: string,
   conversationId: string,
-  limit: number = 15,
+  limit: number = 9,
   before?: string
 ): Promise<{ messages: Message[], hasMore: boolean }> {
   try {

@@ -85,10 +85,12 @@ export default function MessagesPage() {
   const previousMessagesRef = useRef<string>('')
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const justLoadedMoreRef = useRef(false)
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [lastLoadedMessageId, setLastLoadedMessageId] = useState<string | null>(null)
   const [initialLoadDone, setInitialLoadDone] = useState(false)
+  const [isScrolledUp, setIsScrolledUp] = useState(false)
 
   // Real-time conversations and users on mount
   useEffect(() => {
@@ -189,7 +191,7 @@ export default function MessagesPage() {
         const { messages: initialMessages, hasMore: hasMoreInitial } = await getMessagesPaginated(
           user.uid,
           selectedConversation.id,
-          15 // Load 15 messages initially
+          9 // Load 9 messages initially
         )
         setMessages(initialMessages)
         setHasMore(hasMoreInitial)
@@ -211,9 +213,11 @@ export default function MessagesPage() {
       selectedConversation.id,
       new Date(), // Subscribe to messages from now onwards
       (newMessages) => {
-        if (newMessages.length > 0) {
-          setMessages(prev => [...prev, ...newMessages])
-        }
+        setMessages(prev => {
+          const existingIds = new Set(prev.map(m => m.id))
+          const uniqueNewMessages = newMessages.filter(m => !existingIds.has(m.id))
+          return [...prev, ...uniqueNewMessages]
+        })
       },
       (error) => {
         console.error('Error in new messages listener:', error)
@@ -237,10 +241,14 @@ export default function MessagesPage() {
       unsubscribeNewMessages()
       unsubscribeTyping()
     }
-  }, [selectedConversation, user?.uid])
+  }, [selectedConversation?.id, user?.uid])
 
   // Scroll to bottom when new messages arrive (debounced)
   useEffect(() => {
+    if (justLoadedMoreRef.current) {
+      justLoadedMoreRef.current = false
+      return
+    }
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current)
     }
@@ -335,10 +343,14 @@ export default function MessagesPage() {
     }
   }
   const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
-    if (!hasMore || loadingMore || !initialLoadDone) return
-
     const { scrollTop, scrollHeight, clientHeight } = event.currentTarget
-    const isNearTop = scrollTop < 100 // Load more when within 100px of top
+    const isNearTop = scrollTop < 50 // Load more when within 50px of top
+    const isNearBottom = scrollTop + clientHeight >= scrollHeight - 500 // Within 50px of bottom
+
+    // Update scroll position state
+    setIsScrolledUp(!isNearBottom)
+
+    if (!hasMore || loadingMore || !initialLoadDone) return
 
     if (isNearTop && hasMore && !loadingMore && lastLoadedMessageId) {
       loadMoreMessages()
@@ -349,11 +361,14 @@ export default function MessagesPage() {
     if (!selectedConversation || !user?.uid || !lastLoadedMessageId || loadingMore || !hasMore) return
 
     setLoadingMore(true)
+    const scrollElement = scrollAreaRef.current
+    const oldScrollHeight = scrollElement?.scrollHeight || 0
+
     try {
       const { messages: olderMessages, hasMore: hasMoreOlder } = await getMessagesPaginated(
         user.uid,
         selectedConversation.id,
-        15,
+        9,
         lastLoadedMessageId
       )
 
@@ -361,6 +376,15 @@ export default function MessagesPage() {
         setMessages(prev => [...olderMessages, ...prev])
         setLastLoadedMessageId(olderMessages[0].id)
         setHasMore(hasMoreOlder)
+        justLoadedMoreRef.current = true
+
+        // Maintain scroll position after prepending messages
+        setTimeout(() => {
+          if (scrollElement) {
+            const newScrollHeight = scrollElement.scrollHeight
+            scrollElement.scrollTop += newScrollHeight - oldScrollHeight
+          }
+        }, 0)
       } else {
         setHasMore(false)
       }
@@ -398,6 +422,10 @@ export default function MessagesPage() {
     } finally {
       setSendingMessage(false)
     }
+  }
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    setIsScrolledUp(false)
   }
 
   const getConversationDisplayName = useCallback((conversation: Conversation) => {
@@ -552,7 +580,7 @@ export default function MessagesPage() {
       </div>
 
     {/* Chat View */}
-      <div className="flex-1 flex flex-col bg-gray-50">
+     <div className="flex-1 flex flex-col bg-gray-50 relative">
         {selectedConversation ? (
           <>
             {/* Chat Header */}
@@ -584,7 +612,7 @@ export default function MessagesPage() {
             </div>
 
             {/* Messages */}
-            <ScrollArea ref={scrollAreaRef} className="flex-1 relative px-5" onScroll={handleScroll}>
+            <div ref={scrollAreaRef} className="flex-1 relative px-5 overflow-y-auto" onScroll={handleScroll}>
               {loadingMessages ? (
                 <div className="space-y-4">
                   {[...Array(3)].map((_, i) => (
@@ -605,7 +633,7 @@ export default function MessagesPage() {
                   <p>No messages yet. Start the conversation!</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 pt-4">
                   {loadingMore && (
                     <div className="flex justify-center py-4">
                       <div className="animate-spin h-6 w-6 border-2 border-gray-300 border-t-blue-500 rounded-full" />
@@ -622,7 +650,18 @@ export default function MessagesPage() {
                   <div ref={messagesEndRef} />
                 </div>
               )}
-            </ScrollArea>
+            </div>
+
+            {/* Scroll to Bottom Button - Fixed Position */}
+            {isScrolledUp && (
+              <Button
+                onClick={scrollToBottom}
+                className="absolute bottom-20 left-1/2 transform -translate-x-1/2 h-8 w-8 rounded-full shadow-lg bg-blue-500 hover:bg-blue-600 text-white z-10"
+                size="sm"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            )}
 
             {/* Message Input */}
             <div className="p-4 border-t border-gray-200 bg-white">
