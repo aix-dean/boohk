@@ -8,10 +8,14 @@ import { collection, query, where, onSnapshot, doc, getDoc } from "firebase/fire
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/hooks/use-toast"
 import { ToastAction } from "@/components/ui/toast"
+import { Badge } from "@/components/ui/badge"
+import { subscribeToConversations } from "@/lib/messaging-service"
+import type { Conversation } from "@/lib/types/messaging"
 
 export function TopNavigation() {
   const pathname = usePathname()
   const router = useRouter()
+  const [totalUnreadCount, setTotalUnreadCount] = useState(0)
   const { userData } = useAuth()
   const { toast } = useToast()
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -68,6 +72,25 @@ export function TopNavigation() {
 
     return () => unsubscribe()
   }, [userData?.uid, toast, router])
+  // Subscribe to conversations for unread count
+  useEffect(() => {
+    if (!userData?.uid) return
+
+    const unsubscribe = subscribeToConversations(
+      userData.uid,
+      (conversations: Conversation[]) => {
+        const totalUnread = conversations.reduce((sum, conv) => {
+          return sum + (conv.unreadCount[userData.uid] || 0)
+        }, 0)
+        setTotalUnreadCount(totalUnread)
+      },
+      (error) => {
+        console.error('Error subscribing to conversations for unread count:', error)
+      }
+    )
+
+    return () => unsubscribe()
+  }, [userData?.uid])
 
   const isSalesSection = pathname.startsWith("/sales")
   const isLogisticsSection = pathname.startsWith("/logistics")
@@ -149,6 +172,13 @@ export function TopNavigation() {
               fill="white"
             />
           </svg>
+          {totalUnreadCount > 0 && (
+            <Badge
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-gradient-to-b from-[#1a0f5c] via-[#4a1d7f] via-[#6b2d9e] to-[#2d4a9e] text-white border-[#1a0f5c]"
+            >
+              {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+            </Badge>
+          )}
         </button>
 
         {/* User Profile Icon */}

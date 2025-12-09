@@ -540,7 +540,18 @@ export default function MessagesPage() {
   }
 
   const formatMessageTime = (timestamp: Date) => {
-    return formatDistanceToNow(new Date(timestamp), { addSuffix: true })
+    const now = new Date()
+    const diffInSeconds = Math.floor((now.getTime() - new Date(timestamp).getTime()) / 1000)
+
+    if (diffInSeconds < 60) {
+      return `${diffInSeconds} seconds ago`
+    } else if (diffInSeconds < 3600) {
+      return `${Math.floor(diffInSeconds / 60)} minutes ago`
+    } else if (diffInSeconds < 86400) {
+      return `${Math.floor(diffInSeconds / 3600)} hours ago`
+    } else {
+      return `${Math.floor(diffInSeconds / 86400)} days ago`
+    }
   }
   const filteredConversations = useMemo(() => {
     const filtered = conversations.filter(conversation => {
@@ -635,13 +646,20 @@ export default function MessagesPage() {
                               {getConversationDisplayName(conversation)}
                             </p>
                             {conversation.lastMessage && (
-                              <p className="text-xs text-gray-500">
-                                {formatMessageTime(conversation.lastMessage.timestamp)}
-                              </p>
+                              <div className="flex flex-col items-end">
+                                <p className="text-xs text-gray-500">
+                                  {formatMessageTime(conversation.lastMessage.timestamp)}
+                                </p>
+                                {conversation.unreadCount[user?.uid || ''] > 0 && (
+                                  <Badge variant="destructive" className="mt-1 text-xs">
+                                    {conversation.unreadCount[user?.uid || '']}
+                                  </Badge>
+                                )}
+                              </div>
                             )}
                           </div>
                           {conversation.lastMessage && (
-                            <p className="text-sm text-gray-500 truncate mt-1">
+                            <p className="text-xs text-gray-500 truncate mt-1">
                               {conversation.lastMessage.type === 'image' ? (
                                 conversation.lastMessage.senderId === user?.uid ? 'Image sent' : 'Image received'
                               ) : conversation.lastMessage.type === 'video' ? (
@@ -652,11 +670,6 @@ export default function MessagesPage() {
                                 conversation.lastMessage.content
                               )}
                             </p>
-                          )}
-                          {conversation.unreadCount[user?.uid || ''] > 0 && (
-                            <Badge variant="destructive" className="mt-1 text-xs">
-                              {conversation.unreadCount[user?.uid || '']}
-                            </Badge>
                           )}
                         </div>
                       </div>
