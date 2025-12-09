@@ -293,10 +293,10 @@ export function AddEditSiteDialog({
     autoTriggerPercentage: "50"
   })
   // New state for multiple image uploads
-  const [displayPhotos, setDisplayPhotos] = useState<Array<{ file: File | null; caption: string; url?: string }>>([
+  const [displayPhotos, setDisplayPhotos] = useState<Array<{ file: File | null; caption: string; url?: string; isExisting?: boolean; originalMedia?: any }>>([
     { file: null, caption: "" }
   ])
-  const [campaignPhotos, setCampaignPhotos] = useState<Array<{ file: File | null; caption: string; url?: string }>>([
+  const [campaignPhotos, setCampaignPhotos] = useState<Array<{ file: File | null; caption: string; url?: string; isExisting?: boolean; originalCampaign?: any }>>([
     { file: null, caption: "" }
   ])
 
@@ -360,8 +360,13 @@ export function AddEditSiteDialog({
   }
 
   const removeDisplayPhotoRow = (index: number) => {
-    if (displayPhotos.length > 1) {
-      setDisplayPhotos(prev => prev.filter((_, i) => i !== index))
+    const photo = displayPhotos[index];
+    if (photo.file || photo.url) {
+      // If removing an uploaded photo, replace with empty
+      setDisplayPhotos(prev => prev.map((p, i) => i === index ? { file: null, caption: "" } : p));
+    } else if (displayPhotos.length > 1) {
+      // If removing an empty row and there are multiple, remove it
+      setDisplayPhotos(prev => prev.filter((_, i) => i !== index));
     }
   }
 
@@ -487,7 +492,9 @@ const handleFormattedNumberInput = (
           const displayPhotosData = editingProduct.media.map(media => ({
             file: null,
             caption: media.description || "",
-            url: media.url
+            url: media.url,
+            isExisting: true,
+            originalMedia: media
           }))
           setDisplayPhotos(displayPhotosData)
         } else {
@@ -877,8 +884,14 @@ const handleFormattedNumberInput = (
 
       if (editingProduct) {
         // Edit mode
-        // Combine with existing media
-        const allMedia = [...(editingProduct.media || []), ...mediaUrls]
+        // Filter out deleted existing media and combine with new uploads
+        const existingMedia = editingProduct.media || []
+        const remainingExistingMedia = displayPhotos
+          .filter(photo => photo.isExisting && !photo.file) // Keep existing photos that weren't replaced
+          .map(photo => photo.originalMedia)
+          .filter(Boolean)
+
+        const allMedia = [...remainingExistingMedia, ...mediaUrls]
 
         // Create update data
         const updateData: any = {
@@ -1017,7 +1030,12 @@ const handleFormattedNumberInput = (
               image_url: photo.url,
               caption: photo.caption,
               uploaded_date: Timestamp.fromDate(new Date())
-            })),
+            })).concat(
+              campaignPhotos
+                .filter(photo => photo.isExisting && !photo.file) // Keep existing photos that weren't replaced
+                .map(photo => photo.originalCampaign)
+                .filter(Boolean)
+            ),
             illumination: {
               bottom_count: 0,
               upper_count: 0,
@@ -1527,7 +1545,7 @@ const handleFormattedNumberInput = (
                             onChange={(e) => handleDisplayPhotoCaptionChange(index, e.target.value)}
                           />
                         </div>
-                        {displayPhotos.length > 1 && (
+                        {((photo.file || photo.url) || index > 0) && (
                           <Button
                             type="button"
                             variant="ghost"
