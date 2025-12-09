@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Send, MessageCircle, Search, Users, ChevronDown, ChevronUp, ArrowLeft, Plus } from 'lucide-react'
+import { Send, MessageCircle, Search, Users, ChevronDown, ChevronUp, ArrowLeft, Plus, Paperclip, Image, Video, X, Download } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import {
   Dialog,
@@ -30,7 +30,8 @@ import {
   subscribeToNewMessages,
 } from '@/lib/messaging-service'
 import { collection, query, where, onSnapshot } from "firebase/firestore"
-import { db } from "@/lib/firebase"
+import { db, storage } from "@/lib/firebase"
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 
 interface CompanyUser {
   id: string
@@ -41,10 +42,11 @@ interface CompanyUser {
   lastSeen: Date
 }
 
-const MessageComponent = React.memo(({ message, isOwnMessage, formatMessageTime }: {
+const MessageComponent = React.memo(({ message, isOwnMessage, formatMessageTime, openMediaDialog }: {
   message: Message
   isOwnMessage: boolean
   formatMessageTime: (timestamp: Date) => string
+  openMediaDialog: (url: string, type: 'image' | 'video', fileName?: string) => void
 }) => (
   <div
     className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
@@ -56,7 +58,33 @@ const MessageComponent = React.memo(({ message, isOwnMessage, formatMessageTime 
           : 'bg-white border border-gray-200 text-gray-900'
       }`}
     >
-      <p className="text-sm">{message.content}</p>
+      {message.type === 'image' ? (
+        <img
+          src={message.content}
+          alt={message.metadata?.fileName || 'Image'}
+          className="max-w-full rounded cursor-pointer hover:opacity-90 transition-opacity"
+          onClick={() => openMediaDialog(message.content, 'image', message.metadata?.fileName)}
+        />
+      ) : message.type === 'video' ? (
+        <video
+          src={message.content}
+          controls
+          className="max-w-full rounded cursor-pointer hover:opacity-90 transition-opacity"
+          onClick={() => openMediaDialog(message.content, 'video', message.metadata?.fileName)}
+        />
+      ) : message.type === 'file' ? (
+        <a
+          href={message.content}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={isOwnMessage ? 'text-white underline hover:text-blue-200' : 'text-blue-500 underline hover:text-blue-600'}
+          download={message.metadata?.fileName}
+        >
+          {message.metadata?.fileName || 'File'}
+        </a>
+      ) : (
+        <p className="text-sm">{message.content}</p>
+      )}
       <p className={`text-xs mt-1 ${isOwnMessage ? 'text-blue-100' : 'text-gray-500'}`}>
         {formatMessageTime(message.timestamp)}
       </p>
@@ -91,6 +119,10 @@ export default function MessagesPage() {
   const [lastLoadedMessageId, setLastLoadedMessageId] = useState<string | null>(null)
   const [initialLoadDone, setInitialLoadDone] = useState(false)
   const [isScrolledUp, setIsScrolledUp] = useState(false)
+  const [attachment, setAttachment] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [mediaDialogOpen, setMediaDialogOpen] = useState(false)
+  const [selectedMedia, setSelectedMedia] = useState<{ url: string; type: 'image' | 'video'; fileName?: string } | null>(null)
 
   // Real-time conversations and users on mount
   useEffect(() => {
@@ -396,10 +428,36 @@ export default function MessagesPage() {
   }
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation || !user?.uid) return
+    if ((!newMessage.trim() && !attachment) || !selectedConversation || !user?.uid) return
 
     setSendingMessage(true)
     try {
+      let type = 'text'
+      let content = newMessage.trim()
+      let metadata = {}
+
+      if (attachment) {
+        // Upload file to Firebase Storage
+        const fileRef = ref(storage, `messages/${user.uid}/${Date.now()}_${attachment.name}`)
+        await uploadBytes(fileRef, attachment)
+        const downloadURL = await getDownloadURL(fileRef)
+
+        if (attachment.type.startsWith('image/')) {
+          type = 'image'
+        } else if (attachment.type.startsWith('video/')) {
+          type = 'video'
+        } else {
+          type = 'file'
+        }
+
+        content = downloadURL
+        metadata = {
+          fileName: attachment.name,
+          fileSize: attachment.size,
+          fileType: attachment.type
+        }
+      }
+
       const response = await fetch(`/api/messages/send?userId=${user?.uid}`, {
         method: 'POST',
         headers: {
@@ -407,14 +465,19 @@ export default function MessagesPage() {
         },
         body: JSON.stringify({
           conversationId: selectedConversation.id,
-          type: 'text',
-          content: newMessage.trim(),
+          type,
+          content,
+          metadata,
           userId: user.uid,
         }),
       })
 
       if (response.ok) {
         setNewMessage('')
+        setAttachment(null)
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
         // Real-time subscriptions will update messages and conversations automatically
       }
     } catch (error) {
@@ -426,6 +489,33 @@ export default function MessagesPage() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     setIsScrolledUp(false)
+  }
+
+  const removeAttachment = () => {
+    setAttachment(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      setAttachment(file)
+    }
+  }
+
+  const openMediaDialog = (url: string, type: 'image' | 'video', fileName?: string) => {
+    setSelectedMedia({ url, type, fileName })
+    setMediaDialogOpen(true)
+  }
+
+  const handleDownload = () => {
+    if (!selectedMedia) return;
+    const link = document.createElement('a');
+    link.href = selectedMedia.url;
+    link.download = selectedMedia.fileName || 'download';
+    link.click();
   }
 
   const getConversationDisplayName = useCallback((conversation: Conversation) => {
@@ -503,7 +593,7 @@ export default function MessagesPage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Search conversations..."
+              placeholder="Search conversations and team members..."
               className="pl-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -552,7 +642,15 @@ export default function MessagesPage() {
                           </div>
                           {conversation.lastMessage && (
                             <p className="text-sm text-gray-500 truncate mt-1">
-                              {conversation.lastMessage.content}
+                              {conversation.lastMessage.type === 'image' ? (
+                                conversation.lastMessage.senderId === user?.uid ? 'Image sent' : 'Image received'
+                              ) : conversation.lastMessage.type === 'video' ? (
+                                conversation.lastMessage.senderId === user?.uid ? 'Video sent' : 'Video received'
+                              ) : conversation.lastMessage.type === 'file' ? (
+                                conversation.lastMessage.senderId === user?.uid ? 'File sent' : 'File received'
+                              ) : (
+                                conversation.lastMessage.content
+                              )}
                             </p>
                           )}
                           {conversation.unreadCount[user?.uid || ''] > 0 && (
@@ -560,6 +658,39 @@ export default function MessagesPage() {
                               {conversation.unreadCount[user?.uid || '']}
                             </Badge>
                           )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Team Members Section */}
+            {showTeamMembers && searchQuery.trim() && filteredUsers.length > 0 && (
+              <div className="p-4">
+                <h3 className="text-sm font-medium text-gray-900 mb-3">Team Members</h3>
+                <div className="space-y-1">
+                  {filteredUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      onClick={() => createConversation(user.id)}
+                      className="p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user.avatar} />
+                          <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
+                            {user.displayName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {user.displayName}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {user.email}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -645,6 +776,7 @@ export default function MessagesPage() {
                       message={message}
                       isOwnMessage={message.senderId === user?.uid}
                       formatMessageTime={formatMessageTime}
+                      openMediaDialog={openMediaDialog}
                     />
                   ))}
                   <div ref={messagesEndRef} />
@@ -665,7 +797,74 @@ export default function MessagesPage() {
 
             {/* Message Input */}
             <div className="p-4 border-t border-gray-200 bg-white">
+              {/* Attachment Preview */}
+              {attachment && (
+                <div className="mb-2 p-2 bg-gray-50 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    {attachment.type.startsWith('image/') ? (
+                      <Image className="h-4 w-4 text-gray-500" />
+                    ) : attachment.type.startsWith('video/') ? (
+                      <Video className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <Paperclip className="h-4 w-4 text-gray-500" />
+                    )}
+                    <span className="text-sm text-gray-700 truncate">{attachment.name}</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={removeAttachment}
+                    className="h-6 w-6 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+
               <div className="flex space-x-2">
+                {/* Attachment Buttons */}
+                <div className="flex space-x-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="h-8 w-8 p-0"
+                    title="Attach file"
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const input = document.createElement('input')
+                      input.type = 'file'
+                      input.accept = 'image/*'
+                      input.onchange = (e) => handleFileSelect(e as any)
+                      input.click()
+                    }}
+                    className="h-8 w-8 p-0"
+                    title="Attach image"
+                  >
+                    <Image className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const input = document.createElement('input')
+                      input.type = 'file'
+                      input.accept = 'video/*'
+                      input.onchange = (e) => handleFileSelect(e as any)
+                      input.click()
+                    }}
+                    className="h-8 w-8 p-0"
+                    title="Attach video"
+                  >
+                    <Video className="h-4 w-4" />
+                  </Button>
+                </div>
+
                 <Input
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
@@ -673,9 +872,10 @@ export default function MessagesPage() {
                   onKeyPress={(e) => e.key === 'Enter' && !sendingMessage && sendMessage()}
                   className="flex-1"
                 />
+
                 <Button
                   onClick={sendMessage}
-                  disabled={!newMessage.trim() || sendingMessage}
+                  disabled={(!newMessage.trim() && !attachment) || sendingMessage}
                   size="sm"
                 >
                   {sendingMessage ? (
@@ -685,6 +885,15 @@ export default function MessagesPage() {
                   )}
                 </Button>
               </div>
+
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="*/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
             </div>
           </>
         ) : (
@@ -753,6 +962,39 @@ export default function MessagesPage() {
                 ))}
               </div>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Media Dialog */}
+      <Dialog open={mediaDialogOpen} onOpenChange={setMediaDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+          <DialogHeader className="flex flex-row items-center justify-between space-y-0">
+            <DialogTitle>{selectedMedia?.fileName || (selectedMedia?.type === 'image' ? 'Image' : 'Video')}</DialogTitle>
+            <div className="flex items-center space-x-2">
+              <Button variant="ghost" size="sm" onClick={handleDownload} className="h-6 w-6 p-0">
+                <Download className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setMediaDialogOpen(false)} className="h-6 w-6 p-0">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="flex justify-center items-center min-h-[400px]">
+            {selectedMedia?.type === 'image' ? (
+              <img
+                src={selectedMedia.url}
+                alt={selectedMedia.fileName || 'Image'}
+                className="max-w-full max-h-full object-contain"
+              />
+            ) : selectedMedia?.type === 'video' ? (
+              <video
+                src={selectedMedia.url}
+                controls
+                className="max-w-full max-h-full"
+                autoPlay
+              />
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>

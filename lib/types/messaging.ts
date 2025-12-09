@@ -26,7 +26,7 @@ export interface Message {
   id: string;
   conversationId: string;
   senderId: string;
-  type: 'text' | 'image' | 'file' | 'system';
+  type: 'text' | 'image' | 'video' | 'file' | 'system';
   content: string;
   timestamp: Date;
   editedAt?: Date;
