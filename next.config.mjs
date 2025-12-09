@@ -14,7 +14,7 @@ const nextConfig = {
     esmExternals: true,
   },
   transpilePackages: ['html2canvas', 'jspdf'],
-  webpack: (config, { isServer }) => {
+  webpack: (config, { dev, isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -28,6 +28,20 @@ const nextConfig = {
       use: 'ignore-loader',
       include: /node_modules\/@sparticuz\/chromium/
     })
+
+    if (!dev) {
+      // In production, configure Terser to remove console statements
+      const TerserPlugin = require('terser-webpack-plugin');
+      config.optimization.minimizer = [
+        new TerserPlugin({
+          terserOptions: {
+            compress: {
+              drop_console: true,  // Removes all console.* calls
+            },
+          },
+        }),
+      ];
+    }
 
     return config
   },
