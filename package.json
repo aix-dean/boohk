@@ -116,7 +116,7 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^5.0.4",
     "@vitest/ui": "^3.2.4",
-    "eslint": "^8",
+    "eslint": "^9",
     "eslint-config-next": "^16.0.8",
     "firebase-mock": "^2.2.4",
     "happy-dom": "^20.0.0",
