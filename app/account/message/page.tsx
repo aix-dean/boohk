@@ -203,41 +203,39 @@ export default function MessagesPage() {
 
     // Subscribe to real-time company users
     let unsubscribeUsers: (() => void) | null = null
-    if (userData?.company_id) {
-      const usersQuery = query(
-        collection(db, 'boohk_users'),
-        where('company_id', '==', userData.company_id)
-      )
+    const usersQuery = userData?.company_id
+      ? query(
+          collection(db, 'boohk_users'),
+          where('company_id', '==', userData.company_id)
+        )
+      : query(collection(db, 'boohk_users'))
 
-      unsubscribeUsers = onSnapshot(
-        usersQuery,
-        (snapshot) => {
-          console.log('Company users snapshot received, docs count:', snapshot.docs.length)
-          const users = snapshot.docs
-            .filter(doc => doc.data().uid !== user.uid) // Exclude current user
-            .map(doc => {
-              const data = doc.data()
-              return {
-                id: data.uid,
-                displayName: `${data.first_name || ''} ${data.last_name || ''}`.trim() || data.email || 'Unknown User',
-                email: data.email,
-                avatar: data.avatar,
-                status: 'offline' as const, // TODO: Implement real-time status
-                lastSeen: data.updated?.toDate() || new Date(),
-              }
-            })
-          console.log('Loaded company users:', users.map(u => ({ id: u.id, displayName: u.displayName })))
-          setCompanyUsers(users)
-          setLoadingUsers(false)
-        },
-        (error) => {
-          console.error('Error in users listener:', error)
-          setLoadingUsers(false)
-        }
-      )
-    } else {
-      setLoadingUsers(false)
-    }
+    unsubscribeUsers = onSnapshot(
+      usersQuery,
+      (snapshot) => {
+        console.log('Company users snapshot received, docs count:', snapshot.docs.length)
+        const users = snapshot.docs
+          .filter(doc => doc.data().uid !== user.uid) // Exclude current user
+          .map(doc => {
+            const data = doc.data()
+            return {
+              id: data.uid,
+              displayName: `${data.first_name || ''} ${data.last_name || ''}`.trim() || data.email || 'Unknown User',
+              email: data.email,
+              avatar: data.avatar,
+              status: 'offline' as const, // TODO: Implement real-time status
+              lastSeen: data.updated?.toDate() || new Date(),
+            }
+          })
+        console.log('Loaded company users:', users.map(u => ({ id: u.id, displayName: u.displayName })))
+        setCompanyUsers(users)
+        setLoadingUsers(false)
+      },
+      (error) => {
+        console.error('Error in users listener:', error)
+        setLoadingUsers(false)
+      }
+    )
 
     // Cleanup on unmount
     return () => {
