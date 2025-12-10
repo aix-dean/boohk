@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import type { Conversation, Message } from '@/lib/types/messaging'
-import { formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow, format } from 'date-fns'
 import {
   subscribeToConversations,
   subscribeToMessages,
@@ -85,7 +85,7 @@ const MessageComponent = React.memo(({ message, isOwnMessage, formatMessageTime,
       ) : (
         <p className="text-sm">{message.content}</p>
       )}
-      <p className={`text-xs mt-1 ${isOwnMessage ? 'text-blue-100' : 'text-gray-500'}`}>
+      <p className={`text-[10px] mt-1 ${isOwnMessage ? 'text-blue-100' : 'text-gray-500'}`}>
         {formatMessageTime(message.timestamp)}
       </p>
     </div>
@@ -561,6 +561,11 @@ export default function MessagesPage() {
     link.click();
   }
 
+  const truncateName = (name: string, maxLength: number = 20) => {
+    if (name.length <= maxLength) return name
+    return name.substring(0, maxLength) + '..'
+  }
+
   const getConversationDisplayName = useCallback((conversation: Conversation) => {
     if (conversation.metadata?.title) return conversation.metadata.title
 
@@ -621,16 +626,24 @@ export default function MessagesPage() {
 
   const formatMessageTime = (timestamp: Date) => {
     const now = new Date()
-    const diffInSeconds = Math.floor((now.getTime() - new Date(timestamp).getTime()) / 1000)
+    const date = new Date(timestamp)
+    const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
 
-    if (diffInSeconds < 60) {
-      return `${diffInSeconds} seconds ago`
-    } else if (diffInSeconds < 3600) {
-      return `${Math.floor(diffInSeconds / 60)} minutes ago`
-    } else if (diffInSeconds < 86400) {
-      return `${Math.floor(diffInSeconds / 3600)} hours ago`
+    if (diffInDays === 0) {
+      // Today: show time like "11:30AM"
+      return format(date, 'h:mm a')
+    } else if (diffInDays === 1) {
+      // Yesterday
+      return 'Yesterday'
+    } else if (diffInDays < 7) {
+      // This week: show day name like "Monday"
+      return format(date, 'EEEE')
+    } else if (date.getFullYear() === now.getFullYear()) {
+      // This year: show date like "11/20"
+      return format(date, 'M/d')
     } else {
-      return `${Math.floor(diffInSeconds / 86400)} days ago`
+      // Older: show date with year like "11/20/25"
+      return format(date, 'M/d/yy')
     }
   }
   const filteredConversations = useMemo(() => {
@@ -714,11 +727,11 @@ export default function MessagesPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-medium text-gray-900 truncate">
-                              {getConversationDisplayName(conversation)}
+                              {truncateName(getConversationDisplayName(conversation))}
                             </p>
                             {conversation.lastMessage && (
                               <div className="flex flex-col items-end">
-                                <p className="text-xs text-gray-500">
+                                <p className="text-[11px] text-gray-500">
                                   {formatMessageTime(conversation.lastMessage.timestamp)}
                                 </p>
                                 {conversation.unreadCount[user?.uid || ''] > 0 && (
@@ -770,7 +783,7 @@ export default function MessagesPage() {
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 truncate">
-                            {user.displayName}
+                            {truncateName(user.displayName)}
                           </p>
                           <p className="text-xs text-gray-500 truncate">
                             {user.email}
@@ -817,7 +830,7 @@ export default function MessagesPage() {
                 </Avatar>
                 <div>
                   <h2 className="text-lg font-medium text-gray-900">
-                    {getConversationDisplayName(selectedConversation)}
+                    {truncateName(getConversationDisplayName(selectedConversation))}
                   </h2>
                   <p className="text-sm text-gray-500">
                     {selectedConversation.participants.length} participants
@@ -1026,7 +1039,7 @@ export default function MessagesPage() {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">
-                          {user.displayName}
+                          {truncateName(user.displayName)}
                         </p>
                         <p className="text-xs text-gray-500 truncate">
                           {user.email}
