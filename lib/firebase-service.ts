@@ -1657,7 +1657,10 @@ export async function getProductsCountByContentTypeAndCompany(contentType: strin
  */
 export async function uploadFileToFirebaseStorage(file: File, path: string): Promise<string> {
   try {
-    const storageRef = ref(storage, `${path}${file.name}`)
+    // Add timestamp prefix to prevent filename collisions
+    const timestamp = Date.now()
+    const fileName = `${timestamp}_${file.name}`
+    const storageRef = ref(storage, `${path}${fileName}`)
     const snapshot = await uploadBytes(storageRef, file)
     const downloadURL = await getDownloadURL(snapshot.ref)
     console.log("File uploaded successfully:", downloadURL)
