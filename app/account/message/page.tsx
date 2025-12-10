@@ -7,13 +7,18 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Send, MessageCircle, Search, Users, ChevronDown, ChevronUp, ArrowLeft, Plus, Paperclip, Image, Video, X, Download } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import { Send, MessageCircle, Search, Users, ChevronDown, ChevronUp, ArrowLeft, Plus, Paperclip, Image, Video, X, Download, Upload, Info, Pencil } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog"
 import type { Conversation, Message } from '@/lib/types/messaging'
 import { formatDistanceToNow, format } from 'date-fns'
@@ -42,15 +47,29 @@ interface CompanyUser {
   lastSeen: Date
 }
 
-const MessageComponent = React.memo(({ message, isOwnMessage, formatMessageTime, openMediaDialog }: {
+const MessageComponent = React.memo(({ message, isOwnMessage, formatMessageTime, openMediaDialog, isGroup, senderName, senderAvatar }: {
   message: Message
   isOwnMessage: boolean
   formatMessageTime: (timestamp: Date) => string
   openMediaDialog: (url: string, type: 'image' | 'video', fileName?: string) => void
+  isGroup: boolean
+  senderName?: string
+  senderAvatar?: string
 }) => (
   <div
     className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
   >
+    {isGroup && !isOwnMessage && senderName && (
+      <div className="flex items-center space-x-2 mb-1">
+        <Avatar className="h-6 w-6">
+          <AvatarImage src={senderAvatar} />
+          <AvatarFallback className="text-xs bg-gray-200 text-gray-600">
+            {senderName.split(' ').map(n => n[0]).join('').toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <span className="text-sm font-medium text-gray-900">{senderName}</span>
+      </div>
+    )}
     <div
       className={`max-w-[280px] sm:max-w-xs lg:max-w-md px-2 sm:px-4 py-2 rounded-lg ${
         isOwnMessage
@@ -125,6 +144,19 @@ export default function MessagesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [mediaDialogOpen, setMediaDialogOpen] = useState(false)
   const [selectedMedia, setSelectedMedia] = useState<{ url: string; type: 'image' | 'video'; fileName?: string } | null>(null)
+  const [isGroupMode, setIsGroupMode] = useState(false)
+  const [selectedGroupMembers, setSelectedGroupMembers] = useState<string[]>([])
+   const [avatarFile, setAvatarFile] = useState<File | null>(null)
+   const avatarFileRef = useRef<HTMLInputElement>(null)
+  const [groupName, setGroupName] = useState('')
+  const [groupInfoOpen, setGroupInfoOpen] = useState(false)
+  const [savingAvatar, setSavingAvatar] = useState(false)
+  const [hoveredMember, setHoveredMember] = useState<string | null>(null)
+  const [showUpload, setShowUpload] = useState(false)
+  const [isEditingGroup, setIsEditingGroup] = useState(false)
+  const [editingGroupName, setEditingGroupName] = useState('')
+   const [isAddingMember, setIsAddingMember] = useState(false)
+   const [memberToRemove, setMemberToRemove] = useState<string | null>(null)
 
   // Load user profiles for all unique participants
   const loadAllParticipants = useCallback(async (conversations: Conversation[]) => {
@@ -181,7 +213,16 @@ export default function MessagesPage() {
         setConversations(conversations)
         console.log('subscribeToConversations callback received:', conversations.length, 'conversations')
         console.log('Conversations data:', conversations)
+        setConversations(conversations)
         setLoadingConversations(false)
+
+        // Update selectedConversation if it exists and has been updated
+        if (selectedConversation) {
+          const updatedSelected = conversations.find(c => c.id === selectedConversation.id)
+          if (updatedSelected) {
+            setSelectedConversation(updatedSelected)
+          }
+        }
 
         // Load participant profiles for all conversations
         loadAllParticipants(conversations)
@@ -384,19 +425,21 @@ export default function MessagesPage() {
     }
   }
 
-  const createConversation = async (otherUserId: string) => {
-    console.log('createConversation called with otherUserId:', otherUserId)
+  const createConversation = async (participants: string[], type: 'direct' | 'group' = 'direct', metadata?: any) => {
+    console.log('createConversation called with participants:', participants, 'type:', type)
     try {
-      // Check if conversation already exists
-      const existingConversation = conversations.find(conv =>
-        conv.participants.length === 2 &&
-        conv.participants.includes(user!.uid) &&
-        conv.participants.includes(otherUserId)
-      )
+      if (type === 'direct') {
+        // Check if conversation already exists
+        const existingConversation = conversations.find(conv =>
+          conv.participants.length === 2 &&
+          conv.participants.includes(user!.uid) &&
+          conv.participants.includes(participants[1])
+        )
 
-      if (existingConversation) {
-        setSelectedConversation(existingConversation)
-        return
+        if (existingConversation) {
+          setSelectedConversation(existingConversation)
+          return
+        }
       }
 
       // Create new conversation
@@ -406,8 +449,9 @@ export default function MessagesPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          participants: [user!.uid, otherUserId],
-          type: 'direct',
+          participants,
+          type,
+          metadata,
         }),
       })
 
@@ -420,6 +464,16 @@ export default function MessagesPage() {
     } catch (error) {
       console.error('Error creating conversation:', error)
     }
+  }
+
+  const handleCreateGroup = () => {
+    if (!groupName.trim() || selectedGroupMembers.length < 2) return
+    const participants = [user!.uid, ...selectedGroupMembers]
+    createConversation(participants, 'group', { title: groupName.trim() })
+    setIsContactDialogOpen(false)
+    setIsGroupMode(false)
+    setSelectedGroupMembers([])
+    setGroupName('')
   }
   const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = event.currentTarget
@@ -552,6 +606,115 @@ export default function MessagesPage() {
     }
   }
 
+  const handleAvatarSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      // Validate image type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file.')
+        return
+      }
+      // Validate size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size must be less than 5MB.')
+        return
+      }
+      setAvatarFile(file)
+    }
+  }
+
+  const removeAvatar = () => {
+    setAvatarFile(null)
+    if (avatarFileRef.current) {
+      avatarFileRef.current.value = ''
+    }
+  }
+
+  const saveAvatar = async () => {
+    if (!avatarFile || !selectedConversation || !user?.uid) return
+
+    setSavingAvatar(true)
+    try {
+      // Upload to Firebase Storage
+      const fileRef = ref(storage, `conversations/${selectedConversation.id}/avatar_${Date.now()}_${avatarFile.name}`)
+      await uploadBytes(fileRef, avatarFile)
+      const downloadURL = await getDownloadURL(fileRef)
+
+      // Update conversation metadata
+      const response = await fetch(`/api/messages/conversations/${selectedConversation.id}?userId=${user.uid}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          metadata: { avatar: downloadURL }
+        }),
+      })
+
+      if (response.ok) {
+        // Clear the file and reset input
+        setAvatarFile(null)
+        if (avatarFileRef.current) {
+          avatarFileRef.current.value = ''
+        }
+        // The real-time subscription will update the conversation automatically
+      } else {
+        console.error('Failed to update avatar')
+        alert('Failed to save avatar. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error saving avatar:', error)
+      alert('Error saving avatar. Please try again.')
+    } finally {
+  const addMember = async (memberId: string) => {
+    if (!selectedConversation || !user?.uid) return
+
+    try {
+      const response = await fetch(`/api/messages/conversations/${selectedConversation.id}?userId=${user.uid}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ memberId }),
+      })
+
+      if (response.ok) {
+        setIsAddingMember(false)
+        // The real-time subscription will update the conversation automatically
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to add member')
+      }
+    } catch (error) {
+      console.error('Error adding member:', error)
+      alert('Error adding member. Please try again.')
+    }
+  }
+
+  const removeMember = async (memberId: string) => {
+    if (!selectedConversation || !user?.uid) return
+
+    try {
+      const response = await fetch(`/api/messages/conversations/${selectedConversation.id}?userId=${user.uid}&memberId=${memberId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        setMemberToRemove(null)
+        // The real-time subscription will update the conversation automatically
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to remove member')
+      }
+    } catch (error) {
+      console.error('Error removing member:', error)
+      alert('Error removing member. Please try again.')
+    }
+  }
+      setSavingAvatar(false)
+    }
+  }
+
   const openMediaDialog = (url: string, type: 'image' | 'video', fileName?: string) => {
     setSelectedMedia({ url, type, fileName })
     setMediaDialogOpen(true)
@@ -571,6 +734,7 @@ export default function MessagesPage() {
   }
 
   const getConversationDisplayName = useCallback((conversation: Conversation) => {
+    if (!conversation) return ''
     if (conversation.metadata?.title) return conversation.metadata.title
 
     // For direct messages, show the other participant's name
@@ -596,7 +760,7 @@ export default function MessagesPage() {
       // Final fallback: use saved participant name from metadata
       const otherUserId = otherParticipants[0]
       const participantIndex = conversation.participants.indexOf(otherUserId)
-      if (conversation.metadata?.participantNames && conversation.metadata.participantNames[participantIndex]) {
+      if (conversation.metadata?.participantNames?.[participantIndex]) {
         console.log('Using saved participant name for id:', otherUserId, 'name:', conversation.metadata.participantNames[participantIndex])
         return conversation.metadata.participantNames[participantIndex]
       }
@@ -607,6 +771,7 @@ export default function MessagesPage() {
   }, [allParticipants, companyUsers, user?.uid, loadingParticipants])
 
   const getConversationAvatarUrl = (conversation: Conversation) => {
+    if (!conversation) return undefined
     if (conversation.metadata?.avatar) return conversation.metadata.avatar
 
     // For direct messages, use the other participant's avatar
@@ -723,14 +888,15 @@ export default function MessagesPage() {
                     >
                       <div className="flex items-center space-x-3">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={getConversationAvatarUrl(conversation)} />
+                          <AvatarImage src={getConversationAvatarUrl(conversation)} className="object-cover" />
                           <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
-                            {getConversationAvatar(conversation)}
+                            {conversation.type === 'group' ? <Users className="h-4 w-4" /> : getConversationAvatar(conversation)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium text-gray-900 truncate">
+                            <p className="text-sm font-medium text-gray-900 truncate flex items-center">
+                              {conversation.type === 'group' && <Users className="h-3 w-3 mr-1" />}
                               {truncateName(getConversationDisplayName(conversation))}
                             </p>
                             {conversation.lastMessage && (
@@ -772,25 +938,25 @@ export default function MessagesPage() {
               <div className="p-4">
                 <h3 className="text-sm font-medium text-gray-900 mb-3">Team Members</h3>
                 <div className="space-y-1">
-                  {filteredUsers.map((user) => (
+                  {filteredUsers.map((u) => (
                     <div
-                      key={user.id}
-                      onClick={() => createConversation(user.id)}
+                      key={u.id}
+                      onClick={() => createConversation([user!.uid, u.id])}
                       className="p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
                     >
                       <div className="flex items-center space-x-3">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.avatar} />
+                          <AvatarImage src={u.avatar} />
                           <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
-                            {user.displayName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                            {u.displayName.split(' ').map(n => n[0]).join('').toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 truncate">
-                            {truncateName(user.displayName)}
+                            {truncateName(u.displayName)}
                           </p>
                           <p className="text-xs text-gray-500 truncate">
-                            {user.email}
+                            {u.email}
                           </p>
                         </div>
                       </div>
@@ -817,29 +983,37 @@ export default function MessagesPage() {
           <>
             {/* Chat Header */}
             <div className="p-4 border-b border-gray-200 bg-white">
-              <div className="flex items-center space-x-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="md:hidden mr-2"
-                >
-                  <Users className="h-4 w-4" />
-                </Button>
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={getConversationAvatarUrl(selectedConversation)} />
-                  <AvatarFallback className="bg-gray-200 text-gray-600 text-sm">
-                    {getConversationAvatar(selectedConversation)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h2 className="text-lg font-medium text-gray-900">
-                    {truncateName(getConversationDisplayName(selectedConversation))}
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    {selectedConversation.participants.length} participants
-                  </p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className="md:hidden mr-2"
+                  >
+                    <Users className="h-4 w-4" />
+                  </Button>
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={getConversationAvatarUrl(selectedConversation)} className="object-cover" />
+                    <AvatarFallback className="bg-gray-200 text-gray-600 text-sm">
+                      {selectedConversation.type === 'group' ? <Users className="h-4 w-4" /> : getConversationAvatar(selectedConversation)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h2 className="text-lg font-medium text-gray-900 flex items-center">
+                      {selectedConversation.type === 'group' && <Users className="h-4 w-4 mr-2" />}
+                      {truncateName(getConversationDisplayName(selectedConversation))}
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      {selectedConversation.type === 'group' ? 'Group' : 'Direct'} • {selectedConversation.participants.length} participants
+                    </p>
+                  </div>
                 </div>
+                {selectedConversation.type === 'group' && (
+                  <Button variant="ghost" size="sm" onClick={() => setGroupInfoOpen(true)}>
+                    <Info className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -871,15 +1045,21 @@ export default function MessagesPage() {
                       <div className="animate-spin h-6 w-6 border-2 border-gray-300 border-t-blue-500 rounded-full" />
                     </div>
                   )}
-                  {messages.map((message) => (
-                    <MessageComponent
-                      key={message.id}
-                      message={message}
-                      isOwnMessage={message.senderId === user?.uid}
-                      formatMessageTime={formatMessageTime}
-                      openMediaDialog={openMediaDialog}
-                    />
-                  ))}
+                  {messages.map((message) => {
+                    const sender = allParticipants.find(u => u.id === message.senderId) || companyUsers.find(u => u.id === message.senderId)
+                    return (
+                      <MessageComponent
+                        key={message.id}
+                        message={message}
+                        isOwnMessage={message.senderId === user?.uid}
+                        formatMessageTime={formatMessageTime}
+                        openMediaDialog={openMediaDialog}
+                        isGroup={selectedConversation.type === 'group'}
+                        senderName={sender?.displayName}
+                        senderAvatar={sender?.avatar}
+                      />
+                    )
+                  })}
                   <div ref={messagesEndRef} />
                 </div>
               )}
@@ -1001,11 +1181,15 @@ export default function MessagesPage() {
 
 
       {/* Contact Dialog */}
-      <Dialog open={isContactDialogOpen} onOpenChange={setIsContactDialogOpen}>
+      <Dialog open={isContactDialogOpen} onOpenChange={(open) => { setIsContactDialogOpen(open); if (!open) { setIsGroupMode(false); setSelectedGroupMembers([]); setGroupName(''); } }}>
         <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Start New Conversation</DialogTitle>
+            <DialogTitle>{isGroupMode ? 'Create Group Chat' : 'Start New Conversation'}</DialogTitle>
           </DialogHeader>
+          <div className="flex space-x-2 mb-4">
+            <Button variant={isGroupMode ? "outline" : "default"} onClick={() => setIsGroupMode(false)}>Direct Message</Button>
+            <Button variant={isGroupMode ? "default" : "outline"} onClick={() => setIsGroupMode(true)}>Create Group</Button>
+          </div>
           <div className="max-h-96 overflow-y-auto">
             {loadingUsers ? (
               <div className="space-y-3 py-4">
@@ -1023,35 +1207,109 @@ export default function MessagesPage() {
               <p className="text-sm text-gray-500 py-4 text-center">
                 {searchQuery ? 'No team members found matching your search' : 'No team members found'}
               </p>
-            ) : (
+            ) : !isGroupMode ? (
               <div className="space-y-2 py-2">
-                {filteredUsers.map((user) => (
+                {filteredUsers.map((u) => (
                   <div
-                    key={user.id}
+                    key={u.id}
                     onClick={() => {
-                      createConversation(user.id)
+                      createConversation([user!.uid, u.id])
                       setIsContactDialogOpen(false)
                     }}
                     className="p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors border"
                   >
                     <div className="flex items-center space-x-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatar} />
+                        <AvatarImage src={u.avatar} />
                         <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
-                          {user.displayName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          {u.displayName.split(' ').map(n => n[0]).join('').toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">
-                          {truncateName(user.displayName)}
+                          {truncateName(u.displayName)}
                         </p>
                         <p className="text-xs text-gray-500 truncate">
-                          {user.email}
+                          {u.email}
                         </p>
                       </div>
                     </div>
                   </div>
                 ))}
+              </div>
+            ) : (
+              <div>
+                 <Input placeholder="Group name" value={groupName} onChange={(e) => setGroupName(e.target.value)} className="mb-4" />
+                 <div className="mb-4">
+                   <Label htmlFor="group-avatar" className="text-sm font-medium">Group Avatar (optional)</Label>
+                   <div className="mt-2 flex items-center space-x-4">
+                     <div className="relative">
+                       <Avatar className="h-16 w-16">
+                         <AvatarImage src={avatarFile ? URL.createObjectURL(avatarFile) : undefined} />
+                         <AvatarFallback className="bg-gray-200 text-gray-600 text-lg">
+                           <Users className="h-8 w-8" />
+                         </AvatarFallback>
+                       </Avatar>
+                       {avatarFile && (
+                         <Button
+                           variant="destructive"
+                           size="sm"
+                           onClick={removeAvatar}
+                           className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                         >
+                           <X className="h-3 w-3" />
+                         </Button>
+                       )}
+                     </div>
+                     <div>
+                       <input
+                         ref={avatarFileRef}
+                         type="file"
+                         accept="image/*"
+                         onChange={handleAvatarSelect}
+                         className="hidden"
+                       />
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={() => avatarFileRef.current?.click()}
+                       >
+                         <Upload className="h-4 w-4 mr-2" />
+                         {avatarFile ? 'Change Avatar' : 'Upload Avatar'}
+                       </Button>
+                       <p className="text-xs text-gray-500 mt-1">Max 5MB, JPG/PNG</p>
+                     </div>
+                   </div>
+                 </div>
+                <Input placeholder="Group name" value={groupName} onChange={(e) => setGroupName(e.target.value)} className="mb-4" />
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {filteredUsers.map((u) => (
+                    <div key={u.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
+                      <Checkbox
+                        checked={selectedGroupMembers.includes(u.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedGroupMembers(prev => [...prev, u.id])
+                          } else {
+                            setSelectedGroupMembers(prev => prev.filter(id => id !== u.id))
+                          }
+                        }}
+                      />
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={u.avatar} />
+                        <AvatarFallback>{u.displayName.split(' ').map(n => n[0]).join('').toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-medium">{u.displayName}</p>
+                        <p className="text-xs text-gray-500">{u.email}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-between items-center mt-4">
+                  <p className="text-sm text-gray-500">{selectedGroupMembers.length} members selected</p>
+                  <Button onClick={handleCreateGroup} disabled={!groupName.trim() || selectedGroupMembers.length < 2}>Create Group</Button>
+                </div>
               </div>
             )}
           </div>
@@ -1088,6 +1346,352 @@ export default function MessagesPage() {
               />
             ) : null}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Group Info Dialog */}
+      <Dialog open={groupInfoOpen} onOpenChange={(open) => {
+        setGroupInfoOpen(open)
+        if (!open) {
+          setIsEditingGroup(false)
+          setShowUpload(false)
+          setEditingGroupName('')
+          setAvatarFile(null)
+          if (avatarFileRef.current) {
+            avatarFileRef.current.value = ''
+          }
+        }
+      }}>
+        <DialogContent className="sm:max-w-md p-0">
+          <Card className="w-full max-w-md overflow-hidden shadow-2xl border-0 bg-card">
+            {/* Header Section */}
+            <div
+              className="relative aspect-square bg-cover bg-center p-8 text-center flex flex-col items-center justify-end"
+              style={{ backgroundImage: `url('${avatarFile ? URL.createObjectURL(avatarFile) : getConversationAvatarUrl(selectedConversation!) || '/images/image.png'}')` }}
+            >
+              {/* Dark overlay for better text contrast */}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/50 to-black/60" />
+
+              {/* Edit Button */}
+              <button
+                onClick={() => {
+                  if (!isEditingGroup) {
+                    setEditingGroupName(getConversationDisplayName(selectedConversation!))
+                    setShowUpload(true)
+                  } else {
+                    setShowUpload(false)
+                  }
+                  setIsEditingGroup(!isEditingGroup)
+                }}
+                className="absolute top-4 right-4 p-2.5 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 transition-all duration-200 group shadow-lg"
+                aria-label="Edit Group"
+              >
+                <Pencil className="h-4 w-4 text-white" />
+              </button>
+
+              <div className="relative">
+                {/* Group Name */}
+                {isEditingGroup ? (
+                  <Input
+                    value={editingGroupName}
+                    onChange={(e) => setEditingGroupName(e.target.value)}
+                    className="text-3xl font-bold tracking-tight text-white mb-1 drop-shadow-lg bg-transparent border-white/30 text-center h-auto p-0 focus:border-white"
+                    placeholder="Group name"
+                  />
+                ) : (
+                  <h2 className="text-3xl font-bold tracking-tight text-white mb-1 drop-shadow-lg">{getConversationDisplayName(selectedConversation!)}</h2>
+                )}
+
+                {/* Member Count */}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm shadow-sm border border-white/30">
+                  <Users className="h-3.5 w-3.5 text-white" />
+                  <span className="text-sm font-medium text-white">{selectedConversation?.participants?.length || 0} members</span>
+                </div>
+              </div>
+            </div>
+
+            {isEditingGroup && (
+              <div className="px-6 py-5 bg-accent/30">
+                <Button
+                  variant="outline"
+                  className="w-full h-auto py-3 border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-all duration-200 group bg-transparent"
+                  onClick={() => avatarFileRef.current?.click()}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                      <Upload className="h-4 w-4" />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-sm font-semibold text-foreground">Upload Avatar</div>
+                      <div className="text-xs text-muted-foreground">Max 5MB, JPG/PNG</div>
+                    </div>
+                  </div>
+                </Button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarSelect}
+                  className="hidden"
+                  ref={avatarFileRef}
+                />
+              </div>
+            )}
+
+            {isEditingGroup && (
+              <div className="px-6 py-4 bg-accent/30">
+                <div className="flex gap-2">
+                  <Button
+                    onClick={async () => {
+                      if (!selectedConversation || !user?.uid) return
+
+                      setSavingAvatar(true)
+                      try {
+                        const metadata: any = {}
+
+                        // Update group name if changed
+                        if (editingGroupName.trim() !== getConversationDisplayName(selectedConversation)) {
+                          metadata.title = editingGroupName.trim()
+                        }
+
+                        // Update avatar if file selected
+                        if (avatarFile) {
+                          const fileRef = ref(storage, `conversations/${selectedConversation.id}/avatar_${Date.now()}_${avatarFile.name}`)
+                          await uploadBytes(fileRef, avatarFile)
+                          const downloadURL = await getDownloadURL(fileRef)
+                          metadata.avatar = downloadURL
+                        }
+
+                        if (Object.keys(metadata).length > 0) {
+                          const response = await fetch(`/api/messages/conversations/${selectedConversation.id}?userId=${user.uid}`, {
+                            method: 'PUT',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ metadata }),
+                          })
+
+                          if (!response.ok) {
+                            throw new Error('Failed to update group')
+                          }
+                        }
+
+                        // Reset states
+                        setIsEditingGroup(false)
+                        setShowUpload(false)
+                        setAvatarFile(null)
+                        if (avatarFileRef.current) {
+                          avatarFileRef.current.value = ''
+                        }
+                      } catch (error) {
+                        console.error('Error saving group changes:', error)
+                        alert('Failed to save changes. Please try again.')
+                      } finally {
+                        setSavingAvatar(false)
+                      }
+                    }}
+                    disabled={savingAvatar || !editingGroupName.trim()}
+                    size="sm"
+                    className="flex-1"
+                  >
+                    {savingAvatar ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditingGroup(false)
+                      setShowUpload(false)
+                      setEditingGroupName('')
+                      setAvatarFile(null)
+                      if (avatarFileRef.current) {
+                        avatarFileRef.current.value = ''
+                      }
+                    }}
+                    size="sm"
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Members Section */}
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Members</h3>
+                {selectedConversation?.metadata?.admin === user?.uid && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsAddingMember(true)}
+                    className="ml-auto"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Member
+                  </Button>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                {selectedConversation?.participants.map(id => {
+                  const userData = allParticipants.find(u => u.id === id) || companyUsers.find(u => u.id === id)
+                  const isAdmin = id === selectedConversation?.metadata?.admin
+                  const isCurrentUserAdmin = selectedConversation?.metadata?.admin === user?.uid
+                  return (
+                    <div
+                      key={id}
+                      onMouseEnter={() => setHoveredMember(id)}
+                      onMouseLeave={() => setHoveredMember(null)}
+                      className="group flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-all duration-200 cursor-pointer"
+                    >
+                      {/* Avatar */}
+                      <Avatar className="h-10 w-10 border-2 border-border group-hover:border-primary transition-colors shadow-sm">
+                        <AvatarImage src={userData?.avatar} className="object-cover" />
+                        <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-sm group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                          {userData?.displayName.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      {/* Member Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors flex items-center gap-2">
+                          {userData?.displayName || `User ${id}`}
+      {/* Add Member Dialog */}
+      <Dialog open={isAddingMember} onOpenChange={setIsAddingMember}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Member</DialogTitle>
+            <DialogDescription>
+              Select a team member to add to this group.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-96 overflow-y-auto">
+            {companyUsers
+              .filter(u => !selectedConversation?.participants.includes(u.id))
+              .map((u) => (
+                <div
+                  key={u.id}
+                  onClick={() => addMember(u.id)}
+                  className="p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors border mb-2"
+                >
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={u.avatar} />
+                      <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
+                        {u.displayName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {truncateName(u.displayName)}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {u.email}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            {companyUsers.filter(u => !selectedConversation?.participants.includes(u.id)).length === 0 && (
+              <p className="text-sm text-gray-500 py-4 text-center">
+                No available members to add.
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove Member Confirmation Dialog */}
+      <Dialog open={!!memberToRemove} onOpenChange={() => setMemberToRemove(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remove Member</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove this member from the group? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setMemberToRemove(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => memberToRemove && removeMember(memberToRemove)}
+            >
+              Remove
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+                          {isAdmin && <Badge variant="secondary" className="text-xs">Admin</Badge>}
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">Member</div>
+                      </div>
+
+                      {/* Admin controls */}
+                      {isCurrentUserAdmin && !isAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setMemberToRemove(id)
+                          }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+
+                      {/* Hover indicator */}
+                      {hoveredMember === id && <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+            {/* Members Section */}
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Members</h3>
+              </div>
+
+              <div className="space-y-2">
+                {selectedConversation?.participants.map(id => {
+                  const user = allParticipants.find(u => u.id === id) || companyUsers.find(u => u.id === id)
+                  return (
+                    <div
+                      key={id}
+                      onMouseEnter={() => setHoveredMember(id)}
+                      onMouseLeave={() => setHoveredMember(null)}
+                      className="group flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-all duration-200 cursor-pointer"
+                    >
+                      {/* Avatar */}
+                      <Avatar className="h-10 w-10 border-2 border-border group-hover:border-primary transition-colors shadow-sm">
+                        <AvatarImage src={user?.avatar} className="object-contain" />
+                        <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-sm group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                          {user?.displayName.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      {/* Member Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                          {user?.displayName || `User ${id}`}
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">Member</div>
+                      </div>
+
+                      {/* Hover indicator */}
+                      {hoveredMember === id && <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </Card>
         </DialogContent>
       </Dialog>
     </div>

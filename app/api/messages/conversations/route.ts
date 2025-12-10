@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
         updatedAt: data.updatedAt?.toDate() || new Date(),
         lastMessage,
         unreadCount: data.unreadCount || {},
-        metadata: data.metadata,
+        metadata: data.metadata || {},
         settings: {
           isArchived: data.settings?.isArchived || false,
           isMuted: data.settings?.isMuted || false,
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
         acc[participantId] = 0
         return acc
       }, {} as Record<string, number>),
-      metadata: { ...(metadata || {}), participantNames },
+      metadata: { ...(metadata || {}), participantNames, ...(type === 'group' ? { admin: userId } : {}) },
       settings: {
         isArchived: false,
         isMuted: false,
