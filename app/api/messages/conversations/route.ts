@@ -140,6 +140,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Fetch participant names
+    const usersPromises = participants.map(async (id) => {
+      const userQuery = query(collection(db, 'boohk_users'), where('uid', '==', id))
+      const userSnapshot = await getDocs(userQuery)
+      if (!userSnapshot.empty) {
+        const data = userSnapshot.docs[0].data()
+        return `${data.first_name || ''} ${data.last_name || ''}`.trim() || data.email || 'Unknown User'
+      }
+      return 'Unknown User'
+    })
+    const participantNames = await Promise.all(usersPromises)
+
     // Create new conversation
     const conversationData = {
       participants: participants.sort(), // Sort for consistent ordering
@@ -150,7 +162,7 @@ export async function POST(request: NextRequest) {
         acc[participantId] = 0
         return acc
       }, {} as Record<string, number>),
-      metadata: metadata || {},
+      metadata: { ...(metadata || {}), participantNames },
       settings: {
         isArchived: false,
         isMuted: false,

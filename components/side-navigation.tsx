@@ -209,6 +209,7 @@ const navigationItems = [
     items: [
       { title: "Profile", href: "/account", icon: User },
       { title: "Change Password", href: "/account/change-password", icon: Settings },
+      { title: "Messages", href: "/account/message", icon: MessageCircle },
       { title: "Signature", href: "/account/signature", icon: SquarePen },
     ],
   },
@@ -319,7 +320,7 @@ export function SideNavigation() {
   return (
     <div className="h-screen w-[234px] bg-gradient-to-b from-[#1a0f5c] via-[#4a1d7f] via-[#6b2d9e] to-[#2d4a9e] shadow-sm flex flex-col relative">
       <div className="h-16 flex items-center px-6">
-        {pathname === '/account' ? (
+        {pathname.startsWith('/account') ? (
           <Link href="/" className="flex items-center gap-2 text-white hover:text-white/80 transition-colors">
             <ArrowLeft className="h-4 w-4" />
             <span>Account Setting</span>
@@ -1215,6 +1216,7 @@ export function SideNavigation() {
                 {[
                   { title: "Profile", href: "/account", icon: User },
                   { title: "Change Password", href: "/account/change-password", icon: Settings },
+                  { title: "Messages", href: "/account/message", icon: MessageCircle },
                   { title: "Signature", href: "/account/signature", icon: SquarePen },
                 ].map((item) => {
                   const Icon = item.icon

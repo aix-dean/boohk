@@ -103,7 +103,9 @@ export default function MessagesPage() {
   const [loadingMessages, setLoadingMessages] = useState(false)
   const [sendingMessage, setSendingMessage] = useState(false)
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([])
+  const [allParticipants, setAllParticipants] = useState<CompanyUser[]>([])
   const [loadingUsers, setLoadingUsers] = useState(true)
+  const [loadingParticipants, setLoadingParticipants] = useState(false)
   const [typingUsers, setTypingUsers] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [showTeamMembers, setShowTeamMembers] = useState(true)
@@ -124,6 +126,44 @@ export default function MessagesPage() {
   const [mediaDialogOpen, setMediaDialogOpen] = useState(false)
   const [selectedMedia, setSelectedMedia] = useState<{ url: string; type: 'image' | 'video'; fileName?: string } | null>(null)
 
+  // Load user profiles for all unique participants
+  const loadAllParticipants = useCallback(async (conversations: Conversation[]) => {
+    if (!user?.uid) return
+
+    const uniqueParticipantIds = new Set<string>()
+    conversations.forEach(conv => {
+      conv.participants.forEach(participantId => {
+        if (participantId !== user.uid) {
+          uniqueParticipantIds.add(participantId)
+        }
+      })
+    })
+
+    const participantIds = Array.from(uniqueParticipantIds)
+    if (participantIds.length === 0) {
+      setAllParticipants([])
+      setLoadingParticipants(false)
+      return
+    }
+
+    setLoadingParticipants(true)
+    try {
+      const response = await fetch(`/api/messages/users?userIds=${participantIds.join(',')}&userId=${user.uid}`)
+      if (response.ok) {
+        const data = await response.json()
+        setAllParticipants(data.users)
+      } else {
+        console.error('Failed to load participant profiles')
+        setAllParticipants([])
+      }
+    } catch (error) {
+      console.error('Error loading participant profiles:', error)
+      setAllParticipants([])
+    } finally {
+      setLoadingParticipants(false)
+    }
+  }, [user?.uid])
+
   // Real-time conversations and users on mount
   useEffect(() => {
     console.log('MessagesPage useEffect - user:', user)
@@ -142,6 +182,9 @@ export default function MessagesPage() {
         console.log('subscribeToConversations callback received:', conversations.length, 'conversations')
         console.log('Conversations data:', conversations)
         setLoadingConversations(false)
+
+        // Load participant profiles for all conversations
+        loadAllParticipants(conversations)
 
         // Auto-select first conversation if none is selected
         if (conversations.length > 0 && !selectedConversation) {
@@ -203,7 +246,7 @@ export default function MessagesPage() {
         unsubscribeUsers()
       }
     }
-  }, [user])
+  }, [user, loadAllParticipants])
 
   // Load initial messages and subscribe to new messages when conversation is selected
   useEffect(() => {
@@ -525,16 +568,53 @@ export default function MessagesPage() {
     const otherParticipants = conversation.participants.filter(p => p !== user?.uid)
     console.log('getConversationDisplayName for conversation:', conversation.id, 'participants:', conversation.participants, 'user.uid:', user?.uid, 'otherParticipants:', otherParticipants)
     if (otherParticipants.length > 0) {
-      const otherUser = companyUsers.find(u => u.id === otherParticipants[0])
-      console.log('Found otherUser:', otherUser, 'for id:', otherParticipants[0])
-      return otherUser?.displayName || `User ${otherParticipants[0]}`
+      // First try to find in allParticipants (includes users from different companies)
+      const otherUser = allParticipants.find(u => u.id === otherParticipants[0])
+      if (otherUser) {
+        console.log('Found otherUser in allParticipants:', otherUser, 'for id:', otherParticipants[0])
+        return otherUser.displayName
+      }
+      // Fallback to companyUsers
+      const companyUser = companyUsers.find(u => u.id === otherParticipants[0])
+      if (companyUser) {
+        console.log('Found otherUser in companyUsers:', companyUser, 'for id:', otherParticipants[0])
+        return companyUser.displayName
+      }
+      // If still not found and loading, show loading indicator
+      if (loadingParticipants) {
+        return 'Loading...'
+      }
+      // Final fallback: use saved participant name from metadata
+      const otherUserId = otherParticipants[0]
+      const participantIndex = conversation.participants.indexOf(otherUserId)
+      if (conversation.metadata?.participantNames && conversation.metadata.participantNames[participantIndex]) {
+        console.log('Using saved participant name for id:', otherUserId, 'name:', conversation.metadata.participantNames[participantIndex])
+        return conversation.metadata.participantNames[participantIndex]
+      }
+      console.log('No user found for id:', otherUserId, 'showing ID fallback')
+      return `User ${otherUserId}`
     }
     return 'Unknown'
-  }, [companyUsers, user?.uid])
+  }, [allParticipants, companyUsers, user?.uid, loadingParticipants])
 
-  const getConversationAvatar = (conversation: Conversation) => {
+  const getConversationAvatarUrl = (conversation: Conversation) => {
     if (conversation.metadata?.avatar) return conversation.metadata.avatar
 
+    // For direct messages, use the other participant's avatar
+    const otherParticipants = conversation.participants.filter(p => p !== user?.uid)
+    if (otherParticipants.length > 0) {
+      const otherUser = allParticipants.find(u => u.id === otherParticipants[0])
+      if (otherUser?.avatar) return otherUser.avatar
+    }
+
+    return undefined
+  }
+
+  const getConversationAvatar = (conversation: Conversation) => {
+    const url = getConversationAvatarUrl(conversation)
+    if (url) return url
+
+    // Fallback to initials
     const displayName = getConversationDisplayName(conversation)
     return displayName.split(' ').map(n => n[0]).join('').toUpperCase()
   }
@@ -577,15 +657,6 @@ export default function MessagesPage() {
     <div className="container mx-auto p-2 sm:p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.back()}
-            className="gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
               <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -635,7 +706,7 @@ export default function MessagesPage() {
                     >
                       <div className="flex items-center space-x-3">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={conversation.metadata?.avatar} />
+                          <AvatarImage src={getConversationAvatarUrl(conversation)} />
                           <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
                             {getConversationAvatar(conversation)}
                           </AvatarFallback>
@@ -739,7 +810,7 @@ export default function MessagesPage() {
                   <Users className="h-4 w-4" />
                 </Button>
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={selectedConversation.metadata?.avatar} />
+                  <AvatarImage src={getConversationAvatarUrl(selectedConversation)} />
                   <AvatarFallback className="bg-gray-200 text-gray-600 text-sm">
                     {getConversationAvatar(selectedConversation)}
                   </AvatarFallback>
@@ -840,7 +911,12 @@ export default function MessagesPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => {
+                      if (fileInputRef.current) {
+                        fileInputRef.current.accept = '*/*'
+                        fileInputRef.current.click()
+                      }
+                    }}
                     className="h-8 w-8 p-0"
                     title="Attach file"
                   >
@@ -850,31 +926,17 @@ export default function MessagesPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      const input = document.createElement('input')
-                      input.type = 'file'
-                      input.accept = 'image/*'
-                      input.onchange = (e) => handleFileSelect(e as any)
-                      input.click()
+                      if (fileInputRef.current) {
+                        fileInputRef.current.accept = 'image/*,video/*'
+                        fileInputRef.current.click()
+                      }
                     }}
                     className="h-8 w-8 p-0"
-                    title="Attach image"
+                    title="Attach image or video"
                   >
-                    <Image className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      const input = document.createElement('input')
-                      input.type = 'file'
-                      input.accept = 'video/*'
-                      input.onchange = (e) => handleFileSelect(e as any)
-                      input.click()
-                    }}
-                    className="h-8 w-8 p-0"
-                    title="Attach video"
-                  >
-                    <Video className="h-4 w-4" />
+                    <div className="relative">
+                      <Image className="h-4 w-4" />
+                    </div>
                   </Button>
                 </div>
 

@@ -13,6 +13,7 @@ export interface Conversation {
     description?: string;
     avatar?: string;
     createdBy: string;
+    participantNames?: string[];
   };
   settings: {
     isArchived: boolean;
