@@ -1,6 +1,6 @@
 "use client"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import {
@@ -235,6 +235,7 @@ function isActive(pathname: string, href: string) {
 
 export function SideNavigation() {
   const pathname = usePathname()
+  const router = useRouter()
   const { user } = useAuth()
   const { unreadCount } = useUnreadMessages()
   const [showIntelligence, setShowIntelligence] = useState(false)
@@ -321,10 +322,10 @@ export function SideNavigation() {
     <div className="h-screen w-[234px] bg-gradient-to-b from-[#1a0f5c] via-[#4a1d7f] via-[#6b2d9e] to-[#2d4a9e] shadow-sm flex flex-col relative">
       <div className="h-16 flex items-center px-6">
         {pathname.startsWith('/account') ? (
-          <Link href="/" className="flex items-center gap-2 text-white hover:text-white/80 transition-colors">
+          <button onClick={() => router.back()} className="flex items-center gap-2 text-white hover:text-white/80 transition-colors">
             <ArrowLeft className="h-4 w-4" />
             <span>Account Setting</span>
-          </Link>
+          </button>
         ) : (
           <DepartmentDropdown />
         )}
