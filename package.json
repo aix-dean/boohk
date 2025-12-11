@@ -50,6 +50,7 @@
     "@radix-ui/react-toggle": "latest",
     "@radix-ui/react-toggle-group": "latest",
     "@radix-ui/react-tooltip": "latest",
+    "@radix-ui/react-visually-hidden": "^1.2.4",
     "@react-email/render": "latest",
     "@sparticuz/chromium": "latest",
     "@supabase/supabase-js": "^2.45.4",

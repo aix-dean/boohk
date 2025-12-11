@@ -37,6 +37,7 @@ import {
 import { collection, query, where, onSnapshot } from "firebase/firestore"
 import { db, storage } from "@/lib/firebase"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
+import { useToast } from '@/hooks/use-toast'
 
 interface CompanyUser {
   id: string
@@ -112,8 +113,9 @@ const MessageComponent = React.memo(({ message, isOwnMessage, formatMessageTime,
 ))
 
 export default function MessagesPage() {
-  const { user, userData } = useAuth()
-  const router = useRouter()
+   const { user, userData } = useAuth()
+   const router = useRouter()
+   const { toast } = useToast()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -122,9 +124,30 @@ export default function MessagesPage() {
   const [loadingMessages, setLoadingMessages] = useState(false)
   const [sendingMessage, setSendingMessage] = useState(false)
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([])
-  const [allParticipants, setAllParticipants] = useState<CompanyUser[]>([])
   const [loadingUsers, setLoadingUsers] = useState(true)
   const [loadingParticipants, setLoadingParticipants] = useState(false)
+
+  const allParticipants = useMemo(() => {
+    const participants: CompanyUser[] = [...companyUsers]
+    if (selectedConversation) {
+      selectedConversation.participants.forEach((participantId, index) => {
+        if (!participants.find(p => p.id === participantId)) {
+          const name = selectedConversation.metadata?.participantNames?.[index]
+          if (name) {
+            participants.push({
+              id: participantId,
+              displayName: name,
+              email: '',
+              avatar: undefined,
+              status: 'offline' as const,
+              lastSeen: new Date(),
+            })
+          }
+        }
+      })
+    }
+    return participants
+  }, [companyUsers, selectedConversation])
   const [typingUsers, setTypingUsers] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [showTeamMembers, setShowTeamMembers] = useState(true)
@@ -151,50 +174,14 @@ export default function MessagesPage() {
   const [groupName, setGroupName] = useState('')
   const [groupInfoOpen, setGroupInfoOpen] = useState(false)
   const [savingAvatar, setSavingAvatar] = useState(false)
+  const [creatingGroup, setCreatingGroup] = useState(false)
   const [hoveredMember, setHoveredMember] = useState<string | null>(null)
   const [showUpload, setShowUpload] = useState(false)
   const [isEditingGroup, setIsEditingGroup] = useState(false)
   const [editingGroupName, setEditingGroupName] = useState('')
-   const [isAddingMember, setIsAddingMember] = useState(false)
    const [memberToRemove, setMemberToRemove] = useState<string | null>(null)
+   const [dialogMode, setDialogMode] = useState<'info' | 'addMember'>('info')
 
-  // Load user profiles for all unique participants
-  const loadAllParticipants = useCallback(async (conversations: Conversation[]) => {
-    if (!user?.uid) return
-
-    const uniqueParticipantIds = new Set<string>()
-    conversations.forEach(conv => {
-      conv.participants.forEach(participantId => {
-        if (participantId !== user.uid) {
-          uniqueParticipantIds.add(participantId)
-        }
-      })
-    })
-
-    const participantIds = Array.from(uniqueParticipantIds)
-    if (participantIds.length === 0) {
-      setAllParticipants([])
-      setLoadingParticipants(false)
-      return
-    }
-
-    setLoadingParticipants(true)
-    try {
-      const response = await fetch(`/api/messages/users?userIds=${participantIds.join(',')}&userId=${user.uid}`)
-      if (response.ok) {
-        const data = await response.json()
-        setAllParticipants(data.users)
-      } else {
-        console.error('Failed to load participant profiles')
-        setAllParticipants([])
-      }
-    } catch (error) {
-      console.error('Error loading participant profiles:', error)
-      setAllParticipants([])
-    } finally {
-      setLoadingParticipants(false)
-    }
-  }, [user?.uid])
 
   // Real-time conversations and users on mount
   useEffect(() => {
@@ -220,12 +207,11 @@ export default function MessagesPage() {
         if (selectedConversation) {
           const updatedSelected = conversations.find(c => c.id === selectedConversation.id)
           if (updatedSelected) {
+            console.log('DEBUG: Updated selected conversation metadata:', updatedSelected.metadata)
             setSelectedConversation(updatedSelected)
           }
         }
 
-        // Load participant profiles for all conversations
-        loadAllParticipants(conversations)
 
         // Auto-select first conversation if none is selected
         if (conversations.length > 0 && !selectedConversation) {
@@ -291,7 +277,7 @@ export default function MessagesPage() {
         unsubscribeUsers()
       }
     }
-  }, [user, userData, loadAllParticipants])
+  }, [user, userData])
 
   // Load initial messages and subscribe to new messages when conversation is selected
   useEffect(() => {
@@ -438,7 +424,7 @@ export default function MessagesPage() {
 
         if (existingConversation) {
           setSelectedConversation(existingConversation)
-          return
+          return existingConversation
         }
       }
 
@@ -460,20 +446,142 @@ export default function MessagesPage() {
         // Real-time subscription will update conversations list automatically
         // Select the new conversation
         setSelectedConversation(data.conversation)
+        return data.conversation
       }
     } catch (error) {
       console.error('Error creating conversation:', error)
     }
+    return null
   }
 
-  const handleCreateGroup = () => {
-    if (!groupName.trim() || selectedGroupMembers.length < 2) return
+  const handleCreateGroup = async () => {
+    if (!groupName.trim()) return
     const participants = [user!.uid, ...selectedGroupMembers]
-    createConversation(participants, 'group', { title: groupName.trim() })
-    setIsContactDialogOpen(false)
-    setIsGroupMode(false)
-    setSelectedGroupMembers([])
-    setGroupName('')
+    if (selectedGroupMembers.length < 2) {
+      alert('A group must have at least 3 participants.')
+      return
+    }
+
+    // Build participantNames array corresponding to participants by index
+    const currentUserDisplayName = userData ? `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || userData.email || 'Unknown User' : 'Unknown User'
+    const selectedUsersDisplayNames = selectedGroupMembers.map(id => {
+      const user = companyUsers.find(u => u.id === id)
+      return user ? user.displayName : 'Unknown User'
+    })
+    const participantNames = [currentUserDisplayName, ...selectedUsersDisplayNames]
+
+    setCreatingGroup(true)
+    try {
+      console.log('DEBUG: Creating group conversation with participants:', participants)
+      toast({
+        title: "Creating Group",
+        description: "Setting up your group chat...",
+      })
+
+      const conversation = await createConversation(participants, 'group', { title: groupName.trim(), admins: [user!.uid], participantNames })
+      console.log('DEBUG: Group conversation created:', conversation?.id)
+
+      // Upload avatar if selected
+      if (avatarFile && conversation?.id) {
+        console.log('DEBUG: Avatar file selected, starting upload for conversation:', conversation.id)
+        try {
+          toast({
+            title: "Uploading Avatar",
+            description: "Please wait while we upload your group avatar...",
+          })
+
+          // Upload to Firebase Storage
+          const fileRef = ref(storage, `conversations/${conversation.id}/avatar_${Date.now()}_${avatarFile.name}`)
+          console.log('DEBUG: Uploading to Firebase Storage path:', fileRef.fullPath)
+          await uploadBytes(fileRef, avatarFile)
+          console.log('DEBUG: Upload to Firebase Storage successful')
+          const downloadURL = await getDownloadURL(fileRef)
+          console.log('DEBUG: Download URL obtained:', downloadURL)
+
+          // Validate download URL
+          if (!downloadURL || typeof downloadURL !== 'string' || !downloadURL.startsWith('https://')) {
+            throw new Error('Invalid download URL received from Firebase Storage')
+          }
+
+          // Update conversation metadata with retry mechanism
+          let metadataUpdateSuccess = false
+          let retryCount = 0
+          const maxRetries = 3
+
+          while (!metadataUpdateSuccess && retryCount < maxRetries) {
+            try {
+              console.log(`DEBUG: Updating conversation metadata with avatar URL (attempt ${retryCount + 1})`)
+              const response = await fetch(`/api/messages/conversations/${conversation.id}?userId=${user!.uid}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  metadata: { avatar: downloadURL }
+                }),
+              })
+
+              if (response.ok) {
+                console.log('DEBUG: Metadata update successful')
+                metadataUpdateSuccess = true
+                toast({
+                  title: "Avatar Uploaded",
+                  description: "Group avatar has been set successfully.",
+                })
+              } else {
+                const errorText = await response.text()
+                console.error('DEBUG: Failed to update avatar metadata, response status:', response.status, 'error:', errorText)
+                throw new Error(`Metadata update failed: ${response.status} ${errorText}`)
+              }
+            } catch (error) {
+              retryCount++
+              console.error(`DEBUG: Metadata update attempt ${retryCount} failed:`, error)
+              if (retryCount >= maxRetries) {
+                throw error
+              }
+              // Wait before retry (exponential backoff)
+              await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000))
+            }
+          }
+
+          if (!metadataUpdateSuccess) {
+            throw new Error('Failed to update metadata after all retries')
+          }
+        } catch (error) {
+          console.error('DEBUG: Error uploading avatar:', error)
+          toast({
+            title: "Avatar Upload Failed",
+            description: "The group was created but avatar upload failed. You can try uploading it later.",
+            variant: "destructive",
+          })
+        }
+      } else {
+        console.log('DEBUG: No avatar file selected or conversation ID missing')
+      }
+
+      toast({
+        title: "Group Created",
+        description: `Successfully created "${groupName.trim()}" with ${selectedGroupMembers.length + 1} members.`,
+      })
+
+      setIsContactDialogOpen(false)
+      setIsGroupMode(false)
+      setSelectedGroupMembers([])
+      setGroupName('')
+      setAvatarFile(null)
+      if (avatarFileRef.current) {
+        avatarFileRef.current.value = ''
+      }
+    } catch (error) {
+      console.error('Error creating group:', error)
+      toast({
+        title: "Group Creation Failed",
+        description: "There was an error creating your group. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setCreatingGroup(false)
+    }
   }
   const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = event.currentTarget
@@ -666,6 +774,10 @@ export default function MessagesPage() {
       console.error('Error saving avatar:', error)
       alert('Error saving avatar. Please try again.')
     } finally {
+      setSavingAvatar(false)
+    }
+  }
+
   const addMember = async (memberId: string) => {
     if (!selectedConversation || !user?.uid) return
 
@@ -679,7 +791,25 @@ export default function MessagesPage() {
       })
 
       if (response.ok) {
-        setIsAddingMember(false)
+        setDialogMode('info')
+        // Rebuild participantNames
+        const newParticipants = [...selectedConversation.participants, memberId]
+        const newParticipantNames = newParticipants.map(id => {
+          const user = allParticipants.find(u => u.id === id) || companyUsers.find(u => u.id === id)
+          return user ? user.displayName : 'Unknown User'
+        })
+        // Update metadata
+        try {
+          await fetch(`/api/messages/conversations/${selectedConversation.id}?userId=${user.uid}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ metadata: { participantNames: newParticipantNames } }),
+          })
+        } catch (error) {
+          console.error('Error updating participantNames:', error)
+        }
         // The real-time subscription will update the conversation automatically
       } else {
         const error = await response.json()
@@ -701,6 +831,24 @@ export default function MessagesPage() {
 
       if (response.ok) {
         setMemberToRemove(null)
+        // Rebuild participantNames
+        const newParticipants = selectedConversation.participants.filter(id => id !== memberId)
+        const newParticipantNames = newParticipants.map(id => {
+          const user = allParticipants.find(u => u.id === id) || companyUsers.find(u => u.id === id)
+          return user ? user.displayName : 'Unknown User'
+        })
+        // Update metadata
+        try {
+          await fetch(`/api/messages/conversations/${selectedConversation.id}?userId=${user.uid}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ metadata: { participantNames: newParticipantNames } }),
+          })
+        } catch (error) {
+          console.error('Error updating participantNames:', error)
+        }
         // The real-time subscription will update the conversation automatically
       } else {
         const error = await response.json()
@@ -711,7 +859,41 @@ export default function MessagesPage() {
       alert('Error removing member. Please try again.')
     }
   }
-      setSavingAvatar(false)
+
+  const assignAdmin = async (memberId: string) => {
+    if (!selectedConversation || !user?.uid) return
+
+    try {
+      const currentAdmins = (selectedConversation.metadata as any)?.admins || []
+      const isCurrentlyAdmin = currentAdmins.includes(memberId)
+      let newAdmins: string[]
+
+      if (isCurrentlyAdmin) {
+        // Remove admin
+        newAdmins = currentAdmins.filter((id: string) => id !== memberId)
+      } else {
+        // Add admin
+        newAdmins = [...currentAdmins, memberId]
+      }
+
+      const response = await fetch(`/api/messages/conversations/${selectedConversation.id}?userId=${user.uid}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          metadata: { admins: newAdmins }
+        }),
+      })
+
+      if (response.ok) {
+        // success
+      } else {
+        alert(`Failed to ${isCurrentlyAdmin ? 'remove' : 'assign'} admin`)
+      }
+    } catch (error) {
+      console.error('Error updating admin:', error)
+      alert('Error updating admin')
     }
   }
 
@@ -1181,8 +1363,8 @@ export default function MessagesPage() {
 
 
       {/* Contact Dialog */}
-      <Dialog open={isContactDialogOpen} onOpenChange={(open) => { setIsContactDialogOpen(open); if (!open) { setIsGroupMode(false); setSelectedGroupMembers([]); setGroupName(''); } }}>
-        <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
+      <Dialog open={isContactDialogOpen} onOpenChange={(open) => { setIsContactDialogOpen(open); if (!open) { setIsGroupMode(false); setSelectedGroupMembers([]); setGroupName(''); setAvatarFile(null); if (avatarFileRef.current) avatarFileRef.current.value = ''; } }}>
+        <DialogContent className="sm:max-w-md h-auto max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isGroupMode ? 'Create Group Chat' : 'Start New Conversation'}</DialogTitle>
           </DialogHeader>
@@ -1281,8 +1463,7 @@ export default function MessagesPage() {
                      </div>
                    </div>
                  </div>
-                <Input placeholder="Group name" value={groupName} onChange={(e) => setGroupName(e.target.value)} className="mb-4" />
-                <div className="space-y-2 max-h-60 overflow-y-auto">
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
                   {filteredUsers.map((u) => (
                     <div key={u.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
                       <Checkbox
@@ -1300,7 +1481,7 @@ export default function MessagesPage() {
                         <AvatarFallback>{u.displayName.split(' ').map(n => n[0]).join('').toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="text-sm font-medium">{u.displayName}</p>
+                        <p className="text-sm font-medium">{truncateName(u.displayName)}</p>
                         <p className="text-xs text-gray-500">{u.email}</p>
                       </div>
                     </div>
@@ -1308,7 +1489,16 @@ export default function MessagesPage() {
                 </div>
                 <div className="flex justify-between items-center mt-4">
                   <p className="text-sm text-gray-500">{selectedGroupMembers.length} members selected</p>
-                  <Button onClick={handleCreateGroup} disabled={!groupName.trim() || selectedGroupMembers.length < 2}>Create Group</Button>
+                  <Button onClick={handleCreateGroup} disabled={!groupName.trim() || selectedGroupMembers.length < 2 || creatingGroup}>
+                    {creatingGroup ? (
+                      <>
+                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+                        Creating...
+                      </>
+                    ) : (
+                      'Create Group'
+                    )}
+                  </Button>
                 </div>
               </div>
             )}
@@ -1353,6 +1543,7 @@ export default function MessagesPage() {
       <Dialog open={groupInfoOpen} onOpenChange={(open) => {
         setGroupInfoOpen(open)
         if (!open) {
+          setDialogMode('info')
           setIsEditingGroup(false)
           setShowUpload(false)
           setEditingGroupName('')
@@ -1362,336 +1553,353 @@ export default function MessagesPage() {
           }
         }
       }}>
-        <DialogContent className="sm:max-w-md p-0">
-          <Card className="w-full max-w-md overflow-hidden shadow-2xl border-0 bg-card">
-            {/* Header Section */}
-            <div
-              className="relative aspect-square bg-cover bg-center p-8 text-center flex flex-col items-center justify-end"
-              style={{ backgroundImage: `url('${avatarFile ? URL.createObjectURL(avatarFile) : getConversationAvatarUrl(selectedConversation!) || '/images/image.png'}')` }}
-            >
-              {/* Dark overlay for better text contrast */}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/50 to-black/60" />
-
-              {/* Edit Button */}
-              <button
-                onClick={() => {
-                  if (!isEditingGroup) {
-                    setEditingGroupName(getConversationDisplayName(selectedConversation!))
-                    setShowUpload(true)
-                  } else {
-                    setShowUpload(false)
-                  }
-                  setIsEditingGroup(!isEditingGroup)
-                }}
-                className="absolute top-4 right-4 p-2.5 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 transition-all duration-200 group shadow-lg"
-                aria-label="Edit Group"
-              >
-                <Pencil className="h-4 w-4 text-white" />
-              </button>
-
-              <div className="relative">
-                {/* Group Name */}
-                {isEditingGroup ? (
-                  <Input
-                    value={editingGroupName}
-                    onChange={(e) => setEditingGroupName(e.target.value)}
-                    className="text-3xl font-bold tracking-tight text-white mb-1 drop-shadow-lg bg-transparent border-white/30 text-center h-auto p-0 focus:border-white"
-                    placeholder="Group name"
-                  />
-                ) : (
-                  <h2 className="text-3xl font-bold tracking-tight text-white mb-1 drop-shadow-lg">{getConversationDisplayName(selectedConversation!)}</h2>
-                )}
-
-                {/* Member Count */}
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm shadow-sm border border-white/30">
-                  <Users className="h-3.5 w-3.5 text-white" />
-                  <span className="text-sm font-medium text-white">{selectedConversation?.participants?.length || 0} members</span>
-                </div>
-              </div>
-            </div>
-
-            {isEditingGroup && (
-              <div className="px-6 py-5 bg-accent/30">
-                <Button
-                  variant="outline"
-                  className="w-full h-auto py-3 border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-all duration-200 group bg-transparent"
-                  onClick={() => avatarFileRef.current?.click()}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                      <Upload className="h-4 w-4" />
-                    </div>
-                    <div className="text-left">
-                      <div className="text-sm font-semibold text-foreground">Upload Avatar</div>
-                      <div className="text-xs text-muted-foreground">Max 5MB, JPG/PNG</div>
-                    </div>
-                  </div>
-                </Button>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarSelect}
-                  className="hidden"
-                  ref={avatarFileRef}
-                />
-              </div>
-            )}
-
-            {isEditingGroup && (
-              <div className="px-6 py-4 bg-accent/30">
-                <div className="flex gap-2">
-                  <Button
-                    onClick={async () => {
-                      if (!selectedConversation || !user?.uid) return
-
-                      setSavingAvatar(true)
-                      try {
-                        const metadata: any = {}
-
-                        // Update group name if changed
-                        if (editingGroupName.trim() !== getConversationDisplayName(selectedConversation)) {
-                          metadata.title = editingGroupName.trim()
-                        }
-
-                        // Update avatar if file selected
-                        if (avatarFile) {
-                          const fileRef = ref(storage, `conversations/${selectedConversation.id}/avatar_${Date.now()}_${avatarFile.name}`)
-                          await uploadBytes(fileRef, avatarFile)
-                          const downloadURL = await getDownloadURL(fileRef)
-                          metadata.avatar = downloadURL
-                        }
-
-                        if (Object.keys(metadata).length > 0) {
-                          const response = await fetch(`/api/messages/conversations/${selectedConversation.id}?userId=${user.uid}`, {
-                            method: 'PUT',
-                            headers: {
-                              'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ metadata }),
-                          })
-
-                          if (!response.ok) {
-                            throw new Error('Failed to update group')
-                          }
-                        }
-
-                        // Reset states
-                        setIsEditingGroup(false)
-                        setShowUpload(false)
-                        setAvatarFile(null)
-                        if (avatarFileRef.current) {
-                          avatarFileRef.current.value = ''
-                        }
-                      } catch (error) {
-                        console.error('Error saving group changes:', error)
-                        alert('Failed to save changes. Please try again.')
-                      } finally {
-                        setSavingAvatar(false)
-                      }
-                    }}
-                    disabled={savingAvatar || !editingGroupName.trim()}
-                    size="sm"
-                    className="flex-1"
-                  >
-                    {savingAvatar ? 'Saving...' : 'Save Changes'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setIsEditingGroup(false)
-                      setShowUpload(false)
-                      setEditingGroupName('')
-                      setAvatarFile(null)
-                      if (avatarFileRef.current) {
-                        avatarFileRef.current.value = ''
-                      }
-                    }}
-                    size="sm"
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            <Separator />
-
-            {/* Members Section */}
-            <div className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Members</h3>
-                {selectedConversation?.metadata?.admin === user?.uid && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsAddingMember(true)}
-                    className="ml-auto"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Member
-                  </Button>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                {selectedConversation?.participants.map(id => {
-                  const userData = allParticipants.find(u => u.id === id) || companyUsers.find(u => u.id === id)
-                  const isAdmin = id === selectedConversation?.metadata?.admin
-                  const isCurrentUserAdmin = selectedConversation?.metadata?.admin === user?.uid
-                  return (
-                    <div
-                      key={id}
-                      onMouseEnter={() => setHoveredMember(id)}
-                      onMouseLeave={() => setHoveredMember(null)}
-                      className="group flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-all duration-200 cursor-pointer"
-                    >
-                      {/* Avatar */}
-                      <Avatar className="h-10 w-10 border-2 border-border group-hover:border-primary transition-colors shadow-sm">
-                        <AvatarImage src={userData?.avatar} className="object-cover" />
-                        <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-sm group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                          {userData?.displayName.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-
-                      {/* Member Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors flex items-center gap-2">
-                          {userData?.displayName || `User ${id}`}
-      {/* Add Member Dialog */}
-      <Dialog open={isAddingMember} onOpenChange={setIsAddingMember}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Member</DialogTitle>
-            <DialogDescription>
-              Select a team member to add to this group.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="max-h-96 overflow-y-auto">
-            {companyUsers
-              .filter(u => !selectedConversation?.participants.includes(u.id))
-              .map((u) => (
+        <DialogContent className="sm:max-w-md p-0 max-h-[80vh] flex flex-col">
+          {dialogMode === 'info' && (
+            <Card className="w-full max-w-md overflow-hidden shadow-2xl border-0 bg-card flex flex-col flex-1">
+              <div className="flex-1 flex flex-col">
+                {/* Header Section */}
                 <div
-                  key={u.id}
-                  onClick={() => addMember(u.id)}
-                  className="p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors border mb-2"
+                  className="relative bg-cover bg-center p-8 text-center flex flex-col items-center justify-end h-full"
+                  style={{ backgroundImage: `url('${avatarFile ? URL.createObjectURL(avatarFile) : getConversationAvatarUrl(selectedConversation!) || '/images/image.png'}')` }}
                 >
-                  <div className="flex items-center space-x-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={u.avatar} />
-                      <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
-                        {u.displayName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  {/* Dark overlay for better text contrast */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/50 to-black/60" />
+
+                  {/* Edit Button */}
+                  <button
+                    onClick={() => {
+                      if (!isEditingGroup) {
+                        setEditingGroupName(getConversationDisplayName(selectedConversation!))
+                        setShowUpload(true)
+                      } else {
+                        setShowUpload(false)
+                      }
+                      setIsEditingGroup(!isEditingGroup)
+                    }}
+                    className="absolute top-4 right-4 p-2.5 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 transition-all duration-200 group shadow-lg"
+                    aria-label="Edit Group"
+                  >
+                    <Pencil className="h-4 w-4 text-white" />
+                  </button>
+
+                  <div className="relative">
+                    <Avatar className="h-16 w-16 mb-4 mx-auto">
+                      <AvatarImage src={getConversationAvatarUrl(selectedConversation!)} className="object-cover" />
+                      <AvatarFallback className="bg-white/20 text-white">
+                        <Users className="h-8 w-8" />
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {truncateName(u.displayName)}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {u.email}
-                      </p>
+                    {/* Group Name */}
+                    {isEditingGroup ? (
+                      <Input
+                        value={editingGroupName}
+                        onChange={(e) => setEditingGroupName(e.target.value)}
+                        className="text-3xl font-bold tracking-tight text-white mb-1 drop-shadow-lg bg-transparent border-white/30 text-center h-auto p-0 focus:border-white"
+                        placeholder="Group name"
+                      />
+                    ) : (
+                      <h2 className="text-3xl font-bold tracking-tight text-white mb-1 drop-shadow-lg">{getConversationDisplayName(selectedConversation!)}</h2>
+                    )}
+
+                    {/* Member Count */}
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm shadow-sm border border-white/30">
+                      <Users className="h-3.5 w-3.5 text-white" />
+                      <span className="text-sm font-medium text-white">{selectedConversation?.participants?.length || 0} members</span>
                     </div>
                   </div>
                 </div>
-              ))}
-            {companyUsers.filter(u => !selectedConversation?.participants.includes(u.id)).length === 0 && (
-              <p className="text-sm text-gray-500 py-4 text-center">
-                No available members to add.
-              </p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
 
-      {/* Remove Member Confirmation Dialog */}
-      <Dialog open={!!memberToRemove} onOpenChange={() => setMemberToRemove(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Remove Member</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to remove this member from the group? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setMemberToRemove(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => memberToRemove && removeMember(memberToRemove)}
-            >
-              Remove
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-                          {isAdmin && <Badge variant="secondary" className="text-xs">Admin</Badge>}
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate">Member</div>
-                      </div>
-
-                      {/* Admin controls */}
-                      {isCurrentUserAdmin && !isAdmin && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setMemberToRemove(id)
-                          }}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-
-                      {/* Hover indicator */}
-                      {hoveredMember === id && <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-            {/* Members Section */}
-            <div className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Members</h3>
-              </div>
-
-              <div className="space-y-2">
-                {selectedConversation?.participants.map(id => {
-                  const user = allParticipants.find(u => u.id === id) || companyUsers.find(u => u.id === id)
-                  return (
-                    <div
-                      key={id}
-                      onMouseEnter={() => setHoveredMember(id)}
-                      onMouseLeave={() => setHoveredMember(null)}
-                      className="group flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-all duration-200 cursor-pointer"
+                {isEditingGroup && (
+                  <div className="px-6 py-5 bg-accent/30">
+                    <Button
+                      variant="outline"
+                      className="w-full h-auto py-3 border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-all duration-200 group bg-transparent"
+                      onClick={() => avatarFileRef.current?.click()}
                     >
-                      {/* Avatar */}
-                      <Avatar className="h-10 w-10 border-2 border-border group-hover:border-primary transition-colors shadow-sm">
-                        <AvatarImage src={user?.avatar} className="object-contain" />
-                        <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-sm group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                          {user?.displayName.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-
-                      {/* Member Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                          {user?.displayName || `User ${id}`}
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          <Upload className="h-4 w-4" />
                         </div>
-                        <div className="text-xs text-muted-foreground truncate">Member</div>
+                        <div className="text-left">
+                          <div className="text-sm font-semibold text-foreground">Upload Avatar</div>
+                          <div className="text-xs text-muted-foreground">Max 5MB, JPG/PNG</div>
+                        </div>
                       </div>
+                    </Button>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarSelect}
+                      className="hidden"
+                      ref={avatarFileRef}
+                    />
+                  </div>
+                )}
 
-                      {/* Hover indicator */}
-                      {hoveredMember === id && <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />}
+                {isEditingGroup && (
+                  <div className="px-6 py-4 bg-accent/30">
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={async () => {
+                          if (!selectedConversation || !user?.uid) return
+
+                          setSavingAvatar(true)
+                          try {
+                            const metadata: any = {}
+
+                            // Update group name if changed
+                            if (editingGroupName.trim() !== getConversationDisplayName(selectedConversation)) {
+                              metadata.title = editingGroupName.trim()
+                            }
+
+                            // Update avatar if file selected
+                            if (avatarFile) {
+                              const fileRef = ref(storage, `conversations/${selectedConversation.id}/avatar_${Date.now()}_${avatarFile.name}`)
+                              await uploadBytes(fileRef, avatarFile)
+                              const downloadURL = await getDownloadURL(fileRef)
+                              metadata.avatar = downloadURL
+                            }
+
+                            if (Object.keys(metadata).length > 0) {
+                              const response = await fetch(`/api/messages/conversations/${selectedConversation.id}?userId=${user.uid}`, {
+                                method: 'PUT',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ metadata }),
+                              })
+
+                              if (!response.ok) {
+                                throw new Error('Failed to update group')
+                              }
+                            }
+
+                            // Reset states
+                            setIsEditingGroup(false)
+                            setShowUpload(false)
+                            setAvatarFile(null)
+                            if (avatarFileRef.current) {
+                              avatarFileRef.current.value = ''
+                            }
+                          } catch (error) {
+                            console.error('Error saving group changes:', error)
+                            alert('Failed to save changes. Please try again.')
+                          } finally {
+                            setSavingAvatar(false)
+                          }
+                        }}
+                        disabled={savingAvatar || !editingGroupName.trim()}
+                        size="sm"
+                        className="flex-1"
+                      >
+                        {savingAvatar ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setIsEditingGroup(false)
+                          setShowUpload(false)
+                          setEditingGroupName('')
+                          setAvatarFile(null)
+                          if (avatarFileRef.current) {
+                            avatarFileRef.current.value = ''
+                          }
+                        }}
+                        size="sm"
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
                     </div>
-                  )
-                })}
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Members Section */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Members</h3>
+                  {(selectedConversation?.metadata as any)?.admins?.includes(user?.uid) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDialogMode('addMember')}
+                      className="ml-auto"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Member
+                    </Button>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  {selectedConversation?.participants.map(id => {
+                    const userData = allParticipants.find(u => u.id === id) || companyUsers.find(u => u.id === id)
+                    const isAdmin = (selectedConversation?.metadata as any)?.admins?.includes(id) || false
+                    const isCurrentUserAdmin = selectedConversation?.metadata?.admin === user?.uid
+                    return (
+                      <div
+                        key={id}
+                        onMouseEnter={() => setHoveredMember(id)}
+                        onMouseLeave={() => setHoveredMember(null)}
+                        className="group relative flex items-center gap-3 p-3 rounded-lg transition-all duration-200 cursor-pointer"
+                      >
+                        {/* Avatar */}
+                        <Avatar className="h-10 w-10 border-2 border-border transition-colors shadow-sm">
+                          <AvatarImage src={userData?.avatar} className="object-cover" />
+                          <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-sm group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                            {userData?.displayName.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+
+                        {/* Member Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm text-foreground group-hover:text-primary transition-colors flex items-center gap-2" title={userData?.displayName || `User ${id}`}>
+                            <span className="truncate">{truncateName(userData?.displayName || `User ${id}`)}</span>
+                                  {isAdmin && <Badge variant="secondary" className="text-xs group-hover:opacity-0">Admin</Badge>}
+                                  {id === user?.uid && <Badge variant="outline" className="text-xs group-hover:opacity-0">You</Badge>}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">Member</div>
+                          {/* Admin controls - shown below on smaller screens or when needed */}
+                          <div className="absolute top-1/2 -translate-y-1/2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 md:hidden">
+                            {isCurrentUserAdmin && (
+                              <Button
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  assignAdmin(id)
+                                }}
+                                className="h-7 px-2 text-xs text-white bg-destructive hover:bg-destructive/80 outline-none focus:outline-none focus-visible:ring-0 ring-0"
+                              >
+                                {isAdmin ? 'Remove Admin' : 'Make Admin'}
+                              </Button>
+                            )}
+                            {id !== user?.uid && (
+                              <Button
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setMemberToRemove(id)
+                                }}
+                                className="h-7 px-2 text-xs text-white bg-destructive hover:bg-destructive/80 outline-none focus:outline-none focus-visible:ring-0 ring-0"
+                              >
+                                Remove
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Admin controls - desktop version */}
+                        <div className="absolute top-1/2 -translate-y-1/2 right-2 hidden md:flex opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                          {isCurrentUserAdmin && (
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                assignAdmin(id)
+                              }}
+                              className="h-7 px-2 text-xs text-white bg-destructive hover:bg-destructive/80 whitespace-nowrap outline-none focus:outline-none focus-visible:ring-0 ring-0"
+                            >
+                              {isAdmin ? 'Remove Admin' : 'Make Admin'}
+                            </Button>
+                          )}
+                          {id !== user?.uid && (
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setMemberToRemove(id)
+                              }}
+                              className="h-7 px-2 text-xs text-white bg-destructive hover:bg-destructive/80 whitespace-nowrap outline-none focus:outline-none focus-visible:ring-0 ring-0"
+                            >
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Hover indicator */}
+                        {hoveredMember === id && <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Remove Member Confirmation Dialog */}
+              <Dialog open={!!memberToRemove} onOpenChange={() => setMemberToRemove(null)}>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Remove Member</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to remove this member from the group? This action cannot be undone.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setMemberToRemove(null)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => memberToRemove && removeMember(memberToRemove)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </Card>
+          )}
+          {dialogMode === 'addMember' && (
+            <div className="p-6">
+              <DialogHeader>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setDialogMode('info')}>
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                  <DialogTitle>Add Member</DialogTitle>
+                </div>
+                <DialogDescription>
+                  Select a team member to add to this group.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="max-h-96 overflow-y-auto">
+                {companyUsers
+                  .filter(u => !selectedConversation?.participants.includes(u.id))
+                  .sort((a, b) => a.displayName.localeCompare(b.displayName))
+                  .map((u) => (
+                    <div
+                      key={u.id}
+                      onClick={() => addMember(u.id)}
+                      className="p-3 rounded-lg hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors mb-2"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={u.avatar} />
+                          <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
+                            {u.displayName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900">
+                            {u.displayName}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {u.email}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                {companyUsers.filter(u => !selectedConversation?.participants.includes(u.id)).length === 0 && (
+                  <p className="text-sm text-gray-500 py-4 text-center">
+                    No available members to add.
+                  </p>
+                )}
               </div>
             </div>
-          </Card>
+          )}
         </DialogContent>
       </Dialog>
     </div>
