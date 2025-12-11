@@ -349,7 +349,7 @@ export default function AccountPage() {
         displayName: displayName,
         phone_number: phoneNumber,
         gender,
-        ...(photoURL && { photo_url: photoURL }),
+        ...(photoURL && { photo_url: photoURL, avatar: photoURL }),
       } as any)
 
       // Update project data if it exists
@@ -399,7 +399,7 @@ export default function AccountPage() {
       const snapshot = await uploadBytes(storageRef, file)
       const downloadURL = await getDownloadURL(snapshot.ref)
       setPhotoURL(downloadURL)
-      await updateUserData({ photo_url: downloadURL } as any)
+      await updateUserData({ photo_url: downloadURL, avatar: downloadURL } as any)
       toast({
         title: "Success",
         description: "Profile photo updated successfully!",
