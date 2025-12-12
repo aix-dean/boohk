@@ -593,7 +593,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
     const bookingsQuery = query(
       collection(db, "booking"),
-      where("for_censorship", "==", 1),
       where("product_id", "==", productId),
       orderBy("created", "desc")
     )
@@ -758,7 +757,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const productId = Array.isArray(paramsData.id) ? paramsData.id[0] : paramsData.id
     const bookingRequestsQuery = query(
       collection(db, "booking"),
-      where("for_censorship", "==", 1),
       where("product_id", "==", productId),
       orderBy("created", "desc")
     )
