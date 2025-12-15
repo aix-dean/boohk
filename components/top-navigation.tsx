@@ -186,8 +186,17 @@ export function TopNavigation() {
     return null
   }
 
+  // FIXED: Always call the hook, but handle conditional logic inside
   const notificationConfig = getNotificationConfig()
-  const { notifications, unreadCount, loading } = notificationConfig ? useNotifications(notificationConfig) : { notifications: [], unreadCount: 0, loading: false }
+  
+  // Create a default config for non-matching routes to ensure hook is always called
+  const hookConfig = notificationConfig || {
+    department: "General",
+    colorScheme: "blue",
+    notificationsPath: "/notifications"
+  }
+  
+  const { notifications, unreadCount, loading } = useNotifications(hookConfig)
 
   // Debug logging
   console.log('Notification Debug:', {
