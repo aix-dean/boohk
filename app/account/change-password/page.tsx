@@ -188,113 +188,151 @@ export default function ChangePasswordPage() {
   if (!user) return null
 
   return (
-    <div className="relative size-full">
-      {/* Title */}
-      <div className="w-96 h-6  top-[59px] absolute justify-start text-black text-base font-bold font-['Inter'] leading-none">
-        Change Password
-      </div>
-
-      {/* White rounded container */}
-      <div className="w-[1002px] h-64  top-[97px] absolute bg-white rounded-[20px]">
-        {/* Current Password Row */}
-        <div className="w-full h-6 left-[29px] top-[26px] absolute flex items-start">
-          <div className="w-[250px] h-3.5 justify-start text-black text-xs font-bold font-['Inter'] leading-3 mt-1">
-            Current Password:
-          </div>
-          <div className="w-[250px] h-6 bg-white rounded-md border-[1.20px] border-gray-300 relative">
-            <Input
-              id="current-password"
-              type={showPasswords.current ? "text" : "password"}
-              placeholder="Enter current password"
-              value={formData.currentPassword}
-              onChange={handleInputChange("currentPassword")}
-              className="w-full h-full border-none bg-transparent px-2 text-xs"
-            />
-            <button
-              type="button"
-              onClick={() => togglePasswordVisibility('current')}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2"
-            >
-              {showPasswords.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-4xl">
+        {/* Title */}
+        <div className="mb-6">
+          <h1 className="text-lg md:text-xl font-bold text-black">Change Password</h1>
         </div>
 
-        {/* New Password Row */}
-        <div className="w-full h-6 left-[29px] top-[59px] absolute flex items-start">
-          <div className="w-[250px] h-3.5 justify-start text-black text-xs font-bold font-['Inter'] leading-3 mt-1">
-            New Password:
-          </div>
-          <div className="w-[250px] h-6 bg-white rounded-md border-[1.20px] border-gray-300 relative">
-            <Input
-              id="new-password"
-              type={showPasswords.new ? "text" : "password"}
-              placeholder="Enter new password"
-              value={formData.newPassword}
-              onChange={handleInputChange("newPassword")}
-              className="w-full h-full border-none bg-transparent px-2 text-xs"
-            />
-            <button
-              type="button"
-              onClick={() => togglePasswordVisibility('new')}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2"
-            >
-              {showPasswords.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
+        {/* Password Change Form Card */}
+        <Card className="w-full">
+          <CardContent className="p-6 md:p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Current Password Row */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 items-center">
+                <div className="lg:col-span-1">
+                  <Label 
+                    htmlFor="current-password" 
+                    className="text-xs font-bold text-black leading-3 block"
+                  >
+                    Current Password:
+                  </Label>
+                </div>
+                <div className="lg:col-span-2">
+                  <div className="relative w-full lg:w-[250px] h-6">
+                    <Input
+                      id="current-password"
+                      type={showPasswords.current ? "text" : "password"}
+                      placeholder="Enter current password"
+                      value={formData.currentPassword}
+                      onChange={handleInputChange("currentPassword")}
+                      className="w-full h-full border border-gray-300 rounded-xl bg-white px-2 text-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => togglePasswordVisibility('current')}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                    >
+                      {showPasswords.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {errors.currentPassword && (
+                    <p className="text-xs text-red-500 mt-1">{errors.currentPassword}</p>
+                  )}
+                </div>
+              </div>
 
-        {/* Confirm Password Row */}
-        <div className="w-full h-6 left-[29px] top-[92px] absolute flex items-start">
-          <div className="w-[250px] h-3.5 justify-start text-black text-xs font-bold font-['Inter'] leading-3 mt-1">
-            Confirm Password:
-          </div>
-          <div className="w-[250px] h-6 bg-white rounded-md border-[1.20px] border-gray-300 relative">
-            <Input
-              id="confirm-password"
-              type={showPasswords.confirm ? "text" : "password"}
-              placeholder="Confirm new password"
-              value={formData.confirmPassword}
-              onChange={handleInputChange("confirmPassword")}
-              className="w-full h-full border-none bg-transparent px-2 text-xs"
-            />
-            <button
-              type="button"
-              onClick={() => togglePasswordVisibility('confirm')}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2"
-            >
-              {showPasswords.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
+              {/* New Password Row */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 items-center">
+                <div className="lg:col-span-1">
+                  <Label 
+                    htmlFor="new-password" 
+                    className="text-xs font-bold text-black leading-3 block"
+                  >
+                    New Password:
+                  </Label>
+                </div>
+                <div className="lg:col-span-2">
+                  <div className="relative w-full lg:w-[250px] h-6">
+                    <Input
+                      id="new-password"
+                      type={showPasswords.new ? "text" : "password"}
+                      placeholder="Enter new password"
+                      value={formData.newPassword}
+                      onChange={handleInputChange("newPassword")}
+                      className="w-full h-full border border-gray-300 rounded-xl bg-white px-2 text-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => togglePasswordVisibility('new')}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                    >
+                      {showPasswords.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {errors.newPassword && (
+                    <p className="text-xs text-red-500 mt-1">{errors.newPassword}</p>
+                  )}
+                </div>
+              </div>
 
-        {/* Cancel Button */}
-        <button
-          type="button"
-          onClick={handleCancel}
-          className="w-36 h-7 left-[673px] top-[139px] absolute bg-white rounded-[10px] border-2 border-gray-300 text-center justify-start text-zinc-800 text-base font-medium font-['Inter'] leading-none"
-        >
-          Cancel
-        </button>
+              {/* Confirm Password Row */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 items-center">
+                <div className="lg:col-span-1">
+                  <Label 
+                    htmlFor="confirm-password" 
+                    className="text-xs font-bold text-black leading-3 block"
+                  >
+                    Confirm Password:
+                  </Label>
+                </div>
+                <div className="lg:col-span-2">
+                  <div className="relative w-full lg:w-[250px] h-6">
+                    <Input
+                      id="confirm-password"
+                      type={showPasswords.confirm ? "text" : "password"}
+                      placeholder="Confirm new password"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange("confirmPassword")}
+                      className="w-full h-full border border-gray-300 rounded-xl bg-white px-2 text-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => togglePasswordVisibility('confirm')}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                    >
+                      {showPasswords.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="text-xs text-red-500 mt-1">{errors.confirmPassword}</p>
+                  )}
+                </div>
+              </div>
 
-        {/* Save Button */}
-        <button
-          type="submit"
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-          className="w-36 h-7 left-[832px] top-[139px] absolute bg-indigo-700 rounded-[10px] text-center justify-start text-white text-base font-bold font-['Inter'] leading-none disabled:opacity-50"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="inline mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            "Save"
-          )}
-        </button>
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-start lg:justify-end pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                  className="w-full sm:w-36 h-7 bg-white border-2 border-gray-300 text-zinc-800 text-base font-medium rounded-xl"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full sm:w-36 h-7 bg-indigo-700 text-white text-base font-bold disabled:opacity-50 rounded-xl"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="inline mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save"
+                  )}
+                </Button>
+              </div>
 
-
+              {errors.general && (
+                <p className="text-sm text-red-500">{errors.general}</p>
+              )}
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
