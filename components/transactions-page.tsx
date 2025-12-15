@@ -208,76 +208,88 @@ export default function TransactionsPage({ title }: TransactionsPageProps) {
 
 
   return (
-    <div className="h-full pb-4 flex flex-col max-w-full overflow-hidden">
-      {/* Header */}
-      <div className="py-4 flex-shrink-0">
-        <h2 className="text-xl font-semibold text-[#000000]">{title}</h2>
-      </div>
+    <div className="h-full pb-4 overflow-hidden flex flex-col max-w-full">
+      {/* Main content area */}
+      <div className="flex-1 overflow-hidden">
+        <div className="grid grid-cols-1 gap-6 h-full max-w-full">
+          {/* Left Column: Main Content */}
+          <div className="flex flex-col gap-1 md:gap-2 h-full overflow-y-auto max-w-full">
+            {/* Header */}
+            <div className="rounded-lg mb-6 max-w-full">
+              <div className="py-4 max-w-full">
+                <h2 className="text-xl font-semibold text-[#000000] truncate">{title}</h2>
+              </div>
 
-      <div className="flex-shrink-0">
-        <TransactionMetrics transactions={metricsBookings} />
-      </div>
+              {/* Metrics Cards */}
+              <div className="mb-6 max-w-full overflow-hidden">
+                <TransactionMetrics transactions={metricsBookings} />
+              </div>
 
-      {/* Search and Controls */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 mb-6 flex-shrink-0">
-        {/* Search Section */}
-        <div className="flex items-center gap-3 w-full lg:w-auto">
-          <label htmlFor="" className="hidden sm:inline text-sm font-medium text-gray-700 whitespace-nowrap">
-            Search:
-          </label>
-          <div className="relative flex-1 lg:w-80">
-            <Input
-              placeholder="Search transactions..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#fafafa] border-[#e0e0e0] pr-10"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm("")}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#a1a1a1] hover:text-gray-600"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+              {/* Search and Controls */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 max-w-full">
+                <label htmlFor="" className="hidden sm:inline text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0">
+                  Search:
+                </label>
+                <div className="relative w-full sm:flex-1 lg:w-80 max-w-[300px] sm:max-w-[400px]">
+                  <Input
+                    placeholder="Search transactions..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-[#fafafa] border-[#e0e0e0] pr-10"
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#a1a1a1] hover:text-gray-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                
+                {/* Controls Section */}
+                <div className="flex items-center gap-3 w-full sm:w-auto flex-shrink-0">
+                  <div className="flex-1 min-w-0">
+                    <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                      <SelectTrigger className="w-full bg-white h-10 text-sm max-w-full">
+                        <SelectValue placeholder="This month" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="this-month" className="text-sm">This month</SelectItem>
+                        <SelectItem value="last-month" className="text-sm">Last month</SelectItem>
+                        <SelectItem value="this-year" className="text-sm">This year</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <Button
+                      variant="outline"
+                      className="w-full border-gray-300 h-10 text-sm px-6 flex-shrink-0"
+                      onClick={handleExport}
+                    >
+                      Export
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Transactions Table - Scrollable area */}
+            <div className="flex-1 min-w-0 max-w-full">
+              {loading ? (
+                <div className="text-center py-8">Loading transactions...</div>
+              ) : (
+                <TransactionsTable
+                  transactions={bookings}
+                  totalItems={totalItems}
+                  currentPage={currentPage}
+                  onPageChange={setCurrentPage}
+                  onRowClick={handleRowClick}
+                />
+              )}
+            </div>
           </div>
         </div>
-        
-        {/* Controls Section */}
-        <div className="flex items-center gap-3 w-full lg:w-auto">
-          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-full sm:w-[140px] bg-white h-10 text-sm">
-              <SelectValue placeholder="This month" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="this-month" className="text-sm">This month</SelectItem>
-              <SelectItem value="last-month" className="text-sm">Last month</SelectItem>
-              <SelectItem value="this-year" className="text-sm">This year</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            className="border-gray-300 h-10 text-sm w-full sm:w-auto px-6"
-            onClick={handleExport}
-          >
-            Export
-          </Button>
-        </div>
-      </div>
-
-      {/* Transactions Table - Scrollable area */}
-      <div className="flex-1 min-w-0 overflow-hidden">
-        {loading ? (
-          <div className="text-center py-8">Loading transactions...</div>
-        ) : (
-          <TransactionsTable
-            transactions={bookings}
-            totalItems={totalItems}
-            currentPage={currentPage}
-            onPageChange={setCurrentPage}
-            onRowClick={handleRowClick}
-          />
-        )}
       </div>
 
       {/* Export Loading Dialog */}
