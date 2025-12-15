@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -207,14 +208,45 @@ export default function TransactionsPage({ title }: TransactionsPageProps) {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
-      <div className="mx-auto max-w-7xl">
-        {/* Header - Mobile Responsive */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 -mt-2">
-          <h1 className="text-lg sm:text-xl font-semibold text-gray-900">{title}</h1>
-          <div className="w-full sm:w-auto">
+    <div className="h-full pb-4 overflow-hidden flex flex-col">
+      {/* Main content area */}
+      <div className="flex-1 overflow-hidden">
+        {/* Header */}
+        <div className="py-4">
+          <h2 className="text-xl font-semibold text-[#000000]">{title}</h2>
+        </div>
+
+        <TransactionMetrics transactions={metricsBookings} />
+
+        {/* Search and Controls */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 mb-6">
+          {/* Search Section */}
+          <div className="flex items-center gap-3 w-full lg:w-auto">
+            <label htmlFor="" className="hidden sm:inline text-sm font-medium text-gray-700 whitespace-nowrap">
+              Search:
+            </label>
+            <div className="relative flex-1 lg:w-80">
+              <Input
+                placeholder="Search transactions..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-[#fafafa] border-[#e0e0e0] pr-10"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#a1a1a1] hover:text-gray-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+          
+          {/* Controls Section */}
+          <div className="flex items-center gap-3 w-full lg:w-auto">
             <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-full sm:w-[140px] bg-white h-10 sm:h-6 text-sm">
+              <SelectTrigger className="w-full sm:w-[140px] bg-white h-10 text-sm">
                 <SelectValue placeholder="This month" />
               </SelectTrigger>
               <SelectContent>
@@ -223,29 +255,14 @@ export default function TransactionsPage({ title }: TransactionsPageProps) {
                 <SelectItem value="this-year" className="text-sm">This year</SelectItem>
               </SelectContent>
             </Select>
+            <Button
+              variant="outline"
+              className="border-gray-300 h-10 text-sm w-full sm:w-auto px-6"
+              onClick={handleExport}
+            >
+              Export
+            </Button>
           </div>
-        </div>
-
-        <TransactionMetrics transactions={metricsBookings} />
-
-        {/* Search and Export - Mobile Responsive */}
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
-            <span className="text-sm text-gray-700">Search:</span>
-            <Input
-              placeholder="Search transactions..."
-              className="w-full sm:w-64 h-10 sm:h-6 text-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <Button
-            variant="outline"
-            className="border-gray-300 h-10 sm:h-6 text-sm w-full sm:w-auto"
-            onClick={handleExport}
-          >
-            Export
-          </Button>
         </div>
 
         {/* Transactions Table */}
