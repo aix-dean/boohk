@@ -99,10 +99,10 @@ export function TransactionsTable({
   return (
     <div className="bg-white rounded-[10px] overflow-hidden">
       {/* Mobile-optimized horizontal scrolling wrapper */}
-      <div className="overflow-x-auto">
-        <div className="px-[15px] min-w-[1000px]">
+      <div className="overflow-x-auto overflow-y-hidden">
+        <div className="px-4 min-w-[800px] sm:min-w-[1000px]">
           {/* Table Header */}
-          <div className="bg-white px-4 py-1.5">
+          <div className="bg-white px-4 py-1.5 border-b border-gray-200">
             <div className="grid grid-cols-10 gap-2 text-xs font-semibold text-gray-700">
               <div className="min-w-16 py-1 px-2 mt-1">Date</div>
               <div className="min-w-24 py-1 px-2 mt-1">Site</div>

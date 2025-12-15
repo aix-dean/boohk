@@ -209,63 +209,62 @@ export default function TransactionsPage({ title }: TransactionsPageProps) {
 
   return (
     <div className="h-full pb-4 flex flex-col">
-      {/* Main content area - removed overflow-hidden to allow horizontal scrolling */}
+      {/* Header */}
+      <div className="py-4">
+        <h2 className="text-xl font-semibold text-[#000000]">{title}</h2>
+      </div>
+
+      <TransactionMetrics transactions={metricsBookings} />
+
+      {/* Search and Controls */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 mb-6">
+        {/* Search Section */}
+        <div className="flex items-center gap-3 w-full lg:w-auto">
+          <label htmlFor="" className="hidden sm:inline text-sm font-medium text-gray-700 whitespace-nowrap">
+            Search:
+          </label>
+          <div className="relative flex-1 lg:w-80">
+            <Input
+              placeholder="Search transactions..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-[#fafafa] border-[#e0e0e0] pr-10"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#a1a1a1] hover:text-gray-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+        
+        {/* Controls Section */}
+        <div className="flex items-center gap-3 w-full lg:w-auto">
+          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+            <SelectTrigger className="w-full sm:w-[140px] bg-white h-10 text-sm">
+              <SelectValue placeholder="This month" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="this-month" className="text-sm">This month</SelectItem>
+              <SelectItem value="last-month" className="text-sm">Last month</SelectItem>
+              <SelectItem value="this-year" className="text-sm">This year</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            className="border-gray-300 h-10 text-sm w-full sm:w-auto px-6"
+            onClick={handleExport}
+          >
+            Export
+          </Button>
+        </div>
+      </div>
+
+      {/* Transactions Table - This will handle its own horizontal scrolling */}
       <div className="flex-1 min-w-0">
-        {/* Header */}
-        <div className="py-4">
-          <h2 className="text-xl font-semibold text-[#000000]">{title}</h2>
-        </div>
-
-        <TransactionMetrics transactions={metricsBookings} />
-
-        {/* Search and Controls */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 mb-6">
-          {/* Search Section */}
-          <div className="flex items-center gap-3 w-full lg:w-auto">
-            <label htmlFor="" className="hidden sm:inline text-sm font-medium text-gray-700 whitespace-nowrap">
-              Search:
-            </label>
-            <div className="relative flex-1 lg:w-80">
-              <Input
-                placeholder="Search transactions..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-[#fafafa] border-[#e0e0e0] pr-10"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#a1a1a1] hover:text-gray-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-          </div>
-          
-          {/* Controls Section */}
-          <div className="flex items-center gap-3 w-full lg:w-auto">
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-full sm:w-[140px] bg-white h-10 text-sm">
-                <SelectValue placeholder="This month" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="this-month" className="text-sm">This month</SelectItem>
-                <SelectItem value="last-month" className="text-sm">Last month</SelectItem>
-                <SelectItem value="this-year" className="text-sm">This year</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              className="border-gray-300 h-10 text-sm w-full sm:w-auto px-6"
-              onClick={handleExport}
-            >
-              Export
-            </Button>
-          </div>
-        </div>
-
-        {/* Transactions Table */}
         {loading ? (
           <div className="text-center py-8">Loading transactions...</div>
         ) : (
