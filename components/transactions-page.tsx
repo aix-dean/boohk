@@ -207,39 +207,41 @@ export default function TransactionsPage({ title }: TransactionsPageProps) {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6 -mt-2">
-          <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
-          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-[140px] bg-white h-6 text-xs">
-              <SelectValue placeholder="This month" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="this-month" className="text-xs">This month</SelectItem>
-              <SelectItem value="last-month" className="text-xs">Last month</SelectItem>
-              <SelectItem value="this-year" className="text-xs">This year</SelectItem>
-            </SelectContent>
-          </Select>
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+      <div className="mx-auto max-w-7xl">
+        {/* Header - Mobile Responsive */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 -mt-2">
+          <h1 className="text-lg sm:text-xl font-semibold text-gray-900">{title}</h1>
+          <div className="w-full sm:w-auto">
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger className="w-full sm:w-[140px] bg-white h-10 sm:h-6 text-sm">
+                <SelectValue placeholder="This month" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="this-month" className="text-sm">This month</SelectItem>
+                <SelectItem value="last-month" className="text-sm">Last month</SelectItem>
+                <SelectItem value="this-year" className="text-sm">This year</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <TransactionMetrics transactions={metricsBookings} />
 
-        {/* Search and Export */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <span className="text-xs text-gray-700">Search:</span>
+        {/* Search and Export - Mobile Responsive */}
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+            <span className="text-sm text-gray-700">Search:</span>
             <Input
               placeholder="Search transactions..."
-              className="w-64 h-6 text-xs"
+              className="w-full sm:w-64 h-10 sm:h-6 text-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <Button
             variant="outline"
-            className="border-gray-300 h-6 text-xs"
+            className="border-gray-300 h-10 sm:h-6 text-sm w-full sm:w-auto"
             onClick={handleExport}
           >
             Export

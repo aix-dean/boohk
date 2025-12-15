@@ -771,11 +771,11 @@ export default function PriceListingContent() {
                 </div>
 
                 {/* Search and Controls */}
-                <div className="flex items-center gap-3">
-                  <label htmlFor="">
-                    Search:
-                  </label>
-                  <div className="relative w-full sm:w-auto">
+               <div className="flex items-center gap-3">
+                 <label htmlFor="" className="hidden sm:inline">
+                   Search:
+                 </label>
+                 <div className="relative w-full sm:w-auto">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#a1a1a1] w-4 h-4" />
                     <Input
                       placeholder="Search products..."
@@ -855,9 +855,9 @@ export default function PriceListingContent() {
 
                   {/* List View */}
                   {!loading && !searchLoading && (isSearching ? searchResults.length > 0 : products.length > 0) && (
-                    <>
+                    <div className="overflow-x-auto">
                       {/* Header */}
-                      <div className="border-b border-[#e0e0e0] p-2 mb-2">
+                      <div className="border-b border-[#e0e0e0] p-2 mb-2 min-w-[600px]">
                         <div className="grid grid-cols-4 gap-4 text-sm font-medium text-[#000000]">
                           <div className="pl-4">Site</div>
                           <div className="pl-4">Price</div>
@@ -866,111 +866,111 @@ export default function PriceListingContent() {
                         </div>
                       </div>
                       <div className="flex flex-col gap-2">
-                      {(isSearching ? fullSearchResults : products).map((item) => {
-                        const product = item as any
-                        const productId = product.id || product.objectID || ""
-                        const isExpanded = expandedRows.has(productId)
-                        return (
-                          <React.Fragment key={productId}>
-                            <div className="border border-[#e0e0e0] rounded-lg h-[60px] overflow-hidden cursor-pointer" style={{ backgroundColor: '#b8d9ff54' }} onClick={() => { setSelectedRowProduct(product); setShowUpdateForm(false); setNewPriceInDialog(product.price ? product.price.toString() : ""); setRowDialogOpen(true); }}>
-                              <table className="w-full table-fixed">
-                                <tbody>
-                                  <tr className="bg-transparent">
-                                    <td className="px-6">
-                                      <div className="flex items-center gap-3">
-                                        <div className="w-[35px] h-[35px] bg-[#efefef] rounded-md flex items-center justify-center">
-                                          {product.media && product.media.length > 0 ? (
-                                            <Image
-                                              src={product.media[0].url || "/placeholder.svg"}
-                                              alt={product.name || "Product image"}
-                                              width={32}
-                                              height={32}
-                                              priority
-                                              className={`w-[35px] h-[35px] object-cover rounded-md ${productsWithBookings[product.id || ""] ? "grayscale" : ""}`}
-                                              onError={(e) => {
-                                                const target = e.target as HTMLImageElement
-                                                target.src = "/abstract-geometric-sculpture.png"
-                                                target.className = "opacity-50"
-                                              }}
-                                            />
-                                          ) : (
-                                            <div className="text-[10px] text-[#a1a1a1] text-center">
-                                              <div>Site</div>
-                                              <div>Photo</div>
-                                            </div>
-                                          )}
+                        {(isSearching ? fullSearchResults : products).map((item) => {
+                          const product = item as any
+                          const productId = product.id || product.objectID || ""
+                          const isExpanded = expandedRows.has(productId)
+                          return (
+                            <React.Fragment key={productId}>
+                              <div className="border border-[#e0e0e0] rounded-lg h-[60px] overflow-hidden cursor-pointer min-w-[600px]" style={{ backgroundColor: '#b8d9ff54' }} onClick={() => { setSelectedRowProduct(product); setShowUpdateForm(false); setNewPriceInDialog(product.price ? product.price.toString() : ""); setRowDialogOpen(true); }}>
+                                <table className="w-full table-fixed">
+                                  <tbody>
+                                    <tr className="bg-transparent">
+                                      <td className="px-6">
+                                        <div className="flex items-center gap-3">
+                                          <div className="w-[35px] h-[35px] bg-[#efefef] rounded-md flex items-center justify-center">
+                                            {product.media && product.media.length > 0 ? (
+                                              <Image
+                                                src={product.media[0].url || "/placeholder.svg"}
+                                                alt={product.name || "Product image"}
+                                                width={32}
+                                                height={32}
+                                                priority
+                                                className={`w-[35px] h-[35px] object-cover rounded-md ${productsWithBookings[product.id || ""] ? "grayscale" : ""}`}
+                                                onError={(e) => {
+                                                  const target = e.target as HTMLImageElement
+                                                  target.src = "/abstract-geometric-sculpture.png"
+                                                  target.className = "opacity-50"
+                                                }}
+                                              />
+                                            ) : (
+                                              <div className="text-[10px] text-[#a1a1a1] text-center">
+                                                <div>Site</div>
+                                                <div>Photo</div>
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div>
+                                            <div className="text-sm font-medium text-[#000000]">{product.name}</div>
+                                          </div>
                                         </div>
-                                        <div>
-                                          <div className="text-sm font-medium text-[#000000]">{product.name}</div>
-                                        </div>
-                                      </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm font-medium text-[#000000]">
-                                      {product.price ? `₱${Number(product.price).toLocaleString()}/month` : "Not set"}
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-[#000000]">
-                                      {product.updated instanceof Timestamp
-                                        ? new Date(product.updated.seconds * 1000).toLocaleDateString("en-US", {month: "short", day: "numeric", year: "numeric" })
-                                        : product.updated instanceof Date
-                                          ? product.updated.toLocaleDateString("en-US", {month: "short", day: "numeric", year: "numeric" })
-                                        : product.updated
-                                          ? new Date(product.updated).toLocaleDateString("en-US", {month: "short", day: "numeric", year: "numeric" })
-                                        : "N/A"}
-                                    </td>
-                                    <td className="pl-6 py-4 text-sm text-[#000000] truncate pr-10">
-                                      {(productId && priceUpdaters[productId]) || `${userData?.first_name} ${userData?.last_name}` || "System"}
-                                    </td>
-                                  </tr>
-                                </tbody>
-                              </table>
-                            </div>
-                            {isExpanded && (
-                              <div className="bg-gray-50 rounded-lg overflow-hidden shadow-lg border border-gray-200" style={{ position: 'relative', zIndex: 20 }}>
-                                <div className="max-h-40 overflow-y-auto">
-                                  {loadingPriceHistories.has(productId) ? (
-                                    <div className="text-center">
-                                      <div className="flex items-center justify-center">
-                                        <Loader2 size={14} className="animate-spin mr-2" />
-                                        <span>Loading price history...</span>
-                                      </div>
-                                    </div>
-                                  ) : priceHistories[productId] && priceHistories[productId].length > 0 ? (
-                                    <table className="w-full">
-                                      <tbody >
-                                        {priceHistories[productId].map((history, index) => (
-                                          <tr key={`history-${history.id || index}`} className="border-b border-gray-200 last:border-0">
-                                            <td className="px-6 py-2 w-[20%]"></td>
-                                            <td className="px-6 py-2 text-sm font-medium text-[#000000] w-[20%]">
-                                              ₱{Number(history.price).toLocaleString()}
-                                            </td>
-                                            <td className="px-6 py-2 text-sm text-[#000000] w-[20%]">
-                                              {history.created instanceof Timestamp
-                                                ? new Date(history.created.seconds * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-                                                : history.created
-                                                  ? new Date(history.created).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-                                                : "N/A"}
-                                            </td>
-                                            <td className="px-6 py-2 text-sm text-[#000000] w-[20%] truncate">
-                                              {history.name || "System"}
-                                            </td>
-                                            <td className="px-6 py-2 w-[20%]"></td>
-                                          </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
-                                  ) : (
-                                    <div className="text-center text-gray-500">
-                                      No price history available
-                                    </div>
-                                  )}
-                                </div>
+                                      </td>
+                                      <td className="px-6 py-4 text-sm font-medium text-[#000000]">
+                                        {product.price ? `₱${Number(product.price).toLocaleString()}/month` : "Not set"}
+                                      </td>
+                                      <td className="px-6 py-4 text-sm text-[#000000]">
+                                        {product.updated instanceof Timestamp
+                                          ? new Date(product.updated.seconds * 1000).toLocaleDateString("en-US", {month: "short", day: "numeric", year: "numeric" })
+                                          : product.updated instanceof Date
+                                            ? product.updated.toLocaleDateString("en-US", {month: "short", day: "numeric", year: "numeric" })
+                                          : product.updated
+                                            ? new Date(product.updated).toLocaleDateString("en-US", {month: "short", day: "numeric", year: "numeric" })
+                                          : "N/A"}
+                                      </td>
+                                      <td className="pl-6 py-4 text-sm text-[#000000] truncate pr-10">
+                                        {(productId && priceUpdaters[productId]) || `${userData?.first_name} ${userData?.last_name}` || "System"}
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>
                               </div>
-                            )}
-                          </React.Fragment>
-                        )
-                      })}
+                              {isExpanded && (
+                                <div className="bg-gray-50 rounded-lg overflow-hidden shadow-lg border border-gray-200 min-w-[600px]" style={{ position: 'relative', zIndex: 20 }}>
+                                  <div className="max-h-40 overflow-y-auto">
+                                    {loadingPriceHistories.has(productId) ? (
+                                      <div className="text-center">
+                                        <div className="flex items-center justify-center">
+                                          <Loader2 size={14} className="animate-spin mr-2" />
+                                          <span>Loading price history...</span>
+                                        </div>
+                                      </div>
+                                    ) : priceHistories[productId] && priceHistories[productId].length > 0 ? (
+                                      <table className="w-full">
+                                        <tbody >
+                                          {priceHistories[productId].map((history, index) => (
+                                            <tr key={`history-${history.id || index}`} className="border-b border-gray-200 last:border-0">
+                                              <td className="px-6 py-2 w-[20%]"></td>
+                                              <td className="px-6 py-2 text-sm font-medium text-[#000000] w-[20%]">
+                                                ₱{Number(history.price).toLocaleString()}
+                                              </td>
+                                              <td className="px-6 py-2 text-sm text-[#000000] w-[20%]">
+                                                {history.created instanceof Timestamp
+                                                  ? new Date(history.created.seconds * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                                                  : history.created
+                                                    ? new Date(history.created).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                                                  : "N/A"}
+                                              </td>
+                                              <td className="px-6 py-2 text-sm text-[#000000] w-[20%] truncate">
+                                                {history.name || "System"}
+                                              </td>
+                                              <td className="px-6 py-2 w-[20%]"></td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    ) : (
+                                      <div className="text-center text-gray-500">
+                                        No price history available
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </React.Fragment>
+                          )
+                        })}
                       </div>
-                    </>
+                    </div>
                   )}
 
 

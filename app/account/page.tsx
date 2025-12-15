@@ -477,198 +477,285 @@ export default function AccountPage() {
   }
 
   const maxProducts = subscriptionData?.maxProducts
-  const isLimitReached = maxProducts !== null && currentProductsCount !== null && currentProductsCount >= maxProducts
+  const isLimitReached = maxProducts !== null && maxProducts !== undefined && currentProductsCount !== null && currentProductsCount >= maxProducts
   const isTrial = subscriptionData?.status === "trialing"
   const daysRemaining = subscriptionData ? subscriptionService.getDaysRemaining(subscriptionData) : 0
 
   return (
-    <div className="relative size-full" data-name="ACCOUNT SETTING" data-node-id="7174:4241">
-      <div className="absolute bg-neutral-50 h-[661px] left-0 top-[59px] w-[1280px]" data-node-id="7174:4819" />
-      <div className="absolute bg-white left-[31px] rounded-[20px] top-[59px] w-[1002px] px-4 py-8 relative" data-node-id="7174:4779" style={{height: '344px'}} />
-      <p className="absolute font-['Inter:Bold',_sans-serif] font-bold h-[24px] leading-none left-[51px] not-italic text-[16px] text-[var(--lighter-black,#333333)] top-[79px] w-[315px]" data-node-id="7174:4755">
-        Account Details
-      </p>
-      {isEditingPersonal ? (
-        <>
-          <input
-            type="text"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            className="absolute bg-white border border-gray-400 h-[24px] left-[371px] rounded-[6px] top-[157px] w-[190px] px-2 text-sm"
-            placeholder="First Name"
-            maxLength={50}
-          />
-          <input
-            type="text"
-            value={middleName}
-            onChange={(e) => setMiddleName(e.target.value)}
-            className="absolute bg-white border border-gray-400 h-[24px] left-[371px] rounded-[6px] top-[190px] w-[190px] px-2 text-sm"
-            placeholder="Middle Name"
-            maxLength={50}
-          />
-          <input
-            type="text"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            className="absolute bg-white border border-gray-400 h-[24px] left-[371px] rounded-[6px] top-[223px] w-[190px] px-2 text-sm"
-            placeholder="Last Name"
-            maxLength={50}
-          />
-          <select
-            value={gender}
-            onChange={(e) => setGender(e.target.value)}
-            className="absolute bg-white border border-gray-400 h-[24px] left-[371px] rounded-[6px] top-[256px] w-[190px] px-2 text-sm"
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-6xl">
+        {/* Logout Button - Desktop */}
+        <div className="hidden md:flex justify-end mb-6">
+          <Button
+            variant="outline"
+            onClick={handleLogout}
+            className="bg-white border-2 border-gray-400 hover:bg-gray-50"
           >
-            <option value="">Select Gender</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </select>
-          <div className="absolute left-[371px] top-[289px] flex items-center">
-            <span className="bg-gray-100 border border-gray-400 h-[24px] px-2 rounded-l-[6px] text-sm text-gray-600">+63</span>
-            <input
-              type="text"
-              value={phoneNumber.replace(/^\+63/, '')}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, ''); // Only allow digits
-                setPhoneNumber(value);
-              }}
-              className="bg-white border border-gray-400 border-l-0 h-[24px] rounded-r-[6px] w-[150px] px-2 text-sm"
-              placeholder="Phone Number"
-              maxLength={10}
-            />
-          </div>
-          <input
-            type="email"
-            value={userData?.email || ""}
-            className="absolute bg-white border border-gray-400 h-[24px] left-[371px] rounded-[6px] top-[322px] w-[190px] px-2 text-sm"
-            disabled
-            placeholder="Email (read-only)"
-          />
-          <button
-            onClick={handlePhotoClick}
-            className="absolute bg-white border border-gray-400 h-[24px] left-[93px] rounded-[6px] top-[237px] w-[108px] text-sm text-gray-700 hover:bg-gray-50 z-10"
-          >
-            Choose Avatar
-          </button>
-          <div className="absolute left-[695px] top-[339px] flex gap-2">
-            <button
-              onClick={() => setIsEditingPersonal(false)}
-              className="bg-white border-2 border-gray-400 h-[27px] rounded-[10px] w-[149px] text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="bg-blue-600 h-[27px] rounded-[10px] w-[149px] text-white hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isSaving ? "Saving..." : "Save Changes"}
-            </button>
-          </div>
-        </>
-      ) : (
-        <>
-          <p className="absolute font-['Inter:Medium',_sans-serif] font-medium h-[15.118px] leading-none left-[371.06px] not-italic text-[12.004px] text-[var(--lighter-black,#333333)] top-[157.05px] w-[94.74px]" data-node-id="7174:4758">
-            {userData?.first_name || "-"}
-          </p>
-          <p className="absolute font-['Inter:Medium',_sans-serif] font-medium h-[15.118px] leading-none left-[371.06px] not-italic text-[12.004px] text-[var(--lighter-black,#333333)] top-[190.05px] w-[94.74px]" data-node-id="7174:4762">
-            {userData?.middle_name || "-"}
-          </p>
-          <p className="absolute font-['Inter:Medium',_sans-serif] font-medium h-[15.118px] leading-none left-[371.06px] not-italic text-[12.004px] text-[var(--lighter-black,#333333)] top-[223.05px] w-[94.74px]" data-node-id="7174:4765">
-            {userData?.last_name || "-"}
-          </p>
-          <p className="absolute font-['Inter:Medium',_sans-serif] font-medium h-[15.118px] leading-none left-[371.06px] not-italic text-[12.004px] text-[var(--lighter-black,#333333)] top-[256.05px] w-[94.74px]" data-node-id="7174:4771">
-            {userData?.gender || "-"}
-          </p>
-          <p className="absolute font-['Inter:Medium',_sans-serif] font-medium h-[15.118px] leading-none left-[371.06px] not-italic text-[12.004px] text-[var(--lighter-black,#333333)] top-[289.05px] w-[94.74px]" data-node-id="7174:4774">
-            {userData?.phone_number || "-"}
-          </p>
-          <p className="absolute font-['Inter:Medium',_sans-serif] font-medium h-[15px] leading-none left-[371px] not-italic text-[12.004px] text-[var(--lighter-black,#333333)] top-[322px] w-[143px]" data-node-id="7174:4777">
-            {userData?.email || "-"}
-          </p>
-        </>
-      )}
-      <p className="absolute font-['Inter:Bold',_sans-serif] font-bold h-[15px] leading-none left-[266px] not-italic text-[12.004px] text-[var(--lighter-black,#333333)] top-[157px] w-[84px]" data-node-id="7174:4759">
-        First Name:
-      </p>
-      <p className="absolute font-['Inter:Bold',_sans-serif] font-bold h-[15px] leading-none left-[266px] not-italic text-[12.004px] text-[var(--lighter-black,#333333)] top-[190px] w-[84px]" data-node-id="7174:4763">
-        Middle Name:
-      </p>
-      <p className="absolute font-['Inter:Bold',_sans-serif] font-bold h-[15px] leading-none left-[266px] not-italic text-[12.004px] text-[var(--lighter-black,#333333)] top-[223px] w-[84px]" data-node-id="7174:4766">
-        Last Name:
-      </p>
-      <p className="absolute font-['Inter:Bold',_sans-serif] font-bold h-[15px] leading-none left-[266px] not-italic text-[12.004px] text-[var(--lighter-black,#333333)] top-[256px] w-[94px]" data-node-id="7174:4772">
-        Gender:
-      </p>
-      <p className="absolute font-['Inter:Bold',_sans-serif] font-bold h-[15px] leading-none left-[266px] not-italic text-[12.004px] text-[var(--lighter-black,#333333)] top-[289px] w-[94px]" data-node-id="7174:4775">
-        Phone No.:
-      </p>
-      <p className="absolute font-['Inter:Bold',_sans-serif] font-bold h-[15px] leading-none left-[266px] not-italic text-[12.004px] text-[var(--lighter-black,#333333)] top-[322px] w-[94px]" data-node-id="7174:4778">
-        Email:
-      </p>
-      <div className="absolute left-[66px] size-[162px] top-[168px] rounded-full border-2 border-gray-400 overflow-hidden" data-node-id="7174:4830">
-        {isUploading ? (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 size={48} className="animate-spin text-primary" />
-          </div>
-        ) : photoURL ? (
-          <img
-            src={photoURL || "/placeholder.svg"}
-            alt={userData?.displayName || "Profile"}
-            className={`w-full h-full object-cover ${isEditingPersonal ? 'grayscale' : ''}`}
-          />
-        ) : (
-          <div className="flex items-center justify-center h-full">
-            <User size={48} className="text-gray-400" />
-          </div>
-        )}
-      </div>
-      <p className="absolute font-['Inter:Bold',_sans-serif] font-bold h-[20px] leading-none left-[147px] not-italic text-[20px] text-[var(--lighter-black,#333333)] text-center top-[342px] translate-x-[-50%] w-[90px]" data-node-id="7174:4831">
-        {userData?.first_name || "Noemi"}
-      </p>
-      <button
-        className="absolute right-4 top-4 bg-white border-2 border-gray-400 h-[27px] rounded-[10px] w-[80px] text-gray-700 hover:bg-gray-50"
-        onClick={handleLogout}
-      >
-        Logout
-      </button>
-      <button
-        className="absolute left-[993px] size-[23.996px] top-[134px]"
-        onClick={() => setIsEditingPersonal(!isEditingPersonal)}
-        aria-label="Edit account info"
-        data-name="edit (1)"
-        data-node-id="7174:4890"
-      >
-        <SquarePen size={16} className="text-black" />
-      </button>
-      <input
-        type="file"
-        ref={fileInputRef}
-        className="hidden"
-        accept="image/*"
-        onChange={handlePhotoChange}
-        disabled={isUploading}
-      />
-      <div className="absolute bg-white left-[31px] rounded-[20px] top-[410px] w-[1002px] px-4 py-8" data-node-id="7174:4943" style={{height: '151px'}} />
-      <p className="absolute font-['Inter:Bold',_sans-serif] font-bold h-[24px] leading-none left-[51px] not-italic text-[16px] text-[var(--lighter-black,#333333)] top-[426px] w-[315px]" data-node-id="7174:4944">
-        Department and Roles
-      </p>
-      {userData?.roles && userData.roles.length > 0 && (
-        <div className="absolute left-[51px] top-[455px] flex flex-wrap gap-2">
-          {userData.roles.map((role: RoleType) => {
-            const department = departmentMapping[role]
-            return department ? (
-              <div key={role} className="flex flex-col items-center">
-                <div className={`h-[46px] rounded-[20px] px-4 flex items-center justify-center ${department.color} text-white`}>
-                  <span className="font-bold text-[16px]">{department.name}</span>
+            Logout
+          </Button>
+        </div>
+
+        {/* Account Details Card */}
+        <Card className="mb-6">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-bold text-gray-800">Account Details</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditingPersonal(!isEditingPersonal)}
+                  aria-label="Edit account info"
+                  className="p-2"
+                >
+                  <SquarePen size={16} className="text-black" />
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleLogout}
+                  className="md:hidden bg-white border-2 border-gray-400 hover:bg-gray-50"
+                >
+                  Logout
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Profile Section */}
+              <div className="lg:col-span-1">
+                <div className="flex flex-col items-center space-y-4">
+                  {/* Avatar */}
+                  <div className="relative">
+                    <div className="w-32 h-32 lg:w-40 lg:h-40 rounded-full border-2 border-gray-400 overflow-hidden bg-gray-100">
+                      {isUploading ? (
+                        <div className="flex items-center justify-center h-full">
+                          <Loader2 size={48} className="animate-spin text-primary" />
+                        </div>
+                      ) : photoURL ? (
+                        <img
+                          src={photoURL || "/placeholder.svg"}
+                          alt={userData?.displayName || "Profile"}
+                          className={`w-full h-full object-cover ${isEditingPersonal ? 'grayscale' : ''}`}
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <User size={48} className="text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    {isEditingPersonal && (
+                      <Button
+                        onClick={handlePhotoClick}
+                        disabled={isUploading}
+                        className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-white border border-gray-400 hover:bg-gray-50 text-sm text-gray-800"
+                        size="sm"
+                      >
+                        Choose Avatar
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {/* Display Name */}
+                  <h2 className="text-xl font-bold text-gray-800 text-center">
+                    {userData?.first_name || "Noemi"}
+                  </h2>
                 </div>
               </div>
-            ) : null
-          })}
-        </div>
-      )}
-      <div className="absolute left-[994px] top-[426px]" data-name="dots" data-node-id="7174:4951">
-        <MoreVertical size={24} className="text-black" />
+
+              {/* Form Fields Section */}
+              <div className="lg:col-span-2">
+                {isEditingPersonal ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="firstName" className="text-sm font-bold text-gray-800">First Name:</Label>
+                        <Input
+                          id="firstName"
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          className="mt-1"
+                          placeholder="First Name"
+                          maxLength={50}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="middleName" className="text-sm font-bold text-gray-800">Middle Name:</Label>
+                        <Input
+                          id="middleName"
+                          type="text"
+                          value={middleName}
+                          onChange={(e) => setMiddleName(e.target.value)}
+                          className="mt-1"
+                          placeholder="Middle Name"
+                          maxLength={50}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="lastName" className="text-sm font-bold text-gray-800">Last Name:</Label>
+                        <Input
+                          id="lastName"
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          className="mt-1"
+                          placeholder="Last Name"
+                          maxLength={50}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="gender" className="text-sm font-bold text-gray-800">Gender:</Label>
+                        <select
+                          id="gender"
+                          value={gender}
+                          onChange={(e) => setGender(e.target.value)}
+                          className="mt-1 w-full px-3 py-2 border border-gray-400 rounded-md text-sm"
+                        >
+                          <option value="">Select Gender</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                        </select>
+                      </div>
+                      <div>
+                        <Label htmlFor="phone" className="text-sm font-bold text-gray-800">Phone No.:</Label>
+                        <div className="mt-1 flex">
+                          <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-400 bg-gray-100 text-sm text-gray-600">
+                            +63
+                          </span>
+                          <Input
+                            id="phone"
+                            type="text"
+                            value={phoneNumber.replace(/^\+63/, '')}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, '') // Only allow digits
+                              setPhoneNumber(value)
+                            }}
+                            className="rounded-l-none"
+                            placeholder="Phone Number"
+                            maxLength={10}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="email" className="text-sm font-bold text-gray-800">Email:</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={userData?.email || ""}
+                          disabled
+                          className="mt-1 bg-gray-50"
+                          placeholder="Email (read-only)"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsEditingPersonal(false)}
+                        disabled={isSaving}
+                        className="bg-white border-2 border-gray-400 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        {isSaving ? "Saving..." : "Save Changes"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                      <div>
+                        <span className="text-sm font-bold text-gray-800">First Name:</span>
+                        <p className="text-sm font-medium text-gray-600 mt-1">
+                          {userData?.first_name || "-"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-bold text-gray-800">Middle Name:</span>
+                        <p className="text-sm font-medium text-gray-600 mt-1">
+                          {userData?.middle_name || "-"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-bold text-gray-800">Last Name:</span>
+                        <p className="text-sm font-medium text-gray-600 mt-1">
+                          {userData?.last_name || "-"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-bold text-gray-800">Gender:</span>
+                        <p className="text-sm font-medium text-gray-600 mt-1">
+                          {userData?.gender || "-"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-bold text-gray-800">Phone No.:</span>
+                        <p className="text-sm font-medium text-gray-600 mt-1">
+                          {userData?.phone_number || "-"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-bold text-gray-800">Email:</span>
+                        <p className="text-sm font-medium text-gray-600 mt-1">
+                          {userData?.email || "-"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Department and Roles Card */}
+        <Card>
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-bold text-gray-800">Department and Roles</CardTitle>
+              <Button variant="ghost" size="sm" className="p-2">
+                <MoreVertical size={24} className="text-black" />
+              </Button>
+            </div>
+          </CardHeader>
+          
+          <CardContent>
+            {userData?.roles && userData.roles.length > 0 ? (
+              <div className="flex flex-wrap gap-3">
+                {userData.roles.map((role: RoleType) => {
+                  const department = departmentMapping[role]
+                  return department ? (
+                    <Badge
+                      key={role}
+                      className={`${department.color} text-white px-4 py-2 text-sm font-bold`}
+                    >
+                      {department.name}
+                    </Badge>
+                  ) : null
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">No roles assigned</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          accept="image/*"
+          onChange={handlePhotoChange}
+          disabled={isUploading}
+        />
       </div>
     </div>
   )
