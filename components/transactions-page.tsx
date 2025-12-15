@@ -208,16 +208,18 @@ export default function TransactionsPage({ title }: TransactionsPageProps) {
 
 
   return (
-    <div className="h-full pb-4 flex flex-col">
+    <div className="h-full pb-4 flex flex-col max-w-full overflow-hidden">
       {/* Header */}
-      <div className="py-4">
+      <div className="py-4 flex-shrink-0">
         <h2 className="text-xl font-semibold text-[#000000]">{title}</h2>
       </div>
 
-      <TransactionMetrics transactions={metricsBookings} />
+      <div className="flex-shrink-0">
+        <TransactionMetrics transactions={metricsBookings} />
+      </div>
 
       {/* Search and Controls */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 mb-6">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 mb-6 flex-shrink-0">
         {/* Search Section */}
         <div className="flex items-center gap-3 w-full lg:w-auto">
           <label htmlFor="" className="hidden sm:inline text-sm font-medium text-gray-700 whitespace-nowrap">
@@ -263,8 +265,8 @@ export default function TransactionsPage({ title }: TransactionsPageProps) {
         </div>
       </div>
 
-      {/* Transactions Table - This will handle its own horizontal scrolling */}
-      <div className="flex-1 min-w-0">
+      {/* Transactions Table - Scrollable area */}
+      <div className="flex-1 min-w-0 overflow-hidden">
         {loading ? (
           <div className="text-center py-8">Loading transactions...</div>
         ) : (
