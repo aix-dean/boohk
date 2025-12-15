@@ -97,9 +97,9 @@ export function TransactionsTable({
   }
 
   return (
-    <div className="bg-white rounded-[10px] overflow-hidden">
-      {/* Mobile-optimized horizontal scrolling wrapper */}
-      <div className="overflow-x-auto overflow-y-hidden">
+    <div className="bg-white rounded-[10px] overflow-hidden w-full">
+      {/* Mobile-optimized horizontal scrolling wrapper with screen width constraint */}
+      <div className="overflow-x-auto overflow-y-hidden w-full">
         <div className="px-4 min-w-[800px] sm:min-w-[1000px]">
           {/* Table Header */}
           <div className="bg-white px-4 py-1.5 border-b border-gray-200">
