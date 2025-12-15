@@ -208,9 +208,9 @@ export default function TransactionsPage({ title }: TransactionsPageProps) {
 
 
   return (
-    <div className="h-full pb-4 overflow-hidden flex flex-col">
-      {/* Main content area */}
-      <div className="flex-1 overflow-hidden">
+    <div className="h-full pb-4 flex flex-col">
+      {/* Main content area - removed overflow-hidden to allow horizontal scrolling */}
+      <div className="flex-1 min-w-0">
         {/* Header */}
         <div className="py-4">
           <h2 className="text-xl font-semibold text-[#000000]">{title}</h2>
