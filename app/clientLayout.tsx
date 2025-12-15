@@ -15,6 +15,8 @@ export default function ClientLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+
+  // Always call hooks first, before any conditional logic
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { isMobile, isTablet } = useResponsive()
 
@@ -23,13 +25,13 @@ export default function ClientLayout({
 
   const isSmallScreen = isMobile || isTablet
 
-  // Skip the layout for login and register pages
+  // Skip the layout for login and register pages - after hooks are called
   if (pathname === "/login" || pathname === "/register" || pathname === "/forgot-password") {
     return <>{children}</>
   }
 
   return (
-   <div className="h-screen flex bg-gray-50 relative">
+    <div className="h-screen flex bg-gray-50 relative">
       {/* Mobile sidebar backdrop */}
       {isSmallScreen && sidebarOpen && (
         <div className="fixed inset-0 bg-black/30 z-40" onClick={() => setSidebarOpen(false)} />

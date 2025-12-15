@@ -97,118 +97,128 @@ export function TransactionsTable({
   }
 
   return (
-    <div className="bg-white rounded-[10px] overflow-hidden px-[15px]">
-      {/* Table Header */}
-      <div className="bg-white px-4 py-1.5">
-        <div className="grid grid-cols-10 gap-2 text-xs font-semibold text-gray-700">
-          <div className="min-w-16 py-1 px-2 mt-1">Date</div>
-          <div className="min-w-24 py-1 px-2 mt-1">Site</div>
-          <div className="min-w-20 py-1 px-2 mt-1">Airing Ticket</div>
-          <div className="min-w-16 py-1 px-2 mt-1">Total Days</div>
-          <div className="min-w-20 py-1 px-2 mt-1">Gross Amount</div>
-          <div className="min-w-16 py-1 px-2 mt-1">Fees</div>
-          <div className="min-w-16 py-1 px-2 mt-1">Tax (12%)</div>
-          <div className="min-w-16 py-1 px-2 mt-1">Discount</div>
-          <div className="min-w-20 py-1 px-2 mt-1">Payout Amount</div>
-          <div className="min-w-16 py-1 px-2 mt-1">Status</div>
-        </div>
-      </div>
-
-      {/* Table Rows */}
-      <div className="border-t border-gray-200">
-        {transactions.map((booking) => {
-           const isForReview = booking.status?.toLowerCase() === "for review"
-           const isClickable = onRowClick && (isForReview ? booking.id : true)
-           return (
-             <div key={booking.id}>
-               <hr key={`hr-${booking.id}`} className={`border-gray-200 ${isForReview ? 'mb-2' : ''}`} />
-               <div
-                 key={`row-${booking.id}`}
-                 className={`px-4 rounded-[10px] ${isForReview ? 'bg-[#F6F9FF] border-2 border-[#B8D9FF] border-solid mb-1' : 'bg-white'} ${isClickable ? 'cursor-pointer hover:bg-gray-50' : ''}`}
-                 onClick={() => isClickable && onRowClick(booking)}
-               >
-                <div className="grid grid-cols-10 gap-2 text-xs items-center">
-                {/* Date */}
-                <div className="min-w-16 py-1 px-2 mt-1 text-gray-900">
-                  {formatDate(booking.created)}
-                </div>
-
-                {/* Site Name */}
-                <div className="min-w-24 text-xs font-medium text-gray-900 truncate">
-                  {booking.items?.name || 'Unknown'}
-                </div>
-
-                {/* Airing Code */}
-                <div className="min-w-20 py-1 px-2 mt-1 text-gray-900 truncate">
-                  {booking.airing_code || '-'}
-                </div>
-
-                {/* Total Days */}
-                <div className="min-w-16 py-1 px-2 mt-1 text-gray-900">
-                  {booking.start_date && booking.end_date ? Math.ceil((getMillis(booking.end_date) - getMillis(booking.start_date)) / (1000 * 60 * 60 * 24)) : booking.costDetails?.days || 1}
-                </div>
-
-                {/* Gross Amount */}
-                <div className="min-w-20 py-1 px-2 mt-1 text-gray-900 font-medium truncate">
-                  {formatCurrency(booking.transaction?.amount || 0, 'PHP')}
-                </div>
-
-                {/* Fees */}
-                <div className="min-w-16 py-1 px-2 mt-1 text-gray-900 truncate">
-                  {formatCurrency(booking.transaction?.fees?.totalFee || 0, 'PHP')}
-                </div>
-
-                {/* Tax (12%) */}
-                <div className="min-w-16 py-1 px-2 mt-1 text-gray-900 truncate">
-                  {formatCurrency(booking.tax?.taxAmount || 0, 'PHP')}
-                </div>
-
-                {/* Discount */}
-                <div className="min-w-16 py-1 px-2 mt-1 text-gray-900 truncate">
-                  {formatCurrency(booking.discount?.discountTotal || 0, 'PHP')}
-                </div>
-
-                {/* Payout Amount */}
-                <div className="min-w-20 py-1 px-2 mt-1 text-gray-900 font-medium truncate">
-                  {formatCurrency((booking.transaction?.amount || 0) - ((booking.tax?.taxAmount || 0) + (booking.transaction?.fees?.totalFee || 0) + (booking.discount?.discountTotal || 0)), 'PHP')}
-                </div>
-
-                {/* Status */}
-                <div className="min-w-16 py-1 px-2 mt-1">
-                  <span className={`text-xs font-medium ${getStatusStyle(booking.status || '')}`}>
-                    {booking.status ? booking.status.charAt(0).toUpperCase() + booking.status.slice(1).toLowerCase() : 'Unknown'}
-                  </span>
-                </div>
+    <div className="bg-white rounded-[10px] overflow-hidden w-full">
+      {/* Table container with mobile-optimized scrolling */}
+      <div className="w-full">
+        {/* Horizontal scrollable table content - includes both header and body */}
+        <div className="overflow-x-auto overflow-y-hidden w-full">
+          <div className="min-w-[1240px]">
+            {/* Table Header */}
+            <div className="bg-white px-2 sm:px-4 py-1.5 border-b border-gray-200">
+              <div className="grid grid-cols-10 gap-1 sm:gap-2 text-xs font-semibold text-gray-700">
+                <div className="min-w-[100px] py-1 px-1 sm:px-2 mt-1">Date</div>
+                <div className="min-w-[140px] py-1 px-1 sm:px-2 mt-1">Site</div>
+                <div className="min-w-[120px] py-1 px-1 sm:px-2 mt-1">Airing Ticket</div>
+                <div className="min-w-[100px] py-1 px-1 sm:px-2 mt-1">Total Days</div>
+                <div className="min-w-[120px] py-1 px-1 sm:px-2 mt-1">Gross Amount</div>
+                <div className="min-w-[100px] py-1 px-1 sm:px-2 mt-1">Fees</div>
+                <div className="min-w-[100px] py-1 px-1 sm:px-2 mt-1">Tax (12%)</div>
+                <div className="min-w-[100px] py-1 px-1 sm:px-2 mt-1">Discount</div>
+                <div className="min-w-[140px] py-1 px-1 sm:px-2 mt-1">Payout Amount</div>
+                <div className="min-w-[120px] py-1 px-1 sm:px-2 mt-1">Status</div>
               </div>
             </div>
+
+            {/* Table Rows */}
+            <div className="border-t border-gray-200">
+              {transactions.map((booking) => {
+                const isForReview = booking.status?.toLowerCase() === "for review"
+                const isClickable = onRowClick && (isForReview ? booking.id : true)
+                return (
+                  <div key={booking.id}>
+                    <hr key={`hr-${booking.id}`} className={`border-gray-200 ${isForReview ? 'mb-2' : ''}`} />
+                    <div
+                      key={`row-${booking.id}`}
+                      className={`px-2 sm:px-4 rounded-[10px] ${isForReview ? 'bg-[#F6F9FF] border-2 border-[#B8D9FF] border-solid mb-1' : 'bg-white'} ${isClickable ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+                      onClick={() => isClickable && onRowClick(booking)}
+                    >
+                      <div className="grid grid-cols-10 gap-1 sm:gap-2 text-xs items-center">
+                        {/* Date */}
+                        <div className="min-w-[100px] py-1 px-1 sm:px-2 mt-1 text-gray-900">
+                          {formatDate(booking.created)}
+                        </div>
+
+                        {/* Site Name */}
+                        <div className="min-w-[140px] text-xs font-medium text-gray-900 truncate">
+                          {booking.items?.name || 'Unknown'}
+                        </div>
+
+                        {/* Airing Code */}
+                        <div className="min-w-[120px] py-1 px-1 sm:px-2 mt-1 text-gray-900 truncate">
+                          {booking.airing_code || '-'}
+                        </div>
+
+                        {/* Total Days */}
+                        <div className="min-w-[100px] py-1 px-1 sm:px-2 mt-1 text-gray-900">
+                          {booking.start_date && booking.end_date ? Math.ceil((getMillis(booking.end_date) - getMillis(booking.start_date)) / (1000 * 60 * 60 * 24)) : booking.costDetails?.days || 1}
+                        </div>
+
+                        {/* Gross Amount */}
+                        <div className="min-w-[120px] py-1 px-1 sm:px-2 mt-1 text-gray-900 font-medium truncate">
+                          {formatCurrency(booking.transaction?.amount || 0, 'PHP')}
+                        </div>
+
+                        {/* Fees */}
+                        <div className="min-w-[100px] py-1 px-1 sm:px-2 mt-1 text-gray-900 truncate">
+                          {formatCurrency(booking.transaction?.fees?.totalFee || 0, 'PHP')}
+                        </div>
+
+                        {/* Tax (12%) */}
+                        <div className="min-w-[100px] py-1 px-1 sm:px-2 mt-1 text-gray-900 truncate">
+                          {formatCurrency(booking.tax?.taxAmount || 0, 'PHP')}
+                        </div>
+
+                        {/* Discount */}
+                        <div className="min-w-[100px] py-1 px-1 sm:px-2 mt-1 text-gray-900 truncate">
+                          {formatCurrency(booking.discount?.discountTotal || 0, 'PHP')}
+                        </div>
+
+                        {/* Payout Amount */}
+                        <div className="min-w-[140px] py-1 px-1 sm:px-2 mt-1 text-gray-900 font-medium truncate">
+                          {formatCurrency((booking.transaction?.amount || 0) - ((booking.tax?.taxAmount || 0) + (booking.transaction?.fees?.totalFee || 0) + (booking.discount?.discountTotal || 0)), 'PHP')}
+                        </div>
+
+                        {/* Status */}
+                        <div className="min-w-[120px] py-1 px-1 sm:px-2 mt-1">
+                          <span className={`text-xs font-medium ${getStatusStyle(booking.status || '')}`}>
+                            {booking.status ? booking.status.charAt(0).toUpperCase() + booking.status.slice(1).toLowerCase() : 'Unknown'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
-        )
-        })}
+        </div>
       </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center px-6 py-4 bg-white border-t border-gray-200">
-          <div className="flex items-center space-x-4">
-            <div className="text-sm text-gray-700">
-              {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => onPageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => onPageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+        <div className="flex flex-col sm:flex-row justify-between items-center px-6 py-4 bg-white border-t border-gray-200 gap-4">
+          <div className="text-sm text-gray-500">
+            {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed h-8 w-8 flex items-center justify-center"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            {/* Page numbers - Hide on mobile */}
+            <span className="text-sm text-gray-700 px-2 hidden sm:inline">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed h-8 w-8 flex items-center justify-center"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}

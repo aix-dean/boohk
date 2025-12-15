@@ -274,8 +274,7 @@ function EnrolledSitesContent() {
             {/* Search and Actions Bar Skeleton */}
             <div className="flex flex-col sm:flex-row gap-4 justify-between">
               <Skeleton className="h-10 w-full sm:w-96" />
-              <div className="flex gap-3">
-                <Skeleton className="h-10 w-20" />
+              <div className="hidden sm:flex gap-3">
                 <Skeleton className="h-10 w-20" />
                 <Skeleton className="h-10 w-20" />
               </div>
@@ -314,9 +313,9 @@ function EnrolledSitesContent() {
                 </div>
 
                 {/* Search and View Controls */}
-                <div className="flex justify-between items-center">
-                  <div className="relative">
-                    <div className="w-80 mt-2 mb-2">
+                <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                  <div className="relative w-full sm:w-auto flex-1 sm:flex-none">
+                    <div className="w-full sm:w-64 lg:w-80 mt-2 mb-2">
                       <Input
                         placeholder="Search sites..."
                         value={searchQuery}
@@ -326,11 +325,11 @@ function EnrolledSitesContent() {
                       <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="icon" className="bg-white border-[#d9d9d9] hover:bg-gray-50" onClick={() => setViewMode("list")}>
+                  <div className="hidden sm:flex gap-2 flex-shrink-0">
+                    <Button variant="outline" size="icon" className="bg-white border-[#d9d9d9] hover:bg-gray-50 h-11 w-11" onClick={() => setViewMode("list")}>
                       <List className="w-4 h-4 text-[#b7b7b7]" />
                     </Button>
-                    <Button variant="outline" size="icon" className="bg-white border-[#d9d9d9] hover:bg-gray-50" onClick={() => setViewMode("grid")}>
+                    <Button variant="outline" size="icon" className="bg-white border-[#d9d9d9] hover:bg-gray-50 h-11 w-11" onClick={() => setViewMode("grid")}>
                       <Grid3X3 className="w-4 h-4 text-[#b7b7b7]" />
                     </Button>
                   </div>

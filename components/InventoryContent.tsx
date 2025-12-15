@@ -82,54 +82,54 @@ export default function InventoryContent({
 
   return (
     <div className="mb-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-[#333333]">{title}</h1>
-        <Button
-          className="bg-white border border-[#c4c4c4] text-[#333333] hover:bg-gray-50"
-          style={{
-            height: '29.37px',
-            width: '117.46px',
-            borderRadius: '7.53px',
-            borderWidth: '1.205px',
-            fontSize: '12px',
-            fontWeight: '500'
-          }}
-          onClick={handleAddClick}
-        >
-          +Add Site
-        </Button>
-      </div>
-
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Search: </span>
-          <div className="relative">
-            <Input
-              placeholder="Search"
-              className="pl-3 pr-10 w-80"
-              style={{
-                borderRadius: '6.002px',
-                border: '1.2px solid #C4C4C4',
-                background: '#FFF'
-              }}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && !isSearching && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#a1a1a1] hover:text-gray-700"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-            {isSearching && (
-              <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#a1a1a1] w-4 h-4 animate-spin" />
-            )}
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-[#333333] mb-4">{title}</h1>
+        
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span className="text-sm font-medium hidden sm:inline">Search: </span>
+            <div className="relative w-full">
+              <Input
+                placeholder="Search"
+                className="pl-3 pr-10 w-full"
+                style={{
+                  borderRadius: '6.002px',
+                  border: '1.2px solid #C4C4C4',
+                  background: '#FFF'
+                }}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && !isSearching && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#a1a1a1] hover:text-gray-700"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+              {isSearching && (
+                <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#a1a1a1] w-4 h-4 animate-spin" />
+              )}
+            </div>
           </div>
+
+          <Button
+            className="bg-white border border-[#c4c4c4] text-[#333333] hover:bg-gray-50 w-auto flex-shrink-0"
+            style={{
+              height: '29.37px',
+              borderRadius: '7.53px',
+              borderWidth: '1.205px',
+              fontSize: '12px',
+              fontWeight: '500'
+            }}
+            onClick={handleAddClick}
+          >
+            +Add Site
+          </Button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2 mt-4">
           <Button variant="ghost" size="sm" onClick={() => setViewMode("list")} className={viewMode === "list" ? "bg-gray-100" : ""}>
             <List className="w-4 h-4 text-[#a1a1a1]" />
           </Button>

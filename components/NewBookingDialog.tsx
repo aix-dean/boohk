@@ -150,8 +150,8 @@ export function NewBookingDialog({
         )}
         <DialogFooter>
            <Button variant="outline" onClick={onReject} disabled={disabled} className="w-[90px] h-[24px] px-[29px] rounded-[6px] border-[1.5px] border-[#C4C4C4] bg-white">Decline</Button>
-           <Button onClick={onAccept} disabled={!playerOnline || disabled} className="w-[120px] h-[24px] rounded-[6.024px] bg-[#30C71D]">
-             {isAccepting ? <><Loader2 className="animate-spin mr-1 h-4 w-4" /></> : "Accept"}
+           <Button onClick={onAccept} disabled={!playerOnline || disabled || booking?.for_censorship === 0} className="w-[120px] h-[24px] rounded-[6.024px] bg-[#30C71D]">
+             {"Accept"}
            </Button>
         </DialogFooter>
       </DialogContent>

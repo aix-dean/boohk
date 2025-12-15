@@ -1591,8 +1591,7 @@ function SalesDashboardContent() {
             {/* Search and Actions Bar Skeleton */}
             <div className="flex flex-col sm:flex-row gap-4 justify-between">
               <Skeleton className="h-10 w-full sm:w-96" />
-              <div className="flex gap-3">
-                <Skeleton className="h-10 w-20" />
+              <div className="hidden sm:flex gap-3">
                 <Skeleton className="h-10 w-20" />
                 <Skeleton className="h-10 w-20" />
               </div>
@@ -1683,10 +1682,10 @@ function SalesDashboardContent() {
 
                   </div>
 
-                  {/* Search and View Controls */}
-                  <div className="flex justify-between items-center">
-                    <div className="relative">
-                      <div className="w-80 mt-2 mb-2">
+                  {/* Search and View Controls - Responsive layout */}
+                  <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                    <div className="relative w-full sm:w-auto">
+                      <div className="w-full sm:w-80 mt-2 mb-2">
                         <ProductSearchBox
                           companyId={userData?.company_id || ""}
                           onSearchResults={handleSearchResults}
@@ -1699,7 +1698,7 @@ function SalesDashboardContent() {
                         />
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="hidden sm:flex gap-2 flex-shrink-0">
                       <Button variant="outline" size="icon" className="bg-white border-[#d9d9d9] hover:bg-gray-50" onClick={() => setViewMode("list")}>
                         <List className="w-4 h-4 text-[#b7b7b7]" />
                       </Button>

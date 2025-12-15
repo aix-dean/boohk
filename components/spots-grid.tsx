@@ -127,9 +127,6 @@ export function SpotsGrid({
     number | undefined
   >(undefined);
   const [isSpotSelectionOpen, setIsSpotSelectionOpen] = useState(false);
-  const filteredBookings = bookingRequests.filter(
-    (booking) => booking.for_screening === 0
-  );
   const [playerStatus, setPlayerStatus] = useState<boolean>(); // playerId -> online status
   const [playerIds, setPlayerIds] = useState<string[]>([]);
   const [playerOnline, setPlayerOnline] = useState<boolean | null>(null);
@@ -788,7 +785,7 @@ export function SpotsGrid({
   if (bg) {
     return (
       <div className="space-y-4">
-        {filteredBookings.length > 0 && (
+        {bookingRequests.length > 0 && (
           <>
             <div
               style={{
@@ -799,12 +796,12 @@ export function SpotsGrid({
                 lineHeight: "100%",
               }}
             >
-              Booking Requests ({filteredBookings.length})
+              Booking Requests ({bookingRequests.length})
             </div>
             {/* Booking Requests Cards */}
             <div className="mb-4 overflow-x-auto">
               <div className="flex space-x-4 pb-2">
-                {filteredBookings.map((booking) => {
+                {bookingRequests.map((booking) => {
                   return (
                     <div
                       key={booking.id}
@@ -812,18 +809,18 @@ export function SpotsGrid({
                       onClick={() => {
                         setSelectedBooking(booking);
                         setIsAccepting(true);
-                        checkPlayerOnlineStatus(playerIds)
-                          .then((status) => {
-                            setPlayerOnline(status);
-                            if (!status) {
-                              setIsOfflineDialogOpen(true);
-                              setIsAccepting(false);
-                            }
-                            setIsAccepting(false);
-                          })
-                          .catch(() => {
-                            setPlayerOnline(false);
-                          });
+                        // checkPlayerOnlineStatus(playerIds)
+                        //   .then((status) => {
+                        //     setPlayerOnline(status);
+                        //     if (!status) {
+                        //       setIsOfflineDialogOpen(true);
+                        //       setIsAccepting(false);
+                        //     }
+                        //     setIsAccepting(false);
+                        //   })
+                        //   .catch(() => {
+                        //     setPlayerOnline(false);
+                        //   });
                         setIsDialogOpen(true);
                       }}
                     >
