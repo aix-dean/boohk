@@ -15,6 +15,12 @@ export default function ClientLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+
+  // Skip the layout for login and register pages - do this BEFORE calling any hooks
+  if (pathname === "/login" || pathname === "/register" || pathname === "/forgot-password") {
+    return <>{children}</>
+  }
+
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { isMobile, isTablet } = useResponsive()
 
@@ -22,11 +28,6 @@ export default function ClientLayout({
   useUserActivity()
 
   const isSmallScreen = isMobile || isTablet
-
-  // Skip the layout for login and register pages
-  if (pathname === "/login" || pathname === "/register" || pathname === "/forgot-password") {
-    return <>{children}</>
-  }
 
   return (
    <div className="h-screen flex bg-gray-50 relative">
