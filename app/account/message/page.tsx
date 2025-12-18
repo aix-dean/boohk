@@ -258,35 +258,9 @@ export default function MessagesPage() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
     const [messageToDelete, setMessageToDelete] = useState<string | null>(null)
     const [isDeleteMessageDialogOpen, setIsDeleteMessageDialogOpen] = useState(false)
-    const [cachedUserAvatars, setCachedUserAvatars] = useState<Map<string, string>>(new Map())
-    const [fetchedUserIds, setFetchedUserIds] = useState<Set<string>>(new Set())
 
-    // Fetch avatars for users without avatars
-    useEffect(() => {
-      if (!allParticipants.length || !user?.uid) return
 
-      const usersWithoutAvatars = allParticipants.filter(p => !p.avatar && !cachedUserAvatars.has(p.id) && !fetchedUserIds.has(p.id))
-
-      if (usersWithoutAvatars.length === 0) return
-
-      const userIds = usersWithoutAvatars.map(p => p.id).join(',')
-
-      fetch(`/api/messages/users?userIds=${userIds}&userId=${user.uid}`)
-        .then(res => res.json())
-        .then(data => {
-          const newCache = new Map(cachedUserAvatars)
-          data.users.forEach((user: any) => {
-            if (user.avatar) {
-              newCache.set(user.id, user.avatar)
-            }
-          })
-          setCachedUserAvatars(newCache)
-          setFetchedUserIds(prev => new Set([...prev, ...data.users.map((u: any) => u.id)]))
-        })
-        .catch(console.error)
-    }, [allParticipants, user?.uid, fetchedUserIds])
-  
-    // Real-time conversations and users on mount
+  // Real-time conversations and users on mount
   useEffect(() => {
     console.log('MessagesPage useEffect - user:', user)
     console.log('MessagesPage useEffect - userData:', userData)
@@ -1442,7 +1416,7 @@ export default function MessagesPage() {
                         openMediaDialog={openMediaDialog}
                         isGroup={selectedConversation.type === 'group'}
                         senderName={sender?.displayName}
-                        senderAvatar={cachedUserAvatars.get(sender?.id) || sender?.avatar}
+                        senderAvatar={sender?.avatar}
                         onDeleteMessage={handleDeleteMessage}
                       />
                     )

@@ -502,7 +502,7 @@ export function subscribeToNewMessages(
             status: data.status || { delivered: {}, read: {} },
             reactions: data.reactions || {},
           } as Message
-        })
+        }).filter(message => !message.deletedAt)
         onNewMessages(messages)
       } catch (error) {
         console.error("Error processing new messages snapshot:", error)

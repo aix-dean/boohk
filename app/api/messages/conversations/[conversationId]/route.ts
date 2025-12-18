@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { doc, updateDoc, getDoc, arrayUnion, arrayRemove, collection, query, where, getDocs } from "firebase/firestore"
+import { doc, updateDoc, getDoc, arrayUnion, arrayRemove, collection, query, where, getDocs, deleteDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 
 // Helper function to verify Firebase Auth token
@@ -129,7 +129,7 @@ export async function POST(
   }
 }
 
-// Remove member from group (admin only)
+// Delete conversation or remove member from group
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { conversationId: string } }
@@ -144,10 +144,6 @@ export async function DELETE(
     const { searchParams } = new URL(request.url)
     const memberId = searchParams.get('memberId')
 
-    if (!memberId) {
-      return NextResponse.json({ error: "memberId query parameter is required" }, { status: 400 })
-    }
-
     // Get conversation
     const conversationDoc = await getDoc(doc(db, 'conversations', conversationId))
     if (!conversationDoc.exists()) {
@@ -155,43 +151,63 @@ export async function DELETE(
     }
 
     const conversationData = conversationDoc.data()
-    if (conversationData?.type !== 'group') {
-      return NextResponse.json({ error: "Only group conversations support member management" }, { status: 400 })
+
+    // Check if user is a participant
+    if (!conversationData?.participants?.includes(userId)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
-    // Check if user is admin
-    if (conversationData.metadata?.admin !== userId) {
-      return NextResponse.json({ error: "Only group admin can manage members" }, { status: 403 })
+    if (memberId) {
+      // Remove member from group (admin only)
+      if (conversationData?.type !== 'group') {
+        return NextResponse.json({ error: "Only group conversations support member management" }, { status: 400 })
+      }
+
+      // Check if user is admin
+      if (conversationData.metadata?.admin !== userId) {
+        return NextResponse.json({ error: "Only group admin can manage members" }, { status: 403 })
+      }
+
+      // Cannot remove admin
+      if (memberId === conversationData.metadata?.admin) {
+        return NextResponse.json({ error: "Cannot remove group admin" }, { status: 400 })
+      }
+
+      // Check if member exists
+      if (!conversationData.participants?.includes(memberId)) {
+        return NextResponse.json({ error: "User is not a member" }, { status: 400 })
+      }
+
+      // Find member index for name removal
+      const memberIndex = conversationData.participants.indexOf(memberId)
+      const updatedParticipants = conversationData.participants.filter((id: string) => id !== memberId)
+      const updatedParticipantNames = conversationData.metadata?.participantNames?.filter((_: string, index: number) => index !== memberIndex) || []
+
+      // Remove from unread count
+      const { [memberId]: _, ...updatedUnreadCount } = conversationData.unreadCount || {}
+
+      await updateDoc(doc(db, 'conversations', conversationId), {
+        participants: updatedParticipants,
+        'metadata.participantNames': updatedParticipantNames,
+        unreadCount: updatedUnreadCount,
+        updatedAt: new Date()
+      })
+
+      return NextResponse.json({ success: true, message: "Member removed successfully" })
+    } else {
+      // Delete entire conversation
+      // For groups: only admin can delete
+      if (conversationData?.type === 'group' && conversationData.metadata?.admin !== userId) {
+        return NextResponse.json({ error: "Only group admin can delete the conversation" }, { status: 403 })
+      }
+
+      // Delete the conversation document
+      await deleteDoc(doc(db, 'conversations', conversationId))
+
+      return NextResponse.json({ success: true, message: "Conversation deleted successfully" })
     }
-
-    // Cannot remove admin
-    if (memberId === conversationData.metadata?.admin) {
-      return NextResponse.json({ error: "Cannot remove group admin" }, { status: 400 })
-    }
-
-    // Check if member exists
-    if (!conversationData.participants?.includes(memberId)) {
-      return NextResponse.json({ error: "User is not a member" }, { status: 400 })
-    }
-
-    // Find member index for name removal
-    const memberIndex = conversationData.participants.indexOf(memberId)
-    const updatedParticipants = conversationData.participants.filter((id: string) => id !== memberId)
-    const updatedParticipantNames = conversationData.metadata?.participantNames?.filter((_: string, index: number) => index !== memberIndex) || []
-
-    // Remove from unread count
-    const { [memberId]: _, ...updatedUnreadCount } = conversationData.unreadCount || {}
-
-    await updateDoc(doc(db, 'conversations', conversationId), {
-      participants: updatedParticipants,
-      'metadata.participantNames': updatedParticipantNames,
-      unreadCount: updatedUnreadCount,
-      updatedAt: new Date()
-    })
-
-    return NextResponse.json({ success: true, message: "Member removed successfully" })
   } catch (error) {
-    console.error("Error removing member:", error)
-    return NextResponse.json({ error: "Failed to remove member" }, { status: 500 })
+    console.error("Error in DELETE operation:", error)
+    return NextResponse.json({ error: "Operation failed" }, { status: 500 })
   }
 }
