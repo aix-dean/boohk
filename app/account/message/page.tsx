@@ -11,7 +11,7 @@ import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { Send, MessageCircle, Search, Users, ChevronDown, ChevronUp, ArrowLeft, Plus, Paperclip, Image, Video, X, Download, Upload, Info, Pencil } from 'lucide-react'
+import { Send, MessageCircle, Search, Users, ChevronDown, ChevronUp, ArrowLeft, Plus, Paperclip, Image, Video, X, Download, Upload, Info, Pencil, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import {
   Dialog,
@@ -20,6 +20,22 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog"
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import type { Conversation, Message } from '@/lib/types/messaging'
 import { formatDistanceToNow, format } from 'date-fns'
 import {
@@ -48,7 +64,7 @@ interface CompanyUser {
   lastSeen: Date
 }
 
-const MessageComponent = React.memo(({ message, isOwnMessage, formatMessageTime, openMediaDialog, isGroup, senderName, senderAvatar }: {
+const MessageComponent = React.memo(({ message, isOwnMessage, formatMessageTime, openMediaDialog, isGroup, senderName, senderAvatar, onDeleteMessage }: {
   message: Message
   isOwnMessage: boolean
   formatMessageTime: (timestamp: Date) => string
@@ -56,59 +72,115 @@ const MessageComponent = React.memo(({ message, isOwnMessage, formatMessageTime,
   isGroup: boolean
   senderName?: string
   senderAvatar?: string
+  onDeleteMessage: (messageId: string) => void
 }) => (
   <div
     className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
   >
     {isGroup && !isOwnMessage && senderName && (
-      <div className="flex items-center space-x-2 mb-1">
-        <Avatar className="h-6 w-6">
-          <AvatarImage src={senderAvatar} />
-          <AvatarFallback className="text-xs bg-gray-200 text-gray-600">
-            {senderName.split(' ').map(n => n[0]).join('').toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <span className="text-sm font-medium text-gray-900">{senderName}</span>
+      <div className="flex items-center mb-1">
+        <div className="relative group p-2">
+          <Avatar className="h-6 w-6">
+            <AvatarImage src={senderAvatar} />
+            <AvatarFallback className="text-xs bg-gray-200 text-gray-600">
+              {senderName.split(' ').map(n => n[0]).join('').toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+            {senderName}
+          </div>
+        </div>
       </div>
     )}
-    <div
-      className={`max-w-[280px] sm:max-w-xs lg:max-w-md px-2 sm:px-4 py-2 rounded-lg ${
-        isOwnMessage
-          ? 'bg-blue-500 text-white'
-          : 'bg-white border border-gray-200 text-gray-900'
-      }`}
-    >
-      {message.type === 'image' ? (
-        <img
-          src={message.content}
-          alt={message.metadata?.fileName || 'Image'}
-          className="max-w-full rounded cursor-pointer hover:opacity-90 transition-opacity"
-          onClick={() => openMediaDialog(message.content, 'image', message.metadata?.fileName)}
-        />
-      ) : message.type === 'video' ? (
-        <video
-          src={message.content}
-          controls
-          className="max-w-full rounded cursor-pointer hover:opacity-90 transition-opacity"
-          onClick={() => openMediaDialog(message.content, 'video', message.metadata?.fileName)}
-        />
-      ) : message.type === 'file' ? (
-        <a
-          href={message.content}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={isOwnMessage ? 'text-white underline hover:text-blue-200' : 'text-blue-500 underline hover:text-blue-600'}
-          download={message.metadata?.fileName}
-        >
-          {message.metadata?.fileName || 'File'}
-        </a>
-      ) : (
-        <p className="text-sm">{message.content}</p>
-      )}
-      <p className={`text-[10px] mt-1 ${isOwnMessage ? 'text-blue-100' : 'text-gray-500'}`}>
-        {formatMessageTime(message.timestamp)}
-      </p>
-    </div>
+    {isOwnMessage ? (
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div
+            className={`max-w-[280px] sm:max-w-xs lg:max-w-md px-2 sm:px-4 py-2 rounded-lg cursor-pointer ${
+              isOwnMessage
+                ? 'bg-blue-500 text-white'
+                : 'bg-white border border-gray-200 text-gray-900'
+            }`}
+          >
+            {message.type === 'image' ? (
+              <img
+                src={message.content}
+                alt={message.metadata?.fileName || 'Image'}
+                className="max-w-full rounded cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => openMediaDialog(message.content, 'image', message.metadata?.fileName)}
+              />
+            ) : message.type === 'video' ? (
+              <video
+                src={message.content}
+                controls
+                className="max-w-full rounded cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => openMediaDialog(message.content, 'video', message.metadata?.fileName)}
+              />
+            ) : message.type === 'file' ? (
+              <a
+                href={message.content}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={isOwnMessage ? 'text-white underline hover:text-blue-200' : 'text-blue-500 underline hover:text-blue-600'}
+                download={message.metadata?.fileName}
+              >
+                {message.metadata?.fileName || 'File'}
+              </a>
+            ) : (
+              <p className="text-sm">{message.content}</p>
+            )}
+            <p className={`text-[10px] mt-1 ${isOwnMessage ? 'text-blue-100' : 'text-gray-500'}`}>
+              {formatMessageTime(message.timestamp)}
+            </p>
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem onClick={() => onDeleteMessage(message.id)}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete Message
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+    ) : (
+      <div
+        className={`max-w-[280px] sm:max-w-xs lg:max-w-md px-2 sm:px-4 py-2 rounded-lg ${
+          isOwnMessage
+            ? 'bg-blue-500 text-white'
+            : 'bg-white border border-gray-200 text-gray-900'
+        }`}
+      >
+        {message.type === 'image' ? (
+          <img
+            src={message.content}
+            alt={message.metadata?.fileName || 'Image'}
+            className="max-w-full rounded cursor-pointer hover:opacity-90 transition-opacity"
+            onClick={() => openMediaDialog(message.content, 'image', message.metadata?.fileName)}
+          />
+        ) : message.type === 'video' ? (
+          <video
+            src={message.content}
+            controls
+            className="max-w-full rounded cursor-pointer hover:opacity-90 transition-opacity"
+            onClick={() => openMediaDialog(message.content, 'video', message.metadata?.fileName)}
+          />
+        ) : message.type === 'file' ? (
+          <a
+            href={message.content}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={isOwnMessage ? 'text-white underline hover:text-blue-200' : 'text-blue-500 underline hover:text-blue-600'}
+            download={message.metadata?.fileName}
+          >
+            {message.metadata?.fileName || 'File'}
+          </a>
+        ) : (
+          <p className="text-sm">{message.content}</p>
+        )}
+        <p className={`text-[10px] mt-1 ${isOwnMessage ? 'text-blue-100' : 'text-gray-500'}`}>
+          {formatMessageTime(message.timestamp)}
+        </p>
+      </div>
+    )}
   </div>
 ))
 
@@ -178,12 +250,43 @@ export default function MessagesPage() {
   const [hoveredMember, setHoveredMember] = useState<string | null>(null)
   const [showUpload, setShowUpload] = useState(false)
   const [isEditingGroup, setIsEditingGroup] = useState(false)
-  const [editingGroupName, setEditingGroupName] = useState('')
-   const [memberToRemove, setMemberToRemove] = useState<string | null>(null)
-   const [dialogMode, setDialogMode] = useState<'info' | 'addMember'>('info')
+   const [editingGroupName, setEditingGroupName] = useState('')
+    const [memberToRemove, setMemberToRemove] = useState<string | null>(null)
+      const [dialogMode, setDialogMode] = useState<'info' | 'addMember'>('info')
+     const selectedConversationRef = useRef<Conversation | null>(null)
+    const [conversationToDelete, setConversationToDelete] = useState<Conversation | null>(null)
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [messageToDelete, setMessageToDelete] = useState<string | null>(null)
+    const [isDeleteMessageDialogOpen, setIsDeleteMessageDialogOpen] = useState(false)
+    const [cachedUserAvatars, setCachedUserAvatars] = useState<Map<string, string>>(new Map())
+    const [fetchedUserIds, setFetchedUserIds] = useState<Set<string>>(new Set())
 
+    // Fetch avatars for users without avatars
+    useEffect(() => {
+      if (!allParticipants.length || !user?.uid) return
 
-  // Real-time conversations and users on mount
+      const usersWithoutAvatars = allParticipants.filter(p => !p.avatar && !cachedUserAvatars.has(p.id) && !fetchedUserIds.has(p.id))
+
+      if (usersWithoutAvatars.length === 0) return
+
+      const userIds = usersWithoutAvatars.map(p => p.id).join(',')
+
+      fetch(`/api/messages/users?userIds=${userIds}&userId=${user.uid}`)
+        .then(res => res.json())
+        .then(data => {
+          const newCache = new Map(cachedUserAvatars)
+          data.users.forEach((user: any) => {
+            if (user.avatar) {
+              newCache.set(user.id, user.avatar)
+            }
+          })
+          setCachedUserAvatars(newCache)
+          setFetchedUserIds(prev => new Set([...prev, ...data.users.map((u: any) => u.id)]))
+        })
+        .catch(console.error)
+    }, [allParticipants, user?.uid, fetchedUserIds])
+  
+    // Real-time conversations and users on mount
   useEffect(() => {
     console.log('MessagesPage useEffect - user:', user)
     console.log('MessagesPage useEffect - userData:', userData)
@@ -209,14 +312,19 @@ export default function MessagesPage() {
           if (updatedSelected) {
             console.log('DEBUG: Updated selected conversation metadata:', updatedSelected.metadata)
             setSelectedConversation(updatedSelected)
+            selectedConversationRef.current = updatedSelected
+          } else {
+            setSelectedConversation(null)
+            selectedConversationRef.current = null
           }
         }
 
 
-        // Auto-select first conversation if none is selected
-        if (conversations.length > 0 && !selectedConversation) {
+        // Auto-select first conversation if none is selected and was not previously selected
+        if (conversations.length > 0 && !selectedConversation && !selectedConversationRef.current) {
           console.log('Auto-selecting first conversation:', conversations[0].id)
           setSelectedConversation(conversations[0])
+          selectedConversationRef.current = conversations[0]
           if (user?.uid && conversations[0].unreadCount[user.uid] > 0) {
             markConversationAsRead(conversations[0].id)
           }
@@ -321,8 +429,8 @@ export default function MessagesPage() {
       (newMessages) => {
         setMessages(prev => {
           const existingIds = new Set(prev.map(m => m.id))
-          const uniqueNewMessages = newMessages.filter(m => !existingIds.has(m.id))
-          return [...prev, ...uniqueNewMessages]
+          const toAdd = newMessages.filter(m => !existingIds.has(m.id))
+          return [...prev, ...toAdd]
         })
       },
       (error) => {
@@ -446,6 +554,7 @@ export default function MessagesPage() {
         // Real-time subscription will update conversations list automatically
         // Select the new conversation
         setSelectedConversation(data.conversation)
+        selectedConversationRef.current = data.conversation
         return data.conversation
       }
     } catch (error) {
@@ -667,28 +776,14 @@ export default function MessagesPage() {
         }
       }
 
-      const response = await fetch(`/api/messages/send?userId=${user?.uid}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          conversationId: selectedConversation.id,
-          type,
-          content,
-          metadata,
-          userId: user.uid,
-        }),
-      })
+      const messageId = await sendMessageFirebase(selectedConversation.id, user.uid, content, type, metadata)
 
-      if (response.ok) {
-        setNewMessage('')
-        setAttachment(null)
-        if (fileInputRef.current) {
-          fileInputRef.current.value = ''
-        }
-        // Real-time subscriptions will update messages and conversations automatically
+      setNewMessage('')
+      setAttachment(null)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
       }
+      // Real-time subscriptions will update messages and conversations automatically
     } catch (error) {
       console.error('Error sending message:', error)
     } finally {
@@ -897,6 +992,95 @@ export default function MessagesPage() {
     }
   }
 
+  const handleDeleteConversation = (conversation: Conversation) => {
+    setConversationToDelete(conversation)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleDeleteMessage = (messageId: string) => {
+    setMessageToDelete(messageId)
+    setIsDeleteMessageDialogOpen(true)
+  }
+
+  const confirmDeleteConversation = async () => {
+    if (!conversationToDelete || !user?.uid) return
+
+    try {
+      const response = await fetch(`/api/messages/conversations/${conversationToDelete.id}?userId=${user.uid}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        // Remove from local state
+        setConversations(prev => prev.filter(c => c.id !== conversationToDelete.id))
+
+        // Clear selection if this conversation was selected
+        if (selectedConversation?.id === conversationToDelete.id) {
+          setSelectedConversation(null)
+          selectedConversationRef.current = null
+        }
+
+        toast({
+          title: "Conversation Deleted",
+          description: "The conversation has been deleted successfully.",
+        })
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Delete Failed",
+          description: error.error || "Failed to delete conversation",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error)
+      toast({
+        title: "Delete Failed",
+        description: "An error occurred while deleting the conversation",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleteDialogOpen(false)
+      setConversationToDelete(null)
+    }
+  }
+
+  const confirmDeleteMessage = async () => {
+    if (!messageToDelete || !user?.uid) return
+    // Optimistic update
+    const previousMessages = messages
+    const optimisticMessages = messages.filter(m => m.id !== messageToDelete)
+    setMessages(optimisticMessages)
+    toast({
+      title: "Deleting message...",
+      description: "Please wait",
+    })
+    try {
+      const response = await fetch(`/api/messages/${messageToDelete}?userId=${user.uid}`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(errorText || `HTTP error! status: ${response.status}`)
+      }
+      toast({
+        title: "Message Deleted",
+        description: "The message has been deleted successfully.",
+      })
+    } catch (error) {
+      // Rollback optimistic update
+      setMessages(previousMessages)
+      toast({
+        title: "Delete Failed",
+        description: error instanceof Error ? error.message : "An error occurred while deleting the message",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleteMessageDialogOpen(false)
+      setMessageToDelete(null)
+    }
+  }
+
   const openMediaDialog = (url: string, type: 'image' | 'video', fileName?: string) => {
     setSelectedMedia({ url, type, fileName })
     setMediaDialogOpen(true)
@@ -1056,18 +1240,20 @@ export default function MessagesPage() {
                 <h3 className="text-sm font-medium text-gray-900 mb-3">Conversations</h3>
                 <div className="space-y-1">
                   {filteredConversations.map((conversation) => (
-                    <div
-                      key={conversation.id}
-                      onClick={() => {
-                        setSelectedConversation(conversation)
-                        if (user?.uid && conversation.unreadCount[user.uid] > 0) {
-                          markConversationAsRead(conversation.id)
-                        }
-                      }}
-                      className={`p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors ${
-                        selectedConversation?.id === conversation.id ? 'bg-blue-50 border border-blue-200' : ''
-                      }`}
-                    >
+                    <ContextMenu key={conversation.id}>
+                      <ContextMenuTrigger asChild>
+                        <div
+                          onClick={() => {
+                            setSelectedConversation(conversation)
+                            selectedConversationRef.current = conversation
+                            if (user?.uid && conversation.unreadCount[user.uid] > 0) {
+                              markConversationAsRead(conversation.id)
+                            }
+                          }}
+                          className={`p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors ${
+                            selectedConversation?.id === conversation.id ? 'bg-blue-50 border border-blue-200' : ''
+                          }`}
+                        >
                       <div className="flex items-center space-x-3">
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={getConversationAvatarUrl(conversation)} className="object-cover" />
@@ -1096,20 +1282,38 @@ export default function MessagesPage() {
                           </div>
                           {conversation.lastMessage && (
                             <p className="text-xs text-gray-500 truncate mt-1">
-                              {conversation.lastMessage.type === 'image' ? (
-                                conversation.lastMessage.senderId === user?.uid ? 'Image sent' : 'Image received'
-                              ) : conversation.lastMessage.type === 'video' ? (
-                                conversation.lastMessage.senderId === user?.uid ? 'Video sent' : 'Video received'
-                              ) : conversation.lastMessage.type === 'file' ? (
-                                conversation.lastMessage.senderId === user?.uid ? 'File sent' : 'File received'
-                              ) : (
-                                conversation.lastMessage.content
-                              )}
+                              {(() => {
+                                const isGroup = conversation.type === 'group'
+                                const sender = isGroup ? (allParticipants.find(u => u.id === conversation.lastMessage!.senderId) ||
+                                                          companyUsers.find(u => u.id === conversation.lastMessage!.senderId)) : null
+                                const senderName = sender ? sender.displayName : 'Unknown'
+                                if (conversation.lastMessage!.type === 'image') {
+                                  return isGroup ? `${senderName} sent a photo` : (conversation.lastMessage!.senderId === user?.uid ? 'Image sent' : 'Image received')
+                                } else if (conversation.lastMessage!.type === 'video') {
+                                  return isGroup ? `${senderName} sent a video` : (conversation.lastMessage!.senderId === user?.uid ? 'Video sent' : 'Video received')
+                                } else if (conversation.lastMessage!.type === 'file') {
+                                  return isGroup ? `${senderName} sent a file` : (conversation.lastMessage!.senderId === user?.uid ? 'File sent' : 'File received')
+                                } else {
+                                  return isGroup ? `${senderName.length > 15 ? senderName.substring(0, 15) + '...' : senderName}: ${conversation.lastMessage!.content}` : conversation.lastMessage!.content
+                                }
+                              })()}
                             </p>
                           )}
                         </div>
                       </div>
                     </div>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <ContextMenuItem onClick={() => markConversationAsRead(conversation.id)}>
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Mark as Read
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={() => handleDeleteConversation(conversation)}>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Conversation
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
                   ))}
                 </div>
               </div>
@@ -1238,7 +1442,8 @@ export default function MessagesPage() {
                         openMediaDialog={openMediaDialog}
                         isGroup={selectedConversation.type === 'group'}
                         senderName={sender?.displayName}
-                        senderAvatar={sender?.avatar}
+                        senderAvatar={cachedUserAvatars.get(sender?.id) || sender?.avatar}
+                        onDeleteMessage={handleDeleteMessage}
                       />
                     )
                   })}
@@ -1902,6 +2107,42 @@ export default function MessagesPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Conversation Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Conversation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this conversation? This action cannot be undone and all messages will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteConversation} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Message Confirmation Dialog */}
+      <AlertDialog open={isDeleteMessageDialogOpen} onOpenChange={setIsDeleteMessageDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Message</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this message? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteMessage} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
     </div>
   )
