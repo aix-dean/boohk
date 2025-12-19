@@ -2,6 +2,7 @@ import React, { useState } from "react"
 import { X, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogFooter } from "@/components/ui/dialog"
+import { useResponsive } from "@/hooks/use-responsive"
 import type { Booking } from "@/lib/booking-service"
 
 interface NewBookingDialogProps {
@@ -21,21 +22,23 @@ interface NewBookingDialogProps {
  }
 
 export function NewBookingDialog({
-     open,
-     onOpenChange,
-     booking,
-     playerOnline,
-     isAccepting,
-     onReject,
-     onAccept,
-     takenSpotNumbers,
-     retailSpotNumbers,
-     totalSpots,
-     activePages,
-     disabled = false,
-     products
-   }: NewBookingDialogProps) {
-   // Calculate video container aspect ratio based on specs_rental data
+      open,
+      onOpenChange,
+      booking,
+      playerOnline,
+      isAccepting,
+      onReject,
+      onAccept,
+      takenSpotNumbers,
+      retailSpotNumbers,
+      totalSpots,
+      activePages,
+      disabled = false,
+      products
+    }: NewBookingDialogProps) {
+    const { isMobile, isTablet } = useResponsive()
+
+    // Calculate video container aspect ratio based on specs_rental data
    const getVideoAspectRatio = () => {
      const specs = products?.specs_rental
 
@@ -81,7 +84,7 @@ export function NewBookingDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="overflow-auto w-fit max-w-[90vw] max-h-[90vh]">
+      <DialogContent className={`overflow-auto ${isMobile ? 'w-[350px] max-h-[95vh]' : isTablet ? 'w-[550px] max-h-[98vh]' : 'w-[650px] max-h-[95vh]'}`}>
         <DialogHeader className="relative">
           <DialogTitle>New Booking</DialogTitle>
           <DialogClose className="absolute top-[-10px] right-0">
@@ -89,7 +92,7 @@ export function NewBookingDialog({
           </DialogClose>
         </DialogHeader>
         {booking && (
-          <div className="flex gap-4">
+          <div className={`flex ${isMobile ? 'flex-col gap-2' : 'gap-4'}`}>
             <div className=" flex-1">
               <div className="text-xs font-bold mb-[12px]">Booking Details</div>
               <div className="flex">
@@ -131,7 +134,7 @@ export function NewBookingDialog({
               <div className="text-xs font-bold">Content</div>
               <div className="relative flex items-center justify-center bg-gray-100">
                 <div
-                  className="relative overflow-hidden max-w-[400px]"
+                  className={`relative overflow-hidden ${isMobile ? 'max-w-[280px]' : isTablet ? 'max-w-[450px]' : 'max-w-[400px]'}`}
                   style={{ aspectRatio: getVideoAspectRatio() }}
                 >
                   {booking.url ? (
