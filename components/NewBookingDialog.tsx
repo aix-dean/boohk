@@ -2,6 +2,7 @@ import React, { useState } from "react"
 import { X, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogFooter } from "@/components/ui/dialog"
+import { useResponsive } from "@/hooks/use-responsive"
 import type { Booking } from "@/lib/booking-service"
 
 interface NewBookingDialogProps {
@@ -17,69 +18,73 @@ interface NewBookingDialogProps {
    totalSpots: number
    activePages: any[]
    disabled?: boolean
+   products: any
  }
 
 export function NewBookingDialog({
-   open,
-   onOpenChange,
-   booking,
-   playerOnline,
-   isAccepting,
-   onReject,
-   onAccept,
-   takenSpotNumbers,
-   retailSpotNumbers,
-   totalSpots,
-   activePages,
-   disabled = false
- }: NewBookingDialogProps) {
-  // Local function to format booking dates
-  const formatBookingDates = (startDate: any, endDate: any): string => {
-    if (!startDate || !endDate) return "N/A"
-    try {
-      const start = startDate.toDate ? startDate.toDate() : new Date(startDate)
-      const end = endDate.toDate ? endDate.toDate() : new Date(endDate)
-      
-      const startMonth = start.toLocaleDateString('en-US', { month: 'short' })
-      const startDay = start.getDate()
-      const startYear = start.getFullYear()
-      
-      const endMonth = end.toLocaleDateString('en-US', { month: 'short' })
-      const endDay = end.getDate()
-      const endYear = end.getFullYear()
-      
-      // If dates are the same, return single date
-      if (start.getTime() === end.getTime()) {
-        return `${startMonth} ${startDay} ${startYear}`
-      }
-      
-      // If same month and year, return "Nov 12 - 20 2020"
-      if (startMonth === endMonth && startYear === endYear) {
-        return `${startMonth} ${startDay} - ${endDay} ${startYear}`
-      }
-      
-      // Different months/years, return full range
-      return `${startMonth} ${startDay} - ${endMonth} ${endDay} ${endYear}`
-    } catch (error) {
-      console.error("Error formatting booking dates:", error)
-      return "Invalid Dates"
-    }
-  }
+      open,
+      onOpenChange,
+      booking,
+      playerOnline,
+      isAccepting,
+      onReject,
+      onAccept,
+      takenSpotNumbers,
+      retailSpotNumbers,
+      totalSpots,
+      activePages,
+      disabled = false,
+      products
+    }: NewBookingDialogProps) {
+    const { isMobile, isTablet } = useResponsive()
 
-  const originalWidth = booking?.items?.specs_rental.width;
-  const originalHeight = booking?.items?.specs_rental.height;
-  let scaledWidth = originalWidth;
-  let scaledHeight = originalHeight;
-  if (originalWidth && originalHeight) {
-    const availableWidth = 450;
-    const availableHeight = 300;
-    const scale = Math.min(availableWidth / originalWidth, availableHeight / originalHeight);
-    scaledWidth = Math.floor(originalWidth * scale);
-    scaledHeight = Math.floor(originalHeight * scale);
-  }
+    // Calculate video container aspect ratio based on specs_rental data
+   const getVideoAspectRatio = () => {
+     const specs = products?.specs_rental
+
+     if (specs?.width && specs?.height) {
+       return specs.width / specs.height
+     }
+
+     return 12 / 12 // Default 22:12 aspect ratio
+   }
+
+   // Local function to format booking dates
+   const formatBookingDates = (startDate: any, endDate: any): string => {
+     if (!startDate || !endDate) return "N/A"
+     try {
+       const start = startDate.toDate ? startDate.toDate() : new Date(startDate)
+       const end = endDate.toDate ? endDate.toDate() : new Date(endDate)
+
+       const startMonth = start.toLocaleDateString('en-US', { month: 'short' })
+       const startDay = start.getDate()
+       const startYear = start.getFullYear()
+
+       const endMonth = end.toLocaleDateString('en-US', { month: 'short' })
+       const endDay = end.getDate()
+       const endYear = end.getFullYear()
+
+       // If dates are the same, return single date
+       if (start.getTime() === end.getTime()) {
+         return `${startMonth} ${startDay} ${startYear}`
+       }
+
+       // If same month and year, return "Nov 12 - 20 2020"
+       if (startMonth === endMonth && startYear === endYear) {
+         return `${startMonth} ${startDay} - ${endDay} ${startYear}`
+       }
+
+       // Different months/years, return full range
+       return `${startMonth} ${startDay} - ${endMonth} ${endDay} ${endYear}`
+     } catch (error) {
+       console.error("Error formatting booking dates:", error)
+       return "Invalid Dates"
+     }
+   }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className=" overflow-auto" style={{ height: "500px", width: "800px" }}>
+      <DialogContent className={`overflow-auto ${isMobile ? 'w-[350px] max-h-[95vh]' : isTablet ? 'w-[550px] max-h-[98vh]' : 'w-[650px] max-h-[95vh]'}`}>
         <DialogHeader className="relative">
           <DialogTitle>New Booking</DialogTitle>
           <DialogClose className="absolute top-[-10px] right-0">
@@ -87,7 +92,7 @@ export function NewBookingDialog({
           </DialogClose>
         </DialogHeader>
         {booking && (
-          <div className="flex gap-4">
+          <div className={`flex ${isMobile ? 'flex-col gap-2' : 'gap-4'}`}>
             <div className=" flex-1">
               <div className="text-xs font-bold mb-[12px]">Booking Details</div>
               <div className="flex">
@@ -128,17 +133,18 @@ export function NewBookingDialog({
             <div className="flex-1">
               <div className="text-xs font-bold">Content</div>
               <div className="relative flex items-center justify-center bg-gray-100">
-                <div className={`flex items-center justify-center overflow-hidden ${scaledWidth && scaledHeight ? '' : 'aspect-square'}`} style={scaledWidth && scaledHeight ? { width: `${scaledWidth}px`, height: `${scaledHeight}px` } : {}}>
+                <div
+                  className={`relative overflow-hidden ${isMobile ? 'max-w-[280px]' : isTablet ? 'max-w-[450px]' : 'max-w-[400px]'}`}
+                  style={{ aspectRatio: getVideoAspectRatio() }}
+                >
                   {booking.url ? (
                     <video
                       key={booking.url}
                       src={booking.url}
-                      width={scaledWidth}
-                      height={scaledHeight}
-                      disablePictureInPicture
-                      className="object-fill h-full w-full"
+                      className="w-full h-full object-cover"
                       controls
                       autoPlay
+                      disablePictureInPicture
                     />
                   ) : (
                     <span className="text-gray-500">No content available</span>

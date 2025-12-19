@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useState } from "react"
+import { usePathname, useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import {
   LayoutDashboard,
@@ -44,6 +44,9 @@ import { useUnreadMessages } from "@/hooks/use-unread-messages"
 import { useAuth } from "@/contexts/auth-context"
 import { LogisticsNotifications, SalesNotifications, AdminNotifications, ITNotifications, TreasuryNotifications, BusinessDevNotifications } from "@/components/notifications"
 import { DepartmentDropdown } from "@/components/department-dropdown"
+import { doc, onSnapshot, collection, query, where } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { type RoleType } from "@/lib/hardcoded-access-service"
 
 // Custom SVG Icons
 const TeamsIcon = ({ className, color = "white" }: { className?: string; color?: string }) => (
@@ -78,6 +81,137 @@ const MediaLibraryIcon = ({ className, color = "white" }: { className?: string; 
     style={{ filter: color === "white" ? "brightness(0) invert(1)" : "none" }}
   />
 )
+
+// Department mapping (similar to DepartmentDropdown)
+interface DepartmentOption {
+  name: string
+  path: string
+  role: RoleType
+  color: string
+}
+
+const departmentMapping: Partial<Record<RoleType, DepartmentOption>> = {
+  admin: {
+    name: "Admin",
+    path: "/sales/dashboard",
+    role: "admin",
+    color: "bg-purple-500"
+  },
+  it: {
+    name: "IT",
+    path: "/it",
+    role: "it",
+    color: "bg-teal-500"
+  },
+  sales: {
+    name: "Sales",
+    path: "/sales/dashboard",
+    role: "sales",
+    color: "bg-red-500"
+  },
+  logistics: {
+    name: "Logistics",
+    path: "/logistics/enrolled-sites",
+    role: "logistics",
+    color: "bg-blue-500"
+  },
+  cms: {
+    name: "CMS",
+    path: "/cms/dashboard",
+    role: "cms",
+    color: "bg-orange-500"
+  },
+  business: {
+    name: "Business Dev",
+    path: "/business/inventory",
+    role: "business",
+    color: "bg-purple-500"
+  },
+  treasury: {
+    name: "Treasury",
+    path: "/treasury",
+    role: "treasury",
+    color: "bg-green-500"
+  },
+  accounting: {
+    name: "Accounting",
+    path: "/accounting/transactions",
+    role: "accounting",
+    color: "bg-blue-500"
+  },
+  finance: {
+    name: "Finance",
+    path: "/finance",
+    role: "finance",
+    color: "bg-emerald-500"
+  }
+}
+
+// Hook to get user's available departments
+function useUserDepartments() {
+  const [userRoles, setUserRoles] = useState<RoleType[]>([])
+  const { userData } = useAuth()
+
+  useEffect(() => {
+    if (!userData?.uid) {
+      setUserRoles([])
+      return
+    }
+
+    const userRolesCollection = collection(db, "user_roles")
+    const userRolesQuery = query(userRolesCollection, where("userId", "==", userData.uid))
+    const unsubscribe = onSnapshot(userRolesQuery, (querySnapshot) => {
+      const roles: RoleType[] = []
+      querySnapshot.forEach((doc) => {
+        const data = doc.data()
+        if (data.roleId && [
+          "admin", "sales", "logistics", "cms", "it", "business",
+          "treasury", "accounting", "finance"
+        ].includes(data.roleId)) {
+          roles.push(data.roleId as RoleType)
+        }
+      })
+
+      setUserRoles(roles)
+    }, (error) => {
+      console.error("Error in user roles snapshot listener:", error)
+      setUserRoles([])
+    })
+
+    return () => unsubscribe()
+  }, [userData?.uid])
+
+  // Get accessible departments based on user roles
+  let accessibleDepartments = userRoles
+      .map(role => departmentMapping[role])
+      .filter((dept): dept is DepartmentOption => dept !== undefined);
+
+  if (userRoles.includes("admin")) {
+    const requiredDepartments: DepartmentOption[] = [
+      {name: "Sales", path: "/sales/dashboard", role: "sales", color: "bg-red-500"},
+      {name: "Business Dev", path: "/business/inventory", role: "business", color: "bg-purple-500"},
+      {name: "IT", path: "/it", role: "it", color: "bg-teal-500"},
+      {name: "Accounting", path: "/accounting/transactions", role: "accounting", color: "bg-blue-500"},
+    ];
+    for (const dept of requiredDepartments) {
+      if (!accessibleDepartments.some(d => d.role === dept.role)) {
+        accessibleDepartments.push(dept);
+      }
+    }
+    accessibleDepartments = accessibleDepartments.filter(d => d.role !== "admin");
+  } else {
+    accessibleDepartments = accessibleDepartments.filter(dept => ['Sales', 'IT', 'Business Dev', 'Accounting', 'Logistics'].includes(dept.name));
+  }
+
+  accessibleDepartments = accessibleDepartments.sort((a, b) => {
+    // Prioritize Sales to be at the top
+    if (a.name === 'Sales') return -1
+    if (b.name === 'Sales') return 1
+    return 0
+  });
+
+  return accessibleDepartments
+}
 
 // Navigation data structure with icons
 const navigationItems = [
@@ -234,9 +368,33 @@ function isActive(pathname: string, href: string) {
 
 export function SideNavigation() {
   const pathname = usePathname()
+  const router = useRouter()
   const { user } = useAuth()
   const { unreadCount } = useUnreadMessages()
   const [showIntelligence, setShowIntelligence] = useState(false)
+  const accessibleDepartments = useUserDepartments()
+
+  // Enhanced back button handler with fallback
+  const handleAccountBack = () => {
+    console.log("Enhanced back button clicked from account page")
+    
+    // First, try to use browser history to go back
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      console.log("Browser history available, going back")
+      window.history.back()
+      return
+    }
+    
+    // If no history or back failed, fallback to first available department
+    if (accessibleDepartments.length > 0) {
+      const fallbackDepartment = accessibleDepartments[0]
+      console.log("No history available, navigating to fallback department:", fallbackDepartment.name)
+      router.push(fallbackDepartment.path)
+    } else {
+      console.log("No departments available, navigating to dashboard")
+      router.push("/")
+    }
+  }
 
   // Determine the current section from the pathname
   let currentSection = pathname?.split("/")[1] || "dashboard"
@@ -319,11 +477,14 @@ export function SideNavigation() {
   return (
     <div className="h-screen w-[234px] bg-gradient-to-b from-[#1a0f5c] via-[#4a1d7f] via-[#6b2d9e] to-[#2d4a9e] shadow-sm flex flex-col relative">
       <div className="h-16 flex items-center px-6">
-        {pathname === '/account' ? (
-          <Link href="/" className="flex items-center gap-2 text-white hover:text-white/80 transition-colors">
+        {pathname?.startsWith('/account') && !pathname?.startsWith('/accounting') ? (
+          <button 
+            onClick={handleAccountBack}
+            className="flex items-center gap-2 text-white hover:text-white/80 transition-colors"
+          >
             <ArrowLeft className="h-4 w-4" />
             <span>Account Setting</span>
-          </Link>
+          </button>
         ) : (
           <DepartmentDropdown />
         )}
@@ -453,142 +614,6 @@ export function SideNavigation() {
                   </div>
                   <div className="w-2 h-2 bg-white rounded-full"></div>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-3/4"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
               </div>
               <div className="flex justify-end mt-3">
                 <button className="text-xs text-gray-900/90 hover:text-gray-900 transition-colors">See All</button>
@@ -599,22 +624,6 @@ export function SideNavigation() {
                 <h3 className="text-sm font-medium">Updates Center</h3>
               </div>
               <div className="space-y-2">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-white/30 rounded-full"></div>
                   <div className="flex-1 min-w-0">
@@ -783,142 +792,6 @@ export function SideNavigation() {
                   </div>
                   <div className="w-2 h-2 bg-white rounded-full"></div>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-3/4"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
               </div>
               <div className="flex justify-end mt-3">
                 <button className="text-xs text-gray-900/90 hover:text-gray-900 transition-colors">See All</button>
@@ -997,22 +870,6 @@ export function SideNavigation() {
                 <h3 className="text-sm font-medium">Updates Center</h3>
               </div>
               <div className="space-y-2">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-white/30 rounded-full"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-white/40 rounded-full mb-1"></div>
-                    <div className="h-2 bg-white/30 rounded-full w-2/3"></div>
-                  </div>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-white/30 rounded-full"></div>
                   <div className="flex-1 min-w-0">

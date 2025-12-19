@@ -132,6 +132,7 @@ export function SpotsGrid({
   const [playerOnline, setPlayerOnline] = useState<boolean | null>(null);
   const [activePages, setActivePages] = useState<Page[]>([]);
   const [isOperatorDialogOpen, setIsOperatorDialogOpen] = useState(false);
+  const [products, setProducts] = useState<any>(null);
   const [selectedOperatorSpot, setSelectedOperatorSpot] = useState<Spot | null>(
     null
   );
@@ -186,6 +187,7 @@ export function SpotsGrid({
         if (!productSnap.exists()) return;
 
         const product = productSnap.data();
+        setProducts(product);
         setPlayerIds(product.playerIds || []);
         setRetailSpotNumbers(product.retail_spot?.spot_number || []);
 
@@ -975,6 +977,7 @@ export function SpotsGrid({
             totalSpots={totalSpots}
             activePages={activePages}
             disabled={effectiveDisableBookingActions}
+            products={products}
           />
         <BookingSpotSelectionDialog
            open={isSpotSelectionOpen}
