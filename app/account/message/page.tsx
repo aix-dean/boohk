@@ -272,6 +272,7 @@ export default function MessagesPage() {
     const unsubscribeConversations = subscribeToConversations(
       user.uid,
       (conversations) => {
+        console.log('subscribeToConversations callback running, trigger: conversation update')
         console.log('MessagesPage callback - received conversations:', conversations.length)
         console.log('Conversation IDs and participants:', conversations.map(c => ({ id: c.id, participants: c.participants })))
         setConversations(conversations)
@@ -279,6 +280,9 @@ export default function MessagesPage() {
         console.log('Conversations data:', conversations)
         setConversations(conversations)
         setLoadingConversations(false)
+        conversations.forEach(conv => {
+          console.log(`Conversation ${conv.id}: lastMessage content: ${conv.lastMessage?.content}, timestamp: ${conv.lastMessage?.timestamp}`)
+        })
 
         // Update selectedConversation if it exists and has been updated
         if (selectedConversation) {
@@ -404,7 +408,13 @@ export default function MessagesPage() {
         setMessages(prev => {
           const existingIds = new Set(prev.map(m => m.id))
           const toAdd = newMessages.filter(m => !existingIds.has(m.id))
-          return [...prev, ...toAdd]
+          const updated = [...prev, ...toAdd]
+          if (toAdd.length > 0) {
+            setConversations(prevConversations => prevConversations.map(conv =>
+              conv.id === selectedConversation.id ? { ...conv, lastMessage: toAdd[toAdd.length - 1] } : conv
+            ))
+          }
+          return updated
         })
       },
       (error) => {
@@ -476,6 +486,7 @@ export default function MessagesPage() {
   }
 
   const markConversationAsRead = async (conversationId: string) => {
+    console.log('markConversationAsRead called, conversationId:', conversationId)
     try {
       await fetch(`/api/messages/mark-read?userId=${user?.uid}`, {
         method: 'POST',
@@ -724,7 +735,7 @@ export default function MessagesPage() {
 
     setSendingMessage(true)
     try {
-      let type = 'text'
+      let type: 'text' | 'image' | 'video' | 'file' = 'text'
       let content = newMessage.trim()
       let metadata = {}
 
@@ -750,7 +761,8 @@ export default function MessagesPage() {
         }
       }
 
-      const messageId = await sendMessageFirebase(selectedConversation.id, user.uid, content, type, metadata)
+      console.log('sendMessage: conversationId being updated:', selectedConversation.id, 'lastMessage data:', { content, type, metadata })
+      const messageId = await sendMessageFirebase(selectedConversation.id, user.uid, content, type === 'video' ? 'file' : type, metadata)
 
       setNewMessage('')
       setAttachment(null)
@@ -1073,6 +1085,18 @@ export default function MessagesPage() {
     return name.substring(0, maxLength) + '..'
   }
 
+  const getSenderName = (conversation: Conversation, senderId: string) => {
+    // First try companyUsers
+    const user = companyUsers.find(u => u.id === senderId)
+    if (user) return user.displayName
+    // Then try participantNames from metadata
+    const index = conversation.participants.indexOf(senderId)
+    if (index !== -1 && conversation.metadata?.participantNames?.[index]) {
+      return conversation.metadata.participantNames[index]
+    }
+    return 'Unknown'
+  }
+
   const getConversationDisplayName = useCallback((conversation: Conversation) => {
     if (!conversation) return ''
     if (conversation.metadata?.title) return conversation.metadata.title
@@ -1081,34 +1105,28 @@ export default function MessagesPage() {
     const otherParticipants = conversation.participants.filter(p => p !== user?.uid)
     console.log('getConversationDisplayName for conversation:', conversation.id, 'participants:', conversation.participants, 'user.uid:', user?.uid, 'otherParticipants:', otherParticipants)
     if (otherParticipants.length > 0) {
-      // First try to find in allParticipants (includes users from different companies)
-      const otherUser = allParticipants.find(u => u.id === otherParticipants[0])
-      if (otherUser) {
-        console.log('Found otherUser in allParticipants:', otherUser, 'for id:', otherParticipants[0])
-        return otherUser.displayName
-      }
-      // Fallback to companyUsers
-      const companyUser = companyUsers.find(u => u.id === otherParticipants[0])
+      const otherUserId = otherParticipants[0]
+      // First try companyUsers
+      const companyUser = companyUsers.find(u => u.id === otherUserId)
       if (companyUser) {
-        console.log('Found otherUser in companyUsers:', companyUser, 'for id:', otherParticipants[0])
+        console.log('Found otherUser in companyUsers:', companyUser, 'for id:', otherUserId)
         return companyUser.displayName
       }
-      // If still not found and loading, show loading indicator
-      if (loadingParticipants) {
-        return 'Loading...'
-      }
-      // Final fallback: use saved participant name from metadata
-      const otherUserId = otherParticipants[0]
+      // Fallback to participantNames from metadata
       const participantIndex = conversation.participants.indexOf(otherUserId)
       if (conversation.metadata?.participantNames?.[participantIndex]) {
         console.log('Using saved participant name for id:', otherUserId, 'name:', conversation.metadata.participantNames[participantIndex])
         return conversation.metadata.participantNames[participantIndex]
       }
+      // If still not found and loading, show loading indicator
+      if (loadingParticipants) {
+        return 'Loading...'
+      }
       console.log('No user found for id:', otherUserId, 'showing ID fallback')
       return `User ${otherUserId}`
     }
     return 'Unknown'
-  }, [allParticipants, companyUsers, user?.uid, loadingParticipants])
+  }, [companyUsers, user?.uid, loadingParticipants])
 
   const getConversationAvatarUrl = (conversation: Conversation) => {
     if (!conversation) return undefined
@@ -1258,9 +1276,7 @@ export default function MessagesPage() {
                             <p className="text-xs text-gray-500 truncate mt-1">
                               {(() => {
                                 const isGroup = conversation.type === 'group'
-                                const sender = isGroup ? (allParticipants.find(u => u.id === conversation.lastMessage!.senderId) ||
-                                                          companyUsers.find(u => u.id === conversation.lastMessage!.senderId)) : null
-                                const senderName = sender ? sender.displayName : 'Unknown'
+                                const senderName = isGroup ? getSenderName(conversation, conversation.lastMessage!.senderId) : null
                                 if (conversation.lastMessage!.type === 'image') {
                                   return isGroup ? `${senderName} sent a photo` : (conversation.lastMessage!.senderId === user?.uid ? 'Image sent' : 'Image received')
                                 } else if (conversation.lastMessage!.type === 'video') {
@@ -1268,7 +1284,7 @@ export default function MessagesPage() {
                                 } else if (conversation.lastMessage!.type === 'file') {
                                   return isGroup ? `${senderName} sent a file` : (conversation.lastMessage!.senderId === user?.uid ? 'File sent' : 'File received')
                                 } else {
-                                  return isGroup ? `${senderName.length > 15 ? senderName.substring(0, 15) + '...' : senderName}: ${conversation.lastMessage!.content}` : conversation.lastMessage!.content
+                                  return isGroup ? `${senderName && senderName.length > 15 ? senderName.substring(0, 15) + '...' : senderName}: ${conversation.lastMessage!.content}` : conversation.lastMessage!.content
                                 }
                               })()}
                             </p>
