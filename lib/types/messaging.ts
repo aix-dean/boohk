@@ -47,6 +47,7 @@ export interface Message {
     read: Record<string, Date>;
   };
   reactions: Record<string, string[]>;
+  isOptimistic?: boolean;
 }
 
 export interface User {

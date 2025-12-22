@@ -254,7 +254,8 @@ export default function MessagesPage() {
     const [memberToRemove, setMemberToRemove] = useState<string | null>(null)
       const [dialogMode, setDialogMode] = useState<'info' | 'addMember'>('info')
      const selectedConversationRef = useRef<Conversation | null>(null)
-    const [conversationToDelete, setConversationToDelete] = useState<Conversation | null>(null)
+     const unsubscribeRefs = useRef<{ newMessages?: () => void, typing?: () => void }>({})
+     const [conversationToDelete, setConversationToDelete] = useState<Conversation | null>(null)
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
     const [messageToDelete, setMessageToDelete] = useState<string | null>(null)
     const [isDeleteMessageDialogOpen, setIsDeleteMessageDialogOpen] = useState(false)
@@ -398,46 +399,62 @@ export default function MessagesPage() {
       }
     }
 
-    loadInitialMessages()
+    loadInitialMessages().then(() => {
+      // Subscribe to new messages (after the initial load)
+      const unsubscribeNewMessages = subscribeToNewMessages(
+        selectedConversation.id,
+        new Date(Date.now() - 10000), // Subscribe to messages from 10 seconds ago onwards
+        (newMessages) => {
+          setMessages(prev => {
+            const existingIds = new Set(prev.map(m => m.id))
+            const toAdd = newMessages.filter(m => !existingIds.has(m.id))
+            // Remove optimistic messages that match incoming real messages
+            const updated = prev.filter(msg => {
+              if (!msg.isOptimistic) return true
+              return !toAdd.some(real =>
+                real.senderId === msg.senderId &&
+                real.content === msg.content &&
+                real.conversationId === msg.conversationId
+              )
+            }).concat(toAdd)
+            if (toAdd.length > 0) {
+              setConversations(prevConversations => prevConversations.map(conv =>
+                conv.id === selectedConversation.id ? { ...conv, lastMessage: toAdd[toAdd.length - 1] } : conv
+              ))
+            }
+            return updated
+          })
+        },
+        (error) => {
+          console.error('Error in new messages listener:', error)
+        }
+      )
 
-    // Subscribe to new messages (after the initial load)
-    const unsubscribeNewMessages = subscribeToNewMessages(
-      selectedConversation.id,
-      new Date(), // Subscribe to messages from now onwards
-      (newMessages) => {
-        setMessages(prev => {
-          const existingIds = new Set(prev.map(m => m.id))
-          const toAdd = newMessages.filter(m => !existingIds.has(m.id))
-          const updated = [...prev, ...toAdd]
-          if (toAdd.length > 0) {
-            setConversations(prevConversations => prevConversations.map(conv =>
-              conv.id === selectedConversation.id ? { ...conv, lastMessage: toAdd[toAdd.length - 1] } : conv
-            ))
-          }
-          return updated
-        })
-      },
-      (error) => {
-        console.error('Error in new messages listener:', error)
-      }
-    )
+      // Subscribe to typing indicators
+      const unsubscribeTyping = subscribeToTypingIndicators(
+        selectedConversation.id,
+        user.uid,
+        (typingUsers) => {
+          setTypingUsers(typingUsers)
+        },
+        (error) => {
+          console.error('Error in typing indicators listener:', error)
+        }
+      )
 
-    // Subscribe to typing indicators
-    const unsubscribeTyping = subscribeToTypingIndicators(
-      selectedConversation.id,
-      user.uid,
-      (typingUsers) => {
-        setTypingUsers(typingUsers)
-      },
-      (error) => {
-        console.error('Error in typing indicators listener:', error)
-      }
-    )
+      unsubscribeRefs.current.newMessages = unsubscribeNewMessages
+      unsubscribeRefs.current.typing = unsubscribeTyping
+    })
 
     // Cleanup when conversation changes
     return () => {
-      unsubscribeNewMessages()
-      unsubscribeTyping()
+      if (unsubscribeRefs.current.newMessages) {
+        unsubscribeRefs.current.newMessages()
+      }
+      if (unsubscribeRefs.current.typing) {
+        unsubscribeRefs.current.typing()
+      }
+      unsubscribeRefs.current = {}
     }
   }, [selectedConversation?.id, user?.uid])
 
@@ -734,33 +751,54 @@ export default function MessagesPage() {
     if ((!newMessage.trim() && !attachment) || !selectedConversation || !user?.uid) return
 
     setSendingMessage(true)
-    try {
-      let type: 'text' | 'image' | 'video' | 'file' = 'text'
-      let content = newMessage.trim()
-      let metadata = {}
 
-      if (attachment) {
-        // Upload file to Firebase Storage
-        const fileRef = ref(storage, `messages/${user.uid}/${Date.now()}_${attachment.name}`)
-        await uploadBytes(fileRef, attachment)
-        const downloadURL = await getDownloadURL(fileRef)
+    // Create optimistic message
+    let type: 'text' | 'image' | 'video' | 'file' = 'text'
+    let content = newMessage.trim()
+    let metadata = {}
 
-        if (attachment.type.startsWith('image/')) {
-          type = 'image'
-        } else if (attachment.type.startsWith('video/')) {
-          type = 'video'
-        } else {
-          type = 'file'
-        }
+    if (attachment) {
+      // Upload file to Firebase Storage
+      const fileRef = ref(storage, `messages/${user.uid}/${Date.now()}_${attachment.name}`)
+      await uploadBytes(fileRef, attachment)
+      const downloadURL = await getDownloadURL(fileRef)
 
-        content = downloadURL
-        metadata = {
-          fileName: attachment.name,
-          fileSize: attachment.size,
-          fileType: attachment.type
-        }
+      if (attachment.type.startsWith('image/')) {
+        type = 'image'
+      } else if (attachment.type.startsWith('video/')) {
+        type = 'video'
+      } else {
+        type = 'file'
       }
 
+      content = downloadURL
+      metadata = {
+        fileName: attachment.name,
+        fileSize: attachment.size,
+        fileType: attachment.type
+      }
+    }
+
+    const optimisticId = `optimistic-${Date.now()}-${Math.random()}`
+    const optimisticMessage: Message = {
+      id: optimisticId,
+      conversationId: selectedConversation.id,
+      senderId: user.uid,
+      type,
+      content,
+      timestamp: new Date(),
+      metadata,
+      status: { delivered: {}, read: {} },
+      reactions: {},
+      isOptimistic: true
+    }
+
+    // Add optimistic message to local state
+    setMessages(prev => [...prev, optimisticMessage])
+    // Update conversation lastMessage optimistically
+    setConversations(prev => prev.map(c => c.id === selectedConversation.id ? { ...c, lastMessage: optimisticMessage } : c))
+
+    try {
       console.log('sendMessage: conversationId being updated:', selectedConversation.id, 'lastMessage data:', { content, type, metadata })
       const messageId = await sendMessageFirebase(selectedConversation.id, user.uid, content, type === 'video' ? 'file' : type, metadata)
 
@@ -772,6 +810,10 @@ export default function MessagesPage() {
       // Real-time subscriptions will update messages and conversations automatically
     } catch (error) {
       console.error('Error sending message:', error)
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => m.id !== optimisticId))
+      // Revert conversation lastMessage if it was the optimistic one
+      setConversations(prev => prev.map(c => c.id === selectedConversation.id && c.lastMessage?.id === optimisticId ? { ...c, lastMessage: messages.find(m => m.id !== optimisticId) || c.lastMessage } : c))
     } finally {
       setSendingMessage(false)
     }
