@@ -1318,15 +1318,16 @@ export default function MessagesPage() {
                             <p className="text-xs text-gray-500 truncate mt-1">
                               {(() => {
                                 const isGroup = conversation.type === 'group'
-                                const senderName = isGroup ? getSenderName(conversation, conversation.lastMessage!.senderId) : null
+                                const isOwnMessage = conversation.lastMessage!.senderId === user?.uid
+                                const senderName = isOwnMessage ? "You" : (isGroup ? getSenderName(conversation, conversation.lastMessage!.senderId) : null)
                                 if (conversation.lastMessage!.type === 'image') {
-                                  return isGroup ? `${senderName} sent a photo` : (conversation.lastMessage!.senderId === user?.uid ? 'Image sent' : 'Image received')
+                                  return senderName ? `${senderName} sent a photo` : 'Image received'
                                 } else if (conversation.lastMessage!.type === 'video') {
-                                  return isGroup ? `${senderName} sent a video` : (conversation.lastMessage!.senderId === user?.uid ? 'Video sent' : 'Video received')
+                                  return senderName ? `${senderName} sent a video` : 'Video received'
                                 } else if (conversation.lastMessage!.type === 'file') {
-                                  return isGroup ? `${senderName} sent a file` : (conversation.lastMessage!.senderId === user?.uid ? 'File sent' : 'File received')
+                                  return senderName ? `${senderName} sent a file` : 'File received'
                                 } else {
-                                  return isGroup ? `${senderName && senderName.length > 15 ? senderName.substring(0, 15) + '...' : senderName}: ${conversation.lastMessage!.content}` : conversation.lastMessage!.content
+                                  return senderName ? `${senderName}: ${conversation.lastMessage!.content}` : conversation.lastMessage!.content
                                 }
                               })()}
                             </p>
