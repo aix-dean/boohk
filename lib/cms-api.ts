@@ -41,7 +41,7 @@ interface CMSResponse {
   [key: string]: any
 }
 
-const novaCloudURL = process.env.NOVA_CLOUD_URL
+const novaCloudURL = process.env.NEXT_PUBLIC_NOVA_CLOUD_URL
 export async function checkPlayerOnlineStatus(playerIds: string[]): Promise<boolean> {
 
 
