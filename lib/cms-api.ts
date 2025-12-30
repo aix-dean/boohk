@@ -41,12 +41,12 @@ interface CMSResponse {
   [key: string]: any
 }
 
-const novaCloudURL = process.env.NEXT_PUBLIC_NOVA_CLOUD_URL
+const novaCloudURL = "https://cms-novacloud-272363630855.asia-southeast1.run.app"
 export async function checkPlayerOnlineStatus(playerIds: string[]): Promise<boolean> {
 
-
+  console.log(`players id : ${playerIds}`)
   try {
-    const response = await fetch(`${novaCloudURL}/api/v1/players/status/player-info`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_NOVA_CLOUD_URL}/api/v1/players/status/player-info`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -83,7 +83,7 @@ export async function createCMSContentDeployment(
 
     console.log("CMS Request Body:", JSON.stringify(cmsRequestBody, null, 2))
 
-    const cmsResponse = await fetch(`${novaCloudURL}/api/v1/players/solutions/common-solutions`, {
+    const cmsResponse = await fetch(`${process.env.NEXT_PUBLIC_NOVA_CLOUD_URL}/api/v1/players/solutions/common-solutions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
