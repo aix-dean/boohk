@@ -1236,8 +1236,8 @@ export default function MessagesPage() {
   }, [companyUsers, searchQuery])
 
   return (
-    <div className="container mx-auto p-2 sm:p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="container p-0 sm:mx-auto sm:p-6 overflow-hidden flex flex-col h-screen">
+      <div className="hidden md:flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
@@ -1249,9 +1249,9 @@ export default function MessagesPage() {
         </div>
       </div>
 
-      <div className="h-[calc(100vh-180px)] sm:h-[calc(100vh-250px)] min-h-[500px] sm:min-h-[600px] flex bg-white rounded-lg border overflow-hidden relative">
+      <div className="flex-1 min-h-[500px] sm:min-h-[600px] flex bg-white rounded-none sm:rounded-lg border-none sm:border overflow-hidden relative">
       {/* Conversations Sidebar */}
-      <div className={`w-80 bg-gray-50 border-r border-gray-200 flex flex-col fixed md:relative top-0 left-0 h-full z-40 ${sidebarOpen ? 'block' : 'hidden'} md:block`}>
+      <div className={`w-full md:w-80 bg-gray-50 border-r border-gray-200 flex flex-col fixed md:relative top-0 left-0 h-full z-40 ${sidebarOpen ? 'block' : 'hidden'} md:block`}>
         {/* Search */}
         <div className="p-4 border-b border-gray-200">
           <div className="relative">
@@ -1280,6 +1280,7 @@ export default function MessagesPage() {
                           onClick={() => {
                             setSelectedConversation(conversation)
                             selectedConversationRef.current = conversation
+                            setSidebarOpen(false) // Close sidebar on mobile when selecting conversation
                             if (user?.uid && conversation.unreadCount[user.uid] > 0) {
                               markConversationAsRead(conversation.id)
                             }
@@ -1360,7 +1361,10 @@ export default function MessagesPage() {
                   {filteredUsers.map((u) => (
                     <div
                       key={u.id}
-                      onClick={() => createConversation([user!.uid, u.id])}
+                      onClick={() => {
+                        setSidebarOpen(false) // Close sidebar on mobile when starting new conversation
+                        createConversation([user!.uid, u.id])
+                      }}
                       className="p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
                     >
                       <div className="flex items-center space-x-3">
@@ -1410,7 +1414,7 @@ export default function MessagesPage() {
                     onClick={() => setSidebarOpen(!sidebarOpen)}
                     className="md:hidden mr-2"
                   >
-                    <Users className="h-4 w-4" />
+                    <ArrowLeft className="h-4 w-4" />
                   </Button>
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={getConversationAvatarUrl(selectedConversation)} className="object-cover" />
@@ -1633,6 +1637,7 @@ export default function MessagesPage() {
                   <div
                     key={u.id}
                     onClick={() => {
+                      setSidebarOpen(false) // Close sidebar on mobile when starting new conversation
                       createConversation([user!.uid, u.id])
                       setIsContactDialogOpen(false)
                     }}
