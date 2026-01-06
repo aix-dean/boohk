@@ -6,23 +6,25 @@ import { X } from "lucide-react"
 import Image from "next/image"
 import { formatBookingDates } from "@/lib/booking-service"
 import Barcode from 'react-barcode';
+import { useEffect } from "react"
 
 interface Booking {
-  id: string
-  reservation_id?: string
-  start_date: any
-  end_date: any
-  client: {
-    name: string
-    company_name?: string
-  }
-  total_cost: number
-  product_name?: string
-  project_name?: string
-  url?: string
-  type?: string
-  airing_code?: string
-}
+   id: string
+   reservation_id?: string
+   start_date: any
+   end_date: any
+   client: {
+     name: string
+     company_name?: string
+   }
+   total_cost: number
+   product_name?: string
+   project_name?: string
+   url?: string
+   type?: string
+   airing_code?: string
+   airing_url?: string
+ }
 
 interface BookingCongratulationsDialogProps {
   open: boolean
@@ -54,6 +56,21 @@ export function BookingCongratulationsDialog({ open, onOpenChange, booking }: Bo
   const totalPayout = `₱${booking.total_cost?.toLocaleString() || "0"}`
   const bookingCode = booking.reservation_id
   const contentLabel = booking.type?.toUpperCase() || "CONTENT"
+
+  useEffect(() => {
+    if (open && booking.id && !booking.airing_url) {
+      // Generate airing video when dialog opens and no video exists yet
+      fetch('/api/generate-airing-video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ bookingId: booking.id }),
+      }).catch((error) => {
+        console.error('Failed to generate airing video:', error)
+      })
+    }
+  }, [open, booking.id, booking.airing_url])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

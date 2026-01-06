@@ -89,6 +89,7 @@ export interface Booking {
   url?: string // Media URL for booking content
   for_screening?: number // Status for screening (0 = pending, 1 = accepted)
   airing_code?: string // Airing code generated when booking is accepted
+  airing_url?: string // URL of the generated video of the congratulations dialog
 }
 
 export interface SalesRecord {
