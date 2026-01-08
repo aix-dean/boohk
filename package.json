@@ -83,7 +83,6 @@
     "pdfkit": "^0.17.2",
     "puppeteer": "^24.27.0",
     "puppeteer-core": "^24.24.1",
-    "puppeteer-screen-recorder": "^3.0.6",
     "qrcode": "latest",
     "react": "^19",
     "react-barcode": "^1.6.1",
