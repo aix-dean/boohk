@@ -42,6 +42,7 @@ import { BookingSpotSelectionDialog } from "@/components/BookingSpotSelectionDia
 import { OperatorProgramContentDialog } from "@/components/OperatorProgramContentDialog";
 import { MediaPlayer } from "./MediaPlayer";
 
+
 interface Spot {
   id: string;
   number: number;
@@ -286,16 +287,33 @@ export function SpotsGrid({
       // Generate airing_code
       const airing_code = "BH" + Date.now();
 
-      // Update booking to set for_screening = 2 (accepted), status to ongoing, and airing_code
+      // Determine status based on start date
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const startDate = selectedBooking.start_date
+        ? (selectedBooking.start_date.toDate ? selectedBooking.start_date.toDate() : new Date(selectedBooking.start_date as any))
+        : new Date();
+      startDate.setHours(0, 0, 0, 0);
+      const status = startDate > today ? "upcoming" : "ongoing";
+
+      // Update booking to set for_screening = 2 (accepted), status, and airing_code
       await updateDoc(doc(db, "booking", selectedBooking.id), {
         for_screening: 2,
-        status: "ongoing",
+        status,
         airing_code,
         updated: new Date(),
       });
 
       // Update selectedBooking with airing_code for the dialog
       selectedBooking.airing_code = airing_code;
+
+      // Generate dialog video
+      try {
+
+      } catch (error) {
+        console.error("Error generating dialog video:", error);
+        // Continue even if video generation fails
+      }
 
       toast({
         title: "Booking accepted",
@@ -811,19 +829,22 @@ export function SpotsGrid({
                       onClick={() => {
                         setSelectedBooking(booking);
                         setIsAccepting(true);
-                        // checkPlayerOnlineStatus(playerIds)
-                        //   .then((status) => {
-                        //     setPlayerOnline(status);
-                        //     if (!status) {
-                        //       setIsOfflineDialogOpen(true);
-                        //       setIsAccepting(false);
-                        //     }
-                        //     setIsAccepting(false);
-                        //   })
-                        //   .catch(() => {
-                        //     setPlayerOnline(false);
-                        //   });
-                        setIsDialogOpen(true);
+                        checkPlayerOnlineStatus(playerIds)
+                          .then((status) => {
+                            setPlayerOnline(status);
+                            if (!status) {
+                              setIsOfflineDialogOpen(true);
+                              setIsAccepting(false);
+                            } else {
+                              setIsDialogOpen(true);
+                            }
+                            setIsAccepting(false);
+                          })
+                          .catch(() => {
+                            setPlayerOnline(false);
+                            setIsOfflineDialogOpen(true);
+                            setIsAccepting(false);
+                          });
                       }}
                     >
                       <div className="flex items-start gap-3 p-3">
