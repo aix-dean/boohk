@@ -758,7 +758,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const bookingRequestsQuery = query(
       collection(db, "booking"),
       where("product_id", "==", productId),
-      where("for_screening", "==", 0),
+      where("for_screening", "!=", 2),
       orderBy("created", "desc")
     )
 
