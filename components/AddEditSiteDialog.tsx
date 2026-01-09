@@ -13,10 +13,11 @@ import { getPaginatedUserProducts, updateProduct, createProduct, uploadFileToFir
 import { Product } from "oh-db-models/dist/products/types"
 import type { DocumentData, QueryDocumentSnapshot } from "firebase/firestore"
 import { serverTimestamp, Timestamp } from "firebase/firestore"
-import { collection, getDocs, query, orderBy } from "firebase/firestore"
+import { collection, getDocs, query, orderBy, where } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { toast } from "@/components/ui/use-toast"
 import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete"
+import { PriceConfigDialog } from "@/components/PriceConfigDialog"
 import { GeoPoint } from "firebase/firestore"
 
 import {
@@ -272,10 +273,30 @@ export function AddEditSiteDialog({
   const [selectedPricingType, setSelectedPricingType] = useState<'regular' | 'premium' | null>(null)
   const [isFetchingPriceConfig, setIsFetchingPriceConfig] = useState(false)
   
+  // Calculate square footage price
+  const calculateSquareFootagePrice = useCallback((pricingType?: 'regular' | 'premium') => {
+    if (!priceConfigurations) return 0
+
+    const typeToUse = pricingType || selectedPricingType
+    if (!typeToUse) return 0
+
+    const widthFt = parseFloat(width.replace(/,/g, '')) || 0
+    const heightFt = parseFloat(height.replace(/,/g, '')) || 0
+
+    if (widthFt <= 0 || heightFt <= 0) return 0
+
+    const squareFootage = widthFt * heightFt
+    const pricePerSqFt = typeToUse === 'regular'
+      ? (priceConfigurations.regularPrice || 0)
+      : (priceConfigurations.premiumPrice || 0)
+
+    return squareFootage * pricePerSqFt
+  }, [width, height, priceConfigurations, selectedPricingType])
+  
   // Calculate total price with 25% markup
   const calculatedTotalPrice = useMemo(() => {
     const numericPrice = parseFloat(price.replace(/,/g, ''))
-    
+
     // If we have a calculated price from square footage, use that
     if (selectedPricingType && priceConfigurations) {
       const calculatedPrice = calculateSquareFootagePrice()
@@ -284,29 +305,12 @@ export function AddEditSiteDialog({
         return totalPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       }
     }
-    
+
     // Default behavior for manual price input
     if (isNaN(numericPrice) || numericPrice <= 0) return '0.00'
     const totalPrice = numericPrice * 1.25
     return totalPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  }, [price, selectedPricingType, priceConfigurations])
-  
-  // Calculate square footage price
-  const calculateSquareFootagePrice = useCallback(() => {
-    if (!priceConfigurations || !selectedPricingType) return 0
-    
-    const widthFt = parseFloat(width.replace(/,/g, '')) || 0
-    const heightFt = parseFloat(height.replace(/,/g, '')) || 0
-    
-    if (widthFt <= 0 || heightFt <= 0) return 0
-    
-    const squareFootage = widthFt * heightFt
-    const pricePerSqFt = selectedPricingType === 'regular'
-      ? (priceConfigurations.regular_price_per_sqft || 0)
-      : (priceConfigurations.premium_price_per_sqft || 0)
-    
-    return squareFootage * pricePerSqFt
-  }, [width, height, priceConfigurations, selectedPricingType])
+  }, [price, selectedPricingType, priceConfigurations, calculateSquareFootagePrice])
   
   // Fetch price configurations from Firestore
   const fetchPriceConfigurations = useCallback(async () => {
@@ -314,7 +318,7 @@ export function AddEditSiteDialog({
     
     setIsFetchingPriceConfig(true)
     try {
-      const priceConfigRef = collection(db, 'companies', userData.company_id, 'price-configurations')
+      const priceConfigRef = collection(db, 'price-configurations')
       const priceConfigQuery = query(priceConfigRef, orderBy('created', 'desc'))
       const querySnapshot = await getDocs(priceConfigQuery)
       
@@ -324,8 +328,8 @@ export function AddEditSiteDialog({
       } else {
         // Use default values if no configuration exists
         setPriceConfigurations({
-          regular_price_per_sqft: 15,
-          premium_price_per_sqft: 30
+          regularPrice: 15,
+          premiumPrice: 30
         })
         toast({
           title: "Default Pricing Applied",
@@ -337,8 +341,8 @@ export function AddEditSiteDialog({
       console.error("Error fetching price configurations:", error)
       // Use default values on error
       setPriceConfigurations({
-        regular_price_per_sqft: 15,
-        premium_price_per_sqft: 30
+        regularPrice: 15,
+        premiumPrice: 30
       })
       toast({
         title: "Error",
@@ -353,22 +357,12 @@ export function AddEditSiteDialog({
   // Handle pricing type selection
   const handlePricingTypeSelect = useCallback(async (type: 'regular' | 'premium') => {
     setSelectedPricingType(type);
-    setShowPriceConfigDialog(false);
-    
+
     // Calculate and set the price based on square footage
-    const calculatedPrice = calculateSquareFootagePrice();
+    const calculatedPrice = calculateSquareFootagePrice(type);
     if (calculatedPrice > 0) {
       const formattedPrice = calculatedPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       setPrice(formattedPrice);
-      
-      // Automatically proceed with form submission after setting the price
-      setTimeout(() => {
-        // Trigger form submission by calling handleSubmit directly
-        const submitButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
-        if (submitButton) {
-          submitButton.click();
-        }
-      }, 100); // Small delay to ensure state updates
     }
   }, [calculateSquareFootagePrice, setPrice])
   
@@ -376,6 +370,18 @@ export function AddEditSiteDialog({
   const handlePriceConfigDialogClose = useCallback(() => {
     setShowPriceConfigDialog(false);
     setSelectedPricingType(null);
+  }, [])
+
+  // Handle continue from price config dialog
+  const handlePriceConfigContinue = useCallback(() => {
+    setShowPriceConfigDialog(false);
+    // Trigger form submission
+    setTimeout(() => {
+      const submitButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+      if (submitButton) {
+        submitButton.click();
+      }
+    }, 100);
   }, [])
   
   // Handle price change without triggering dialog
@@ -1063,7 +1069,6 @@ const handleFormattedNumberInput = (
             width: parseFloat(width.replace(/,/g, '')) || 0,
             elevation: parseFloat(elevation.replace(/,/g, '')) || 0,
             dimension_unit: dimensionUnit,
-            elevation_unit: elevationUnit as any,
             resolution: {
               width: parseInt(calculatedResolution.width) || 0,
               height: parseInt(calculatedResolution.height) || 0,
@@ -1110,7 +1115,7 @@ const handleFormattedNumberInput = (
       } else {
         // Add mode
         // Create product data
-        const productData: Partial<Product> = {
+        const productData: any = {
           name: siteName,
           description,
           price: parseFloat(price.replace(/,/g, '')) || 0,
@@ -1150,7 +1155,6 @@ const handleFormattedNumberInput = (
             width: parseFloat(width.replace(/,/g, '')) || 0,
             elevation: parseFloat(elevation.replace(/,/g, '')) || 0,
             dimension_unit: dimensionUnit,
-            elevation_unit: elevationUnit,
             resolution: {
               width: parseInt(calculatedResolution.width) || 0,
               height: parseInt(calculatedResolution.height) || 0,
@@ -1186,7 +1190,7 @@ const handleFormattedNumberInput = (
               contractor: "",
               last_maintenance: serverTimestamp() as any,
             },
-          },
+          } as any,
           retail_spot: { spot_number: selectedRetailSpots },
           media: mediaUrls,
           active: true,
@@ -1219,111 +1223,19 @@ const handleFormattedNumberInput = (
     }
   }
 
-  // Price Configuration Dialog Component
-  const PriceConfigDialog = () => (
-    <Dialog open={showPriceConfigDialog} onOpenChange={handlePriceConfigDialogClose}>
-      <DialogContent className="max-w-md rounded-[20px]">
-        <DialogHeader>
-          <DialogTitle className="text-lg font-semibold text-[#333333]">Select Pricing Type</DialogTitle>
-          <DialogDescription className="text-sm text-[#666666]">
-            Choose the pricing type for this site. The price will be calculated based on the dimensions.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-4">
-          {isFetchingPriceConfig ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-[#1d0beb]" />
-              <span className="ml-2 text-sm text-[#666666]">Loading price configurations...</span>
-            </div>
-          ) : priceConfigurations ? (
-            <>
-              <div
-                className={`p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-                  selectedPricingType === 'regular' ? 'border-[#1d0beb] bg-blue-50' : 'border-gray-300'
-                }`}
-                onClick={() => handlePricingTypeSelect('regular')}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-[#333333]">Regular Pricing</div>
-                    <div className="text-sm text-[#666666]">
-                      Price per sq. ft: ₱{priceConfigurations.regular_price_per_sqft?.toLocaleString() || '0.00'}
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    {selectedPricingType === 'regular' && (
-                      <div className="w-4 h-4 bg-[#1d0beb] rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {selectedPricingType === 'regular' && (
-                  <div className="mt-2 text-xs text-[#666666]">
-                    Calculated price: ₱{calculateSquareFootagePrice().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </div>
-                )}
-              </div>
-              
-              <div
-                className={`p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-                  selectedPricingType === 'premium' ? 'border-[#1d0beb] bg-blue-50' : 'border-gray-300'
-                }`}
-                onClick={() => handlePricingTypeSelect('premium')}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-[#333333]">Premium Pricing</div>
-                    <div className="text-sm text-[#666666]">
-                      Price per sq. ft: ₱{priceConfigurations.premium_price_per_sqft?.toLocaleString() || '0.00'}
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    {selectedPricingType === 'premium' && (
-                      <div className="w-4 h-4 bg-[#1d0beb] rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {selectedPricingType === 'premium' && (
-                  <div className="mt-2 text-xs text-[#666666]">
-                    Calculated price: ₱{calculateSquareFootagePrice().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-8 text-[#666666]">
-              No price configurations found. Please set up price configurations in your settings.
-            </div>
-          )}
-        </div>
-        
-        <DialogFooter className="flex justify-end space-x-2">
-          <Button
-            variant="outline"
-            onClick={handlePriceConfigDialogClose}
-            className="border-[#c4c4c4] text-[#4e4e4e] hover:bg-gray-50"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handlePriceConfigDialogClose}
-            className="bg-[#1d0beb] hover:bg-[#1508d1] text-white"
-            disabled={!selectedPricingType || isFetchingPriceConfig}
-          >
-            Continue
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-
   return (
     <>
-      <PriceConfigDialog />
+      <PriceConfigDialog
+        isOpen={showPriceConfigDialog}
+        onClose={handlePriceConfigDialogClose}
+        onSelectPricingType={handlePricingTypeSelect}
+        onContinue={handlePriceConfigContinue}
+        selectedPricingType={selectedPricingType}
+        priceConfigurations={priceConfigurations}
+        isFetchingPriceConfig={isFetchingPriceConfig}
+        width={width}
+        height={height}
+      />
       <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-[20px] py-0 [&::-webkit-scrollbar]:w-3 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
         <DialogHeader className="sticky top-0 bg-white z-10 pb-4 border-b px-6 mb-0 min-h-[4rem] flex items-start pt-6">
