@@ -13,8 +13,11 @@ import { getPaginatedUserProducts, updateProduct, createProduct, uploadFileToFir
 import { Product } from "oh-db-models/dist/products/types"
 import type { DocumentData, QueryDocumentSnapshot } from "firebase/firestore"
 import { serverTimestamp, Timestamp } from "firebase/firestore"
+import { collection, getDocs, query, orderBy, where } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 import { toast } from "@/components/ui/use-toast"
 import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete"
+import { PriceConfigDialog } from "@/components/PriceConfigDialog"
 import { GeoPoint } from "firebase/firestore"
 
 import {
@@ -222,6 +225,20 @@ export function AddEditSiteDialog({
   user,
   onSuccess
 }: AddEditSiteDialogProps) {
+  // Price validation functions
+  const validatePriceInput = (value: string): boolean => {
+    // Allow empty string, numbers, and decimal point
+    const regex = /^(\d*\.?\d{0,2}|\d+\.)$/;
+    return regex.test(value);
+  };
+
+  const formatPriceOnBlur = (value: string): string => {
+    if (!value || value === '') return '0';
+    const num = parseFloat(value.replace(/,/g, ''));
+    if (isNaN(num)) return '0';
+    return num.toFixed(2);
+  };
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
 
@@ -249,6 +266,135 @@ export function AddEditSiteDialog({
   const [dailyTraffic, setDailyTraffic] = useState("")
   const [price, setPrice] = useState("0")
   const [priceUnit, setPriceUnit] = useState<"per spot" | "per day" | "per month">("per month")
+  
+  // Price configuration state
+  const [showPriceConfigDialog, setShowPriceConfigDialog] = useState(false)
+  const [priceConfigurations, setPriceConfigurations] = useState<any>(null)
+  const [selectedPricingType, setSelectedPricingType] = useState<'regular' | 'premium' | null>(null)
+  const [isFetchingPriceConfig, setIsFetchingPriceConfig] = useState(false)
+  
+  // Calculate square footage price
+  const calculateSquareFootagePrice = useCallback((pricingType?: 'regular' | 'premium') => {
+    if (!priceConfigurations) return 0
+
+    const typeToUse = pricingType || selectedPricingType
+    if (!typeToUse) return 0
+
+    const widthFt = parseFloat(width.replace(/,/g, '')) || 0
+    const heightFt = parseFloat(height.replace(/,/g, '')) || 0
+
+    if (widthFt <= 0 || heightFt <= 0) return 0
+
+    const squareFootage = widthFt * heightFt
+    const pricePerSqFt = typeToUse === 'regular'
+      ? (priceConfigurations.regularPrice || 0)
+      : (priceConfigurations.premiumPrice || 0)
+
+    return squareFootage * pricePerSqFt
+  }, [width, height, priceConfigurations, selectedPricingType])
+  
+  // Calculate total price with 25% markup
+  const calculatedTotalPrice = useMemo(() => {
+    const numericPrice = parseFloat(price.replace(/,/g, ''))
+
+    // If we have a calculated price from square footage, use that
+    if (selectedPricingType && priceConfigurations) {
+      const calculatedPrice = calculateSquareFootagePrice()
+      if (calculatedPrice > 0) {
+        const totalPrice = calculatedPrice * 1.25
+        return totalPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      }
+    }
+
+    // Default behavior for manual price input
+    if (isNaN(numericPrice) || numericPrice <= 0) return '0.00'
+    const totalPrice = numericPrice * 1.25
+    return totalPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  }, [price, selectedPricingType, priceConfigurations, calculateSquareFootagePrice])
+  
+  // Fetch price configurations from Firestore
+  const fetchPriceConfigurations = useCallback(async () => {
+    if (!userData?.company_id) return
+    
+    setIsFetchingPriceConfig(true)
+    try {
+      const priceConfigRef = collection(db, 'price-configurations')
+      const priceConfigQuery = query(priceConfigRef, orderBy('created', 'desc'))
+      const querySnapshot = await getDocs(priceConfigQuery)
+      
+      if (!querySnapshot.empty) {
+        const latestConfig = querySnapshot.docs[0].data()
+        setPriceConfigurations(latestConfig)
+      } else {
+        // Use default values if no configuration exists
+        setPriceConfigurations({
+          regularPrice: 15,
+          premiumPrice: 30
+        })
+        toast({
+          title: "Default Pricing Applied",
+          description: "Using default pricing: Regular ₱15/sq.ft, Premium ₱30/sq.ft",
+          variant: "default",
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching price configurations:", error)
+      // Use default values on error
+      setPriceConfigurations({
+        regularPrice: 15,
+        premiumPrice: 30
+      })
+      toast({
+        title: "Error",
+        description: "Using default pricing due to configuration error.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsFetchingPriceConfig(false)
+    }
+  }, [userData?.company_id])
+  
+  // Handle pricing type selection
+  const handlePricingTypeSelect = useCallback(async (type: 'regular' | 'premium') => {
+    setSelectedPricingType(type);
+
+    // Calculate and set the price based on square footage
+    const calculatedPrice = calculateSquareFootagePrice(type);
+    if (calculatedPrice > 0) {
+      const formattedPrice = calculatedPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      setPrice(formattedPrice);
+    }
+  }, [calculateSquareFootagePrice, setPrice])
+  
+  // Handle dialog close without selection
+  const handlePriceConfigDialogClose = useCallback(() => {
+    setShowPriceConfigDialog(false);
+    setSelectedPricingType(null);
+  }, [])
+
+  // Handle continue from price config dialog
+  const handlePriceConfigContinue = useCallback(() => {
+    setShowPriceConfigDialog(false);
+    // Trigger form submission
+    setTimeout(() => {
+      const submitButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+      if (submitButton) {
+        submitButton.click();
+      }
+    }, 100);
+  }, [])
+  
+  // Handle price change without triggering dialog
+  const handlePriceChangeWithDialog = useCallback((e: React.ChangeEvent<HTMLInputElement>, setPrice: (value: string) => void) => {
+    let value = e.target.value.replace(/,/g, '');
+    if (validatePriceInput(value)) {
+      const formattedValue = value === '' ? '' : Number(value).toLocaleString();
+      setPrice(formattedValue);
+    }
+  }, [])
+
+
+
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [landOwner, setLandOwner] = useState("")
@@ -327,20 +473,6 @@ export function AddEditSiteDialog({
       }, 500)
     }
   }
-
-  // Price validation functions
-  const validatePriceInput = (value: string): boolean => {
-    // Allow empty string, numbers, and decimal point
-    const regex = /^(\d*\.?\d{0,2}|\d+\.)$/;
-    return regex.test(value);
-  };
-
-  const formatPriceOnBlur = (value: string): string => {
-    if (!value || value === '') return '0';
-    const num = parseFloat(value.replace(/,/g, ''));
-    if (isNaN(num)) return '0';
-    return num.toFixed(2);
-  };
 
   // Handlers for multiple image uploads
   const handleDisplayPhotoUpload = (index: number, file: File | null) => {
@@ -430,7 +562,7 @@ const handleFormattedNumberInput = (
     if (isOpen) {
       if (editingProduct) {
         // Edit mode - populate with existing data
-        setSiteType(editingProduct.content_type || "digital")
+        setSiteType((editingProduct.content_type || "digital") as "static" | "digital")
         setCategory(editingProduct.categories?.[0] || DIGITAL_CATEGORIES[0])
         setSiteName(editingProduct.name || "")
         setLocation(editingProduct.specs_rental?.location || "")
@@ -468,10 +600,10 @@ const handleFormattedNumberInput = (
         }
 
         setPlayerId(editingProduct.playerIds?.[0] || "")
-        setSpotInputs(new Array(parseInt(editingProduct.cms?.loops_per_day || "0") || 0).fill("")) // Initialize based on CMS
+        setSpotInputs(new Array(parseInt(String(editingProduct.cms?.loops_per_day || "0")) || 0).fill("")) // Initialize based on CMS
         setSelectedRetailSpots(editingProduct.retail_spot?.spot_number || [])
         setBrightness(editingProduct.specs_rental?.brightness || "")
-        setPitch(editingProduct.specs_rental?.pitch || "")
+        setPitch((editingProduct.specs_rental as any)?.pitch || "")
         setLandOwner(editingProduct.specs_rental?.land_owner || "")
         setPartner(editingProduct.specs_rental?.partner || "")
         setLocationVisibility(editingProduct.specs_rental?.location_visibility ? String(editingProduct.specs_rental.location_visibility) : "")
@@ -658,6 +790,14 @@ const handleFormattedNumberInput = (
 
   const handleSubmit = async () => {
     if (!userData?.company_id || !user?.uid) return
+
+    // Check if price is 0 and show configuration dialog before proceeding
+    const numericPrice = parseFloat(price.replace(/,/g, ''))
+    if (numericPrice === 0) {
+      await fetchPriceConfigurations()
+      setShowPriceConfigDialog(true)
+      return // Exit early to show dialog
+    }
 
     setIsSubmitting(true)
 
@@ -929,7 +1069,6 @@ const handleFormattedNumberInput = (
             width: parseFloat(width.replace(/,/g, '')) || 0,
             elevation: parseFloat(elevation.replace(/,/g, '')) || 0,
             dimension_unit: dimensionUnit,
-            elevation_unit: elevationUnit,
             resolution: {
               width: parseInt(calculatedResolution.width) || 0,
               height: parseInt(calculatedResolution.height) || 0,
@@ -954,7 +1093,7 @@ const handleFormattedNumberInput = (
               color: "",
               condition: "",
               contractor: "",
-              last_maintenance: serverTimestamp(),
+              last_maintenance: serverTimestamp() as any,
             },
           },
           retail_spot: { spot_number: selectedRetailSpots },
@@ -976,7 +1115,7 @@ const handleFormattedNumberInput = (
       } else {
         // Add mode
         // Create product data
-        const productData: Partial<Product> = {
+        const productData: any = {
           name: siteName,
           description,
           price: parseFloat(price.replace(/,/g, '')) || 0,
@@ -1016,7 +1155,6 @@ const handleFormattedNumberInput = (
             width: parseFloat(width.replace(/,/g, '')) || 0,
             elevation: parseFloat(elevation.replace(/,/g, '')) || 0,
             dimension_unit: dimensionUnit,
-            elevation_unit: elevationUnit,
             resolution: {
               width: parseInt(calculatedResolution.width) || 0,
               height: parseInt(calculatedResolution.height) || 0,
@@ -1050,9 +1188,9 @@ const handleFormattedNumberInput = (
               color: "",
               condition: "",
               contractor: "",
-              last_maintenance: serverTimestamp(),
+              last_maintenance: serverTimestamp() as any,
             },
-          },
+          } as any,
           retail_spot: { spot_number: selectedRetailSpots },
           media: mediaUrls,
           active: true,
@@ -1060,7 +1198,7 @@ const handleFormattedNumberInput = (
           enable_special_rate: specialRateEnabled,
           position: 0,
           status: "PENDING",
-          created: serverTimestamp(),
+          created: serverTimestamp() as any,
         }
 
         await createProduct(productData)
@@ -1086,7 +1224,19 @@ const handleFormattedNumberInput = (
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <>
+      <PriceConfigDialog
+        isOpen={showPriceConfigDialog}
+        onClose={handlePriceConfigDialogClose}
+        onSelectPricingType={handlePricingTypeSelect}
+        onContinue={handlePriceConfigContinue}
+        selectedPricingType={selectedPricingType}
+        priceConfigurations={priceConfigurations}
+        isFetchingPriceConfig={isFetchingPriceConfig}
+        width={width}
+        height={height}
+      />
+      <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-[20px] py-0 [&::-webkit-scrollbar]:w-3 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
         <DialogHeader className="sticky top-0 bg-white z-10 pb-4 border-b px-6 mb-0 min-h-[4rem] flex items-start pt-6">
           <DialogTitle className="text-2xl font-semibold text-[#333333]">{editingProduct ? "Edit site" : "Add site"}</DialogTitle>
@@ -1701,8 +1851,30 @@ const handleFormattedNumberInput = (
                     placeholder="Regular rate"
                     className="border-[#c4c4c4]"
                     value={price}
-                    onChange={(e) => handlePriceChange(e, setPrice)}
+                    onChange={(e) => handlePriceChangeWithDialog(e, setPrice)}
                   />
+                  <p className="text-[10px] text-[#666666] mt-1">
+                    <span className="text-red-500">Disclaimer:</span> We are adding 25% on top of the product price
+                  </p>
+                  <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="text-[10px] text-[#4e4e4e] font-medium mb-1">Price Breakdown:</div>
+                    <div className="flex justify-between text-[10px]">
+                      <span>Original Price:</span>
+                      <span className="font-semibold">₱{price || '0.00'}</span>
+                    </div>
+                    <div className="flex justify-between text-[10px]">
+                      <span>Markup (25%):</span>
+                      <span className="text-green-600 font-semibold">+₱{(() => {
+                        const original = parseFloat(price.replace(/,/g, ''))
+                        const markup = original * 0.25
+                        return isNaN(markup) ? '0.00' : markup.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                      })()}</span>
+                    </div>
+                    <div className="flex justify-between text-[10px] font-semibold border-t border-gray-300 pt-1 mt-1">
+                      <span>Total Price:</span>
+                      <span className="text-blue-600">₱{calculatedTotalPrice}</span>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Special Rate */}
@@ -1846,5 +2018,6 @@ const handleFormattedNumberInput = (
         </div>
       </DialogContent>
     </Dialog>
+    </>
   )
 }
